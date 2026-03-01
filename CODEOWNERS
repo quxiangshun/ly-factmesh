@@ -1,0 +1,29 @@
+# 根配置文件由 quxiangshun 审核
+*       @quxiangshun
+
+# 系统管理模块审核
+/mom-admin/   @quxiangshun
+
+# 设备物联模块审核
+/mom-iot/     @quxiangshun
+
+# 生产执行模块审核
+/mom-mes/     @quxiangshun
+
+# 仓储管理模块审核
+/mom-wms/     @quxiangshun
+
+# 质量管理模块审核
+/mom-qms/     @quxiangshun
+
+# 公共模块审核
+/mom-common/  @quxiangshun
+
+# 基础设施模块审核
+/mom-infra/   @quxiangshun
+
+# 网关模块审核
+/mom-gateway/ @quxiangshun
+
+# 注册/配置模块审核
+/mom-registry/ @quxiangshun

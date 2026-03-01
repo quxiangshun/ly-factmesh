@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ly.factmesh.admin.infrastructure.database.mapper.PermissionMapper">
+
+    <!-- 根据权限代码查询权限 -->
+    <select id="findByPermCode" resultType="com.ly.factmesh.admin.infrastructure.database.entity.PermissionEntity">
+        SELECT * FROM sys_permission WHERE perm_code = #{permCode}
+    </select>
+
+    <!-- 根据父权限ID查询子权限 -->
+    <select id="findByParentId" resultType="com.ly.factmesh.admin.infrastructure.database.entity.PermissionEntity">
+        SELECT * FROM sys_permission WHERE parent_id = #{parentId}
+    </select>
+
+</mapper>

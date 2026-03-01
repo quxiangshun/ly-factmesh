@@ -1,0 +1,47 @@
+# 应用名称
+spring:
+  application:
+    name: mom-iot
+  profiles:
+    active: dev  # 默认使用开发环境
+  config:
+    import: optional:nacos:iot.yaml
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
+
+  # Flyway 数据库迁移（ly_factmesh_iot 独立库，脚本位于 classpath:db/migration）
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# InfluxDB 时序数据库（设备遥测数据）
+influxdb:
+  url: http://localhost:8086
+  token: ly-factmesh-iot-token
+  org: ly-factmesh
+  bucket: iot-telemetry
+
+# MyBatis Plus配置
+mybatis-plus:
+  # XML映射文件位置
+  mapper-locations: classpath*:mapper/**/*.xml
+  # 实体类包路径
+  type-aliases-package: com.ly.factmesh.iot.domain.entity
+  # 配置日志
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

@@ -1,0 +1,10 @@
+# 应用名称
+spring:
+  application:
+    name: mom-admin
+  profiles:
+    active: dev  # 默认使用开发环境
+  
+  cloud:
+    compatibility-verifier:
+      enabled: false

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ly.factmesh.admin.infrastructure.database.mapper.RoleMapper">
+
+    <!-- 根据角色名称查询角色 -->
+    <select id="findByRoleName" resultType="com.ly.factmesh.admin.infrastructure.database.entity.RoleEntity">
+        SELECT * FROM sys_role WHERE role_name = #{roleName}
+    </select>
+
+    <!-- 根据角色代码查询角色 -->
+    <select id="findByRoleCode" resultType="com.ly.factmesh.admin.infrastructure.database.entity.RoleEntity">
+        SELECT * FROM sys_role WHERE role_code = #{roleCode}
+    </select>
+
+</mapper>

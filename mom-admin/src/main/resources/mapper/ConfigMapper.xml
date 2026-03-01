@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ly.factmesh.admin.infrastructure.database.mapper.ConfigMapper">
+
+    <!-- 根据配置键查询配置 -->
+    <select id="findByConfigKey" resultType="com.ly.factmesh.admin.infrastructure.database.entity.ConfigEntity">
+        SELECT * FROM sys_config WHERE config_key = #{configKey}
+    </select>
+
+</mapper>

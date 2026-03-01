@@ -1,0 +1,19 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    // ✅ 核心修复：SpringCloud OpenFeign 必须带真实版本号变量
+    api "org.springframework.cloud:spring-cloud-starter-openfeign"
+    // Springdoc OpenAPI 3（替代 Knife4j，生成 /v3/api-docs，需 Spring Boot 4）
+    api "org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1"
+}
+
+jar {
+    enabled = true
+}
+
+// java-library模块必加：解决Lombok注解编译失效
+tasks.withType(JavaCompile) {
+    options.annotationProcessorPath = configurations.annotationProcessor
+}

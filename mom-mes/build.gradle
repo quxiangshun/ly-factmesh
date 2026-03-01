@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    implementation project(':mom-common')
+    implementation project(':mom-infra')
+
+    // Nacos 服务注册与发现、配置中心
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery:${springCloudAlibabaVersion}"
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config:${springCloudAlibabaVersion}"
+
+    // SpringBoot业务依赖，自动兜底版本
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Mybatis-Plus依赖
+    implementation "com.baomidou:mybatis-plus-spring-boot3-starter:${mybatisPlusVersion}"
+    implementation "com.baomidou:mybatis-plus-core:${mybatisPlusVersion}"
+    implementation "com.baomidou:mybatis-plus-extension:${mybatisPlusVersion}"
+}
+
+jar {
+    enabled = true
+}
+
+springBoot {
+    mainClass = 'com.ly.factmesh.mes.MesApplication'
+}

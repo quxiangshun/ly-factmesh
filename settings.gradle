@@ -1,0 +1,9 @@
+rootProject.name = "ly-factmesh"
+include("mom-gateway")
+include("mom-common")
+include("mom-infra")
+include("mom-iot")
+include("mom-mes")
+include("mom-wms")
+include("mom-qms")
+include("mom-admin")

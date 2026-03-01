@@ -1,0 +1,53 @@
+package com.ly.factmesh.admin.application.dto;
+
+import java.time.LocalDateTime;
+import lombok.Data;
+
+/**
+ * 用户DTO
+ *
+ * @author 屈想顺
+ */
+@Data
+public class UserDTO {
+    
+    /**
+     * 用户ID
+     */
+    private Long id;
+    
+    /**
+     * 用户名
+     */
+    private String username;
+    
+    /**
+     * 真实姓名
+     */
+    private String realName;
+    
+    /**
+     * 邮箱
+     */
+    private String email;
+    
+    /**
+     * 手机
+     */
+    private String phone;
+    
+    /**
+     * 状态：0-禁用，1-启用
+     */
+    private Integer status;
+    
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createdAt;
+    
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updatedAt;
+}

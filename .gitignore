@@ -1,0 +1,34 @@
+# Gradle 忽略
+.gradle/
+build/
+
+# 编译输出，禁止提交（各模块 bin/ 与 build/）
+bin/
+**/bin/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Spring Boot 忽略
+*.log
+*.gz
+*.tmp
+*.bak
+application-dev.yml
+application-prod.yml
+*.jks
+*.p12
+
+# IDE 忽略（IDEA）
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# 前端构建产物
+web/dist/
+web/node_modules/
+
+# META-INF 自动生成
+META-INF/

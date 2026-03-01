@@ -1,0 +1,38 @@
+# 应用名称
+spring:
+  application:
+    name: mom-gateway
+  profiles:
+    active: dev  # 默认使用开发环境
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    gateway:
+      # 通过 Nacos 自动为每个服务生成路由：/{serviceId}/**
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+server:
+  port: 8080
+  max-http-header-size: 32KB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Knife4j 网关聚合：从 Nacos 发现服务并聚合各服务 /v3/api-docs，统一在 /doc.html 访问
+knife4j:
+  gateway:
+    enabled: true
+    discover:
+      enabled: true
+      excluded-services:
+        - ${spring.application.name}
+      api-docs-path: /v3/api-docs

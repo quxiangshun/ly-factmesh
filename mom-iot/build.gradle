@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' // 继承根工程4.0.1版本
+}
+
+dependencies {
+    // 依赖基础层
+    implementation project(':mom-common')
+    implementation project(':mom-infra')
+
+    // Nacos 服务注册与发现、配置中心
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery:${springCloudAlibabaVersion}"
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config:${springCloudAlibabaVersion}"
+
+    // Spring Boot业务依赖，省略版本号
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Flyway 数据库迁移（ly_factmesh_iot 独立库）
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    // MyBatis-Plus 省略版本号
+    implementation 'com.baomidou:mybatis-plus-spring-boot3-starter'
+    implementation 'com.baomidou:mybatis-plus-core'
+    implementation 'com.baomidou:mybatis-plus-extension'
+
+    // InfluxDB 时序数据库客户端
+    implementation 'com.influxdb:influxdb-client-java:7.3.0'
+}
+
+// 打包配置
+jar {
+    enabled = true
+}
+
+// Spring Boot主类配置
+springBoot {
+    mainClass = 'com.ly.factmesh.iot.IotApplication'
+}

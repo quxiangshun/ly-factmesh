@@ -1,0 +1,36 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+}
+
+dependencies {
+    // 项目内部依赖
+    implementation(project(':mom-common'))
+
+    // Spring Cloud Gateway 与 Nacos 服务发现（网关通过 Nacos 发现并路由到各微服务）
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery:${springCloudAlibabaVersion}"
+
+    // Spring Boot Actuator（用于监控）
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Knife4j Gateway 聚合组件（基于 Spring Cloud Gateway 聚合所有微服务 OpenAPI3）
+    implementation "com.github.xiaoymin:knife4j-gateway-spring-boot-starter:${knife4jVersion}"
+
+    // 测试依赖
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+// Spring Boot插件配置
+springBoot {
+    mainClass = 'com.ly.factmesh.gateway.GatewayApplication'
+}
+
+// 打包配置
+bootJar {
+    enabled = true
+}
+
+jar {
+    enabled = false
+}

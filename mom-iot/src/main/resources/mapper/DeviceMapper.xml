@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ly.factmesh.iot.infrastructure.repository.DeviceMapper">
+    
+    <!-- 根据设备编码获取设备 -->
+    <select id="selectByDeviceCode" resultType="com.ly.factmesh.iot.domain.entity.Device">
+        SELECT * FROM device WHERE device_code = #{deviceCode}
+    </select>
+    
+    <!-- 根据设备类型获取设备列表 -->
+    <select id="selectByDeviceType" resultType="com.ly.factmesh.iot.domain.entity.Device">
+        SELECT * FROM device WHERE device_type = #{deviceType}
+    </select>
+    
+    <!-- 检查设备编码是否存在 -->
+    <select id="existsByDeviceCode" resultType="java.lang.Boolean">
+        SELECT COUNT(*) > 0 FROM device WHERE device_code = #{deviceCode}
+    </select>
+
+    <select id="countOnline" resultType="long">
+        SELECT COUNT(*) FROM device WHERE online_status = 1
+    </select>
+
+    <select id="countFault" resultType="long">
+        SELECT COUNT(*) FROM device WHERE running_status = 2
+    </select>
+</mapper>

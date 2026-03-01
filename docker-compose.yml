@@ -1,0 +1,262 @@
+# LY-FactMesh 完整编排：PostgreSQL + MySQL(Nacos) + Nacos + 各微服务
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16.4
+    container_name: ly-factmesh-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ly_factmesh_main
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/ly_factmesh_admin.sql:/docker-entrypoint-initdb.d/1_ly_factmesh_admin.sql
+      - ./sql/ly_factmesh_common.sql:/docker-entrypoint-initdb.d/2_ly_factmesh_common.sql
+      - ./sql/ly_factmesh_iot.sql:/docker-entrypoint-initdb.d/3_ly_factmesh_iot.sql
+      - ./sql/ly_factmesh_mes.sql:/docker-entrypoint-initdb.d/4_ly_factmesh_mes.sql
+      - ./sql/ly_factmesh_qms.sql:/docker-entrypoint-initdb.d/5_ly_factmesh_qms.sql
+      - ./sql/ly_factmesh_wms.sql:/docker-entrypoint-initdb.d/6_ly_factmesh_wms.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ly_factmesh_main"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mysql-nacos:
+    image: mysql:8.0
+    container_name: ly-factmesh-mysql-nacos
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ly_factmesh_nacos
+      MYSQL_USER: nacos
+      MYSQL_PASSWORD: nacos
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_general_ci
+    volumes:
+      - mysql_nacos_data:/var/lib/mysql
+      - ./sql/nacos-all-init.sql:/docker-entrypoint-initdb.d/1_nacos-all-init.sql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --skip-host-cache --skip-name-resolve
+      --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -proot || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: ly-factmesh-nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    environment:
+      MODE: standalone
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
+    volumes:
+      - ./nacos-config/application.properties:/home/nacos/conf/application.properties
+    depends_on:
+      mysql-nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mom-gateway:
+    build:
+      context: .
+      dockerfile: mom-gateway/Dockerfile
+    container_name: mom-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+    depends_on:
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mom-admin:
+    build:
+      context: .
+      dockerfile: mom-admin/Dockerfile
+    container_name: mom-admin
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ly_factmesh_admin
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      nacos:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mom-iot:
+    build:
+      context: .
+      dockerfile: mom-iot/Dockerfile
+    container_name: mom-iot
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ly_factmesh_iot
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      nacos:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mom-mes:
+    build:
+      context: .
+      dockerfile: mom-mes/Dockerfile
+    container_name: mom-mes
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ly_factmesh_mes
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      nacos:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mom-wms:
+    build:
+      context: .
+      dockerfile: mom-wms/Dockerfile
+    container_name: mom-wms
+    ports:
+      - "8084:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ly_factmesh_wms
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      nacos:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mom-qms:
+    build:
+      context: .
+      dockerfile: mom-qms/Dockerfile
+    container_name: mom-qms
+    ports:
+      - "8085:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ly_factmesh_qms
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      nacos:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+networks:
+  mom-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  mysql_nacos_data:
+    driver: local

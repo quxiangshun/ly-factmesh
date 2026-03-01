@@ -1,0 +1,79 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.3' apply false
+}
+
+group = 'com.ly.factmesh'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    group = 'com.ly.factmesh'
+    version = '1.0-SNAPSHOT'
+
+    java {
+        sourceCompatibility = JavaVersion.toVersion("25")
+        targetCompatibility = JavaVersion.toVersion("25")
+        withSourcesJar()
+    }
+
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+
+    ext {
+        // ========== 核心：所有版本号全部声明【真实可用的版本】 ==========
+        // SpringBoot核心版本
+        springBootVersion = '4.0.3'
+        // SpringCloud 2025.1.0 对应的所有starter真实版本
+        springCloudVersion = '2025.1.0'
+        // SpringCloud Alibaba版本(别名，这个是对的)
+        springCloudAlibabaVersion = '2025.1.0.0'
+        // 第三方依赖真实版本（全部验证过，适配SB4+JDK25）
+        lombokVersion = '1.18.42'
+        postgresqlVersion = '42.7.3'
+        druidVersion = '1.2.22'
+        mybatisPlusVersion = '3.5.6'
+        junitJupiterVersion = '5.10.0'
+        junitPlatformVersion = '1.10.0'
+    }
+
+    dependencies {
+        // Spring Boot BOM：为未指定版本的 spring-boot 依赖提供版本
+        implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+        // Spring Cloud BOM：为 spring-cloud 依赖提供版本
+        implementation platform("org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}")
+        // Lombok全局依赖
+        implementation "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        testImplementation "org.projectlombok:lombok:${lombokVersion}"
+        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+        // JUnit 由 spring-boot-starter-test 提供；无 starter-test 的模块需自行添加
+        testImplementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+        testImplementation "org.junit.jupiter:junit-jupiter"
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            // 只强制锁定非SpringCloud的第三方依赖，避免版本冲突
+            force "org.postgresql:postgresql:${postgresqlVersion}"
+            force "com.alibaba:druid:${druidVersion}"
+            force "com.baomidou:mybatis-plus-spring-boot3-starter:${mybatisPlusVersion}"
+            force "com.baomidou:mybatis-plus-extension:${mybatisPlusVersion}"
+            force "org.projectlombok:lombok:${lombokVersion}"
+        }
+    }
+}

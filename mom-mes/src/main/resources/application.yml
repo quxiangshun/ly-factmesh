@@ -1,0 +1,31 @@
+# 应用名称
+spring:
+  application:
+    name: mom-mes
+  profiles:
+    active: dev  # 默认使用开发环境
+  config:
+    import: optional:nacos:mes.yaml
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.ly.factmesh.mes.infrastructure.database.entity
+  configuration:
+    map-underscore-to-camel-case: true

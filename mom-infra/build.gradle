@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':mom-common')
+
+    // SpringBoot依赖：SB插件自动兜底版本，无需写变量
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation "org.springframework.boot:spring-boot-configuration-processor:${springBootVersion}"
+
+    // 数据库相关：根工程声明真实版本
+    implementation "org.postgresql:postgresql:${postgresqlVersion}"
+    implementation "com.alibaba:druid:${druidVersion}"
+
+    // Mybatis-Plus 3.x适配SB4，正确依赖名
+    implementation "com.baomidou:mybatis-plus-spring-boot3-starter:${mybatisPlusVersion}"
+    implementation "com.baomidou:mybatis-plus-extension:${mybatisPlusVersion}"
+}
+
+jar {
+    enabled = true
+}
+
+tasks.withType(JavaCompile) {
+    options.annotationProcessorPath = configurations.annotationProcessor
+}

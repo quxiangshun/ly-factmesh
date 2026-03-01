@@ -1,0 +1,30 @@
+# 应用名称
+spring:
+  application:
+    name: mom-wms
+  profiles:
+    active: dev  # 默认使用开发环境
+  config:
+    import: optional:nacos:wms.yaml
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.ly.factmesh.wms.infrastructure.database.entity
+  configuration:
+    map-underscore-to-camel-case: true
