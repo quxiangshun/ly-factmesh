@@ -3,6 +3,7 @@ package com.ly.factmesh.admin.application.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.admin.application.dto.PermissionCreateRequest;
 import com.ly.factmesh.admin.application.dto.PermissionDTO;
+import com.ly.factmesh.admin.application.dto.PermissionTreeDTO;
 import com.ly.factmesh.admin.application.dto.PermissionUpdateRequest;
 import com.ly.factmesh.admin.domain.entity.Permission;
 import com.ly.factmesh.admin.domain.repository.PermissionRepository;
@@ -10,6 +11,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 权限应用服务
@@ -136,6 +140,34 @@ public class PermissionApplicationService {
      */
     public Boolean checkPermissionExists(Long id) {
         return permissionRepository.findById(id).isPresent();
+    }
+
+    /**
+     * 获取权限树（parent_id 为 null 的为根节点）
+     */
+    public List<PermissionTreeDTO> getPermissionTree() {
+        List<Permission> all = permissionRepository.findAll();
+        return buildTree(all, null);
+    }
+
+    private List<PermissionTreeDTO> buildTree(List<Permission> all, Long parentId) {
+        List<PermissionTreeDTO> result = new ArrayList<>();
+        for (Permission p : all) {
+            boolean match = (parentId == null && p.getParentId() == null)
+                    || (parentId != null && parentId.equals(p.getParentId()));
+            if (!match) continue;
+            PermissionTreeDTO node = new PermissionTreeDTO();
+            node.setId(p.getId());
+            node.setPermName(p.getPermName());
+            node.setPermCode(p.getPermCode());
+            node.setUrl(p.getUrl());
+            node.setMethod(p.getMethod());
+            node.setParentId(p.getParentId());
+            node.setCreateTime(p.getCreateTime());
+            node.setChildren(buildTree(all, p.getId()));
+            result.add(node);
+        }
+        return result;
     }
     
     /**

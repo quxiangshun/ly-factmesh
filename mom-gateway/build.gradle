@@ -7,15 +7,14 @@ dependencies {
     // 项目内部依赖
     implementation(project(':mom-common'))
 
-    // Spring Cloud Gateway 与 Nacos 服务发现（网关通过 Nacos 发现并路由到各微服务）
-    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    // Spring Cloud Gateway 与 Nacos 服务发现、配置中心
+    implementation "org.springframework.cloud:spring-cloud-starter-gateway-server-webflux:5.0.0"
     implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery:${springCloudAlibabaVersion}"
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config:${springCloudAlibabaVersion}"
+    implementation "org.springframework.cloud:spring-cloud-starter-loadbalancer"
 
     // Spring Boot Actuator（用于监控）
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-    // Knife4j Gateway 聚合组件（基于 Spring Cloud Gateway 聚合所有微服务 OpenAPI3）
-    implementation "com.github.xiaoymin:knife4j-gateway-spring-boot-starter:${knife4jVersion}"
 
     // 测试依赖
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

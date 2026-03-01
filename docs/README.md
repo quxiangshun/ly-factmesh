@@ -14,7 +14,7 @@
 | 文档 | 说明 |
 |------|------|
 | [DDD 架构总览](DDD_ARCHITECTURE_OVERVIEW.md) | 领域驱动设计分层、各模块领域对象与 DDD 分层结构 |
-| [Knife4j 集成](knife4j-integration.md) | OpenAPI3 与 Knife4j 网关文档聚合配置与使用说明 |
+| [MOM 菜单结构](MOM_MENU_STRUCTURE.md) | 企业级 MOM 按微服务划分的完整菜单树 |
 | [贡献指南](CONTRIBUTING.md) | 分支规范、提交规范、PR 流程 |
 
 ## 部署与运维
@@ -40,4 +40,4 @@
 
 ---
 
-阅读建议：新人可先看 **项目设计文档** 与 **系统开发计划**，再按需查阅 DDD 架构与 Knife4j 集成；部署时参考 Docker 与 Nacos 文档。
+阅读建议：新人可先看 **项目设计文档** 与 **系统开发计划**，再按需查阅 DDD 架构；部署时参考 Docker 与 Nacos 文档。

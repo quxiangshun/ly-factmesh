@@ -101,4 +101,13 @@ public class PermissionController {
         Boolean exists = permissionApplicationService.checkPermissionExists(id);
         return ResponseEntity.ok(exists);
     }
+
+    /**
+     * 获取权限树
+     */
+    @GetMapping("/tree")
+    @Operation(summary = "获取权限树", description = "获取树形结构的权限列表")
+    public ResponseEntity<java.util.List<com.ly.factmesh.admin.application.dto.PermissionTreeDTO>> getPermissionTree() {
+        return ResponseEntity.ok(permissionApplicationService.getPermissionTree());
+    }
 }

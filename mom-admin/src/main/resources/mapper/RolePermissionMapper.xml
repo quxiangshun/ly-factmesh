@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ly.factmesh.admin.infrastructure.database.mapper.RolePermissionMapper">
+
+    <select id="findPermissionIdsByRoleId" resultType="java.lang.Long">
+        SELECT perm_id FROM sys_role_permission WHERE role_id = #{roleId}
+    </select>
+
+    <delete id="deleteByRoleId">
+        DELETE FROM sys_role_permission WHERE role_id = #{roleId}
+    </delete>
+
+    <insert id="insertBatch">
+        INSERT INTO sys_role_permission (role_id, perm_id) VALUES
+        <foreach collection="permIds" item="permId" separator=",">
+            (#{roleId}, #{permId})
+        </foreach>
+    </insert>
+</mapper>

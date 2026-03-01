@@ -103,4 +103,14 @@ public class DictController {
         Boolean exists = dictApplicationService.checkDictExists(id);
         return ResponseEntity.ok(exists);
     }
+
+    /**
+     * 根据字典类型获取字典列表（用于下拉等场景）
+     */
+    @GetMapping("/type/{dictType}")
+    @Operation(summary = "按类型获取字典", description = "根据字典类型获取字典列表，按 sort_order 排序")
+    public ResponseEntity<java.util.List<com.ly.factmesh.admin.application.dto.DictDTO>> getDictsByType(
+            @PathVariable @Parameter(description = "字典类型") String dictType) {
+        return ResponseEntity.ok(dictApplicationService.getDictsByType(dictType));
+    }
 }

@@ -30,12 +30,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException e) {
         String msg = e.getMessage() != null ? e.getMessage() : "请求参数错误";
-        // 认证相关错误返回 401
-        if (msg.contains("用户名或密码") || msg.contains("账号已禁用") || msg.contains("用户不存在") || msg.contains("刷新令牌")) {
+        if (isAuthError(msg)) {
             log.debug("Auth error: {}", msg);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("code", 401, "message", msg));
         }
         return ResponseEntity.badRequest().body(Map.of("code", 400, "message", msg));
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "操作失败";
+        if (isAuthError(msg)) {
+            log.debug("Auth error: {}", msg);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("code", 401, "message", msg));
+        }
+        return ResponseEntity.badRequest().body(Map.of("code", 400, "message", msg));
+    }
+
+    private boolean isAuthError(String msg) {
+        return msg.contains("用户名或密码") || msg.contains("账号已禁用") || msg.contains("用户不存在") || msg.contains("刷新令牌");
     }
 
     @ExceptionHandler(Exception.class)

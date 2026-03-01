@@ -32,7 +32,7 @@
 ### 3.1 目标
 
 - 完成微服务骨架与基础设施（Nacos、Gateway、mom-common、mom-infra）。
-- 完成接口文档统一聚合（Knife4j + Nacos Discover）。
+- 完成接口文档统一聚合（OpenAPI3 + Nacos Discover）。
 - 完成前端工程（web/）骨架与基础页面，可访问网关与文档。
 
 ### 3.2 里程碑与交付物
@@ -40,18 +40,18 @@
 | 序号 | 里程碑 | 交付物 | 验收标准 |
 |------|--------|--------|----------|
 | M0-1 | 基础设施就绪 | Nacos 可启动（Docker/本地），各微服务可注册与发现 | 网关通过服务名访问到 mom-admin、mom-iot 等 |
-| M0-2 | 网关与文档聚合 | mom-gateway 集成 knife4j-gateway，基于 Nacos Discover | 访问 `/doc.html` 可切换并查看各服务 OpenAPI3 |
-| M0-3 | 统一 OpenAPI 规范 | mom-common Knife4jConfig 统一，各服务暴露 `/v3/api-docs` | 各业务服务无额外 Swagger 配置，文档风格一致 |
+| M0-2 | 网关与文档聚合 | mom-gateway 基于 Nacos Discover 聚合各服务 OpenAPI3 | 访问 `/doc.html` 可切换并查看各服务 OpenAPI3 |
+| M0-3 | 统一 OpenAPI 规范 | mom-common 统一配置，各服务暴露 `/v3/api-docs` | 各业务服务无额外 Swagger 配置，文档风格一致 |
 | M0-4 | 前端工程骨架 | web/（Vite+Vue3+TS+Router+Iconify） | 本地 `npm run dev` 可访问概览/微服务页，可跳转 `/doc.html` |
-| M0-5 | 文档与规范文档 | docs/ 下设计文档、开发计划、Knife4j 集成说明等 | 新人可仅凭 docs 理解架构与接入方式 |
+| M0-5 | 文档与规范文档 | docs/ 下设计文档、开发计划、OpenAPI 说明等 | 新人可仅凭 docs 理解架构与接入方式 |
 
 ### 3.3 任务清单（建议顺序）
 
 1. 确认 Nacos 配置（bootstrap/application），移除网关对 Nacos 的排除，启用 Discovery Locator。
-2. mom-gateway 引入 knife4j-gateway-spring-boot-starter，配置 discover 模式，移除手写 SwaggerResourceController（若存在）。
-3. 各业务服务仅依赖 mom-common，确认 Knife4jConfig 生效，单服务 `/v3/api-docs` 可访问。
+2. mom-gateway 配置 OpenAPI 聚合，基于 Nacos Discover 发现各服务 `/v3/api-docs`。
+3. 各业务服务仅依赖 mom-common，确认 OpenAPI 配置生效，单服务 `/v3/api-docs` 可访问。
 4. 创建 web/ 工程，配置 Vite 代理 `/api` → 网关，实现首页与微服务介绍页，导航可打开 `/doc.html`。
-5. 编写/更新 docs：PROJECT_DESIGN.md、SYSTEM_DEVELOPMENT_PLAN.md、knife4j-integration.md。
+5. 编写/更新 docs：PROJECT_DESIGN.md、SYSTEM_DEVELOPMENT_PLAN.md。
 
 ### 3.4 输出
 
@@ -64,14 +64,13 @@
 | 任务 | 状态 | 说明 |
 |------|------|------|
 | Nacos 配置与网关 Discovery | ✅ | 网关与各业务服务（admin/iot/mes/wms/qms）均已引入 `spring-cloud-starter-alibaba-nacos-discovery`，网关启用 Discovery Locator，bootstrap 中 Nacos 配置已存在 |
-| Knife4j Gateway + Discover | ✅ | mom-gateway 已引入 knife4j-gateway-spring-boot-starter，application.yml 配置 discover 模式 |
-| 移除手写 SwaggerResourceController | ✅ | 已删除，由 Knife4j Gateway 自动发现服务 |
-| 各业务服务 Knife4jConfig | ✅ | 各服务依赖 mom-common，统一暴露 `/v3/api-docs` |
+| 网关 OpenAPI 聚合 | ✅ | mom-gateway 基于 Nacos Discover 聚合各服务 OpenAPI3 |
+| 各业务服务 OpenAPI | ✅ | 各服务依赖 mom-common，统一暴露 `/v3/api-docs` |
 | 前端 web/ 骨架 | ✅ | Vite+Vue3+TS+Router+Iconify，首页/微服务页，代理 `/api` 与 `/doc.html` 等至网关 |
-| 文档 | ✅ | PROJECT_DESIGN.md、SYSTEM_DEVELOPMENT_PLAN.md、knife4j-integration.md、web/README.md |
+| 文档 | ✅ | PROJECT_DESIGN.md、SYSTEM_DEVELOPMENT_PLAN.md、web/README.md |
 | mom-mes/wms/qms mainClass | ✅ | 已修正为 MesApplication、WmsApplication、QmsApplication |
 
-**验收建议**：本地需 JDK 25（与 build.gradle 一致），先启动 Nacos（如 Docker），再启动 mom-admin、mom-gateway；访问 `http://localhost:8080/doc.html` 应能看到 Knife4j 聚合；前端 `cd web && npm run dev` 后访问 `http://localhost:5173` 与 `http://localhost:5173/doc.html`。
+**验收建议**：本地需 JDK 25（与 build.gradle 一致），先启动 Nacos（如 Docker），再启动 mom-admin、mom-gateway；访问 `http://localhost:8080/doc.html` 应能看到 OpenAPI 聚合；前端 `cd web && npm run dev` 后访问 `http://localhost:5173` 与 `http://localhost:5173/doc.html`。
 
 ---
 
@@ -89,7 +88,7 @@
 
 | 序号 | 里程碑 | 交付物 | 验收标准 |
 |------|--------|--------|----------|
-| M1-1 | Admin 核心能力 | 用户/角色/权限/字典/配置的领域模型、应用服务、REST API | 可通过 Knife4j 调试，前端可对接（若已做登录页） |
+| M1-1 | Admin 核心能力 | 用户/角色/权限/字典/配置的领域模型、应用服务、REST API | 可通过 OpenAPI 调试，前端可对接（若已做登录页） |
 | M1-2 | IoT 核心能力 | 设备实体、状态、注册/上下线、基础采集或告警 API | 设备列表与状态可查询，可扩展采集与告警 |
 | M1-3 | MES 核心能力 | 工单、工序、产线、报工等领域模型与 API | 工单创建与状态流转、报工可演示 |
 | M1-4 | WMS 核心能力 | 仓库、库存、出入库单、批次等领域模型与 API | 入库/出库/盘点流程可演示 |
@@ -114,7 +113,7 @@
 
 | 里程碑 | 状态 | 说明 |
 |--------|------|------|
-| M1-1 Admin 核心能力 | ✅ 已有 | 用户/角色/权限/字典/配置 CRUD 与 RBAC 已存在，可通过 Knife4j 调试 |
+| M1-1 Admin 核心能力 | ✅ 已有 | 用户/角色/权限/字典/配置 CRUD 与 RBAC 已存在，可通过 OpenAPI 调试 |
 | 统一分页与响应体 | ✅ | mom-common 新增 `Result<T>`、`PageResult<T>`，供各域统一使用 |
 | M1-2 IoT 核心能力 | ✅ | 新增 DeviceController、DeviceRegisterRequest；设备注册、上下线、状态、列表、删除等 API |
 | M1-3 MES 核心能力 | ✅ | 工单领域：WorkOrder 实体、WorkOrderRepository、WorkOrderApplicationService、WorkOrderController；创建/分页/下发/开始/完成/删除工单 API |
@@ -226,7 +225,7 @@
 |------|------|
 | Nacos/网关与业务服务版本不兼容 | 锁定 Spring Cloud Alibaba 与 Spring Boot BOM 版本，在 CI 中做集成测试 |
 | 跨域事务与一致性 | 优先采用事件与最终一致性，明确记录在设计文档；复杂场景再考虑 Saga 或补偿 |
-| 前端与后端接口不同步 | 以 OpenAPI3 为契约，Knife4j 为单源真相；有条件的可生成前端类型或 Mock |
+| 前端与后端接口不同步 | 以 OpenAPI3 为契约；有条件的可生成前端类型或 Mock |
 | 人力不足导致周期拉长 | 优先保证 P0+P1 的 Admin/IoT/MES，WMS/QMS 可做最小闭环后迭代 |
 
 ---

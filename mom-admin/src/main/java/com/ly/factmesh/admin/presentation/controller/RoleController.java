@@ -89,4 +89,26 @@ public class RoleController {
         roleApplicationService.deleteRole(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * 获取角色的权限列表
+     */
+    @GetMapping("/{id}/permissions")
+    @Operation(summary = "获取角色权限", description = "根据角色ID获取角色关联的权限列表")
+    public ResponseEntity<java.util.List<com.ly.factmesh.admin.application.dto.PermissionDTO>> getRolePermissions(
+            @PathVariable @Parameter(description = "角色ID") Long id) {
+        return ResponseEntity.ok(roleApplicationService.getRolePermissions(id));
+    }
+
+    /**
+     * 为角色分配权限
+     */
+    @PutMapping("/{id}/permissions")
+    @Operation(summary = "分配角色权限", description = "为角色分配权限列表")
+    public ResponseEntity<Void> assignPermissions(
+            @PathVariable @Parameter(description = "角色ID") Long id,
+            @RequestBody java.util.List<Long> permIds) {
+        roleApplicationService.assignPermissions(id, permIds);
+        return ResponseEntity.noContent().build();
+    }
 }

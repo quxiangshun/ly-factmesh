@@ -1,38 +1,64 @@
-# 应用名称
+# 应用基础配置（网关路由由 Nacos 配置中心提供）
 spring:
   application:
     name: mom-gateway
   profiles:
-    active: dev  # 默认使用开发环境
+    active: dev
+  config:
+    import: optional:nacos:gateway.yaml
   cloud:
     compatibility-verifier:
       enabled: false
-    gateway:
-      # 通过 Nacos 自动为每个服务生成路由：/{serviceId}/**
+    nacos:
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
       discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: LY_MOM_GROUP
+        username: nacos
+        password: nacos
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          httpclient:
+            connect-timeout: 3000
+            response-timeout: 30s
+          routes:
+            - id: api-docs-all
+              uri: forward:///local-api-docs
+              predicates:
+                - Path=/v3/api-docs/all
+            - id: api-admin
+              uri: lb://mom-admin
+              predicates:
+                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**
+            - id: api-iot
+              uri: lb://mom-iot
+              predicates:
+                - Path=/api/devices/**
+            - id: api-mes
+              uri: lb://mom-mes
+              predicates:
+                - Path=/api/work-orders/**
+            - id: api-wms
+              uri: lb://mom-wms
+              predicates:
+                - Path=/api/materials/**,/api/requisitions/**
+            - id: api-qms
+              uri: lb://mom-qms
+              predicates:
+                - Path=/api/inspection-tasks/**
 
 server:
   port: 8080
   max-http-header-size: 32KB
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,loggers
-  endpoint:
-    health:
-      show-details: when_authorized
-
-# Knife4j 网关聚合：从 Nacos 发现服务并聚合各服务 /v3/api-docs，统一在 /doc.html 访问
-knife4j:
-  gateway:
-    enabled: true
-    discover:
-      enabled: true
-      excluded-services:
-        - ${spring.application.name}
-      api-docs-path: /v3/api-docs
+# management、app.jwt、app.rate-limit 由 Nacos 配置中心提供（见 sql/nacos-all-init.sql）

@@ -1,11 +1,16 @@
 package com.ly.factmesh.admin.application.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ly.factmesh.admin.application.dto.PermissionDTO;
 import com.ly.factmesh.admin.application.dto.RoleCreateRequest;
 import com.ly.factmesh.admin.application.dto.RoleDTO;
 import com.ly.factmesh.admin.application.dto.RoleUpdateRequest;
+import com.ly.factmesh.admin.domain.entity.Permission;
 import com.ly.factmesh.admin.domain.entity.Role;
+import com.ly.factmesh.admin.domain.repository.PermissionRepository;
 import com.ly.factmesh.admin.domain.repository.RoleRepository;
+import com.ly.factmesh.admin.infrastructure.database.mapper.RolePermissionMapper;
+import com.ly.factmesh.admin.infrastructure.database.mapper.UserRoleMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +28,9 @@ import java.util.stream.Collectors;
 public class RoleApplicationService {
     
     private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
+    private final RolePermissionMapper rolePermissionMapper;
+    private final UserRoleMapper userRoleMapper;
     
     /**
      * 创建角色
@@ -125,19 +133,43 @@ public class RoleApplicationService {
      */
     @Transactional
     public void deleteRole(Long id) {
-        // 检查角色是否存在
-        roleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("角色不存在"));
-        
-        // 删除角色
+        roleRepository.findById(id).orElseThrow(() -> new RuntimeException("角色不存在"));
+        rolePermissionMapper.deleteByRoleId(id);
+        userRoleMapper.deleteByRoleId(id);
         roleRepository.deleteById(id);
     }
     
     /**
-     * 将角色实体转换为DTO
-     * @param role 角色实体
-     * @return 角色DTO
+     * 获取角色的权限ID列表
      */
+    public List<PermissionDTO> getRolePermissions(Long roleId) {
+        roleRepository.findById(roleId).orElseThrow(() -> new RuntimeException("角色不存在"));
+        List<Long> permIds = rolePermissionMapper.findPermissionIdsByRoleId(roleId);
+        if (permIds.isEmpty()) return List.of();
+        return permIds.stream()
+                .map(permissionRepository::findById)
+                .filter(java.util.Optional::isPresent)
+                .map(o -> convertPermissionToDTO(o.get()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 为角色分配权限
+     */
+    @Transactional
+    public void assignPermissions(Long roleId, List<Long> permIds) {
+        roleRepository.findById(roleId).orElseThrow(() -> new RuntimeException("角色不存在"));
+        if (permIds == null || permIds.isEmpty()) {
+            rolePermissionMapper.deleteByRoleId(roleId);
+            return;
+        }
+        for (Long permId : permIds) {
+            permissionRepository.findById(permId).orElseThrow(() -> new RuntimeException("权限不存在: " + permId));
+        }
+        rolePermissionMapper.deleteByRoleId(roleId);
+        rolePermissionMapper.insertBatch(roleId, permIds);
+    }
+
     private RoleDTO convertToDTO(Role role) {
         RoleDTO dto = new RoleDTO();
         dto.setId(role.getId());
@@ -146,6 +178,18 @@ public class RoleApplicationService {
         dto.setDescription(role.getDescription());
         dto.setCreateTime(role.getCreateTime());
         dto.setUpdateTime(role.getUpdateTime());
+        return dto;
+    }
+
+    private PermissionDTO convertPermissionToDTO(Permission p) {
+        PermissionDTO dto = new PermissionDTO();
+        dto.setId(p.getId());
+        dto.setPermName(p.getPermName());
+        dto.setPermCode(p.getPermCode());
+        dto.setUrl(p.getUrl());
+        dto.setMethod(p.getMethod());
+        dto.setParentId(p.getParentId());
+        dto.setCreateTime(p.getCreateTime());
         return dto;
     }
 }

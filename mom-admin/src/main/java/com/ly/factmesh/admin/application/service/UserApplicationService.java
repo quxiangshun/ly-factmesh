@@ -1,11 +1,17 @@
 package com.ly.factmesh.admin.application.service;
 
+import com.ly.factmesh.admin.application.dto.RoleDTO;
 import com.ly.factmesh.admin.application.dto.UserCreateRequest;
 import com.ly.factmesh.admin.application.dto.UserDTO;
 import com.ly.factmesh.admin.application.dto.UserUpdateRequest;
+import com.ly.factmesh.admin.domain.entity.Role;
 import com.ly.factmesh.admin.domain.entity.User;
+import com.ly.factmesh.admin.domain.repository.RoleRepository;
 import com.ly.factmesh.admin.domain.repository.UserRepository;
+import com.ly.factmesh.admin.infrastructure.database.mapper.UserRoleMapper;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +30,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 public class UserApplicationService {
     
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleMapper userRoleMapper;
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
     
     /**
      * 创建用户
@@ -41,7 +50,7 @@ public class UserApplicationService {
         // 创建用户实体
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword()); // 实际项目中需要加密密码
+        user.setPassword(PASSWORD_ENCODER.encode(request.getPassword()));
         user.setNickname(request.getRealName());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
@@ -120,7 +129,7 @@ public class UserApplicationService {
         }
         
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-            user.setPassword(request.getPassword()); // 实际项目中需要加密密码
+            user.setPassword(PASSWORD_ENCODER.encode(request.getPassword()));
         }
         
         // 保存更新
@@ -135,11 +144,8 @@ public class UserApplicationService {
      */
     @Transactional
     public void deleteUser(Long id) {
-        // 检查用户是否存在
-        userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-        
-        // 删除用户
+        userRepository.findById(id).orElseThrow(() -> new RuntimeException("用户不存在"));
+        userRoleMapper.deleteByUserId(id);
         userRepository.deleteById(id);
     }
     
@@ -151,6 +157,48 @@ public class UserApplicationService {
     public Boolean checkUserExists(Long id) {
         return userRepository.findById(id).isPresent();
     }
+
+    /**
+     * 获取用户的角色列表
+     */
+    public List<RoleDTO> getUserRoles(Long userId) {
+        userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+        List<Long> roleIds = userRoleMapper.findRoleIdsByUserId(userId);
+        if (roleIds.isEmpty()) return List.of();
+        return roleIds.stream()
+                .map(roleRepository::findById)
+                .filter(java.util.Optional::isPresent)
+                .map(o -> convertRoleToDTO(o.get()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 为用户分配角色
+     */
+    @Transactional
+    public void assignRoles(Long userId, List<Long> roleIds) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+        if (roleIds == null || roleIds.isEmpty()) {
+            userRoleMapper.deleteByUserId(userId);
+            return;
+        }
+        for (Long roleId : roleIds) {
+            roleRepository.findById(roleId).orElseThrow(() -> new RuntimeException("角色不存在: " + roleId));
+        }
+        userRoleMapper.deleteByUserId(userId);
+        userRoleMapper.insertBatch(userId, roleIds);
+    }
+
+    private RoleDTO convertRoleToDTO(Role role) {
+        RoleDTO dto = new RoleDTO();
+        dto.setId(role.getId());
+        dto.setRoleName(role.getRoleName());
+        dto.setRoleCode(role.getRoleCode());
+        dto.setDescription(role.getDescription());
+        dto.setCreateTime(role.getCreateTime());
+        dto.setUpdateTime(role.getUpdateTime());
+        return dto;
+    }
     
     /**
      * 将用户实体转换为DTO
@@ -160,6 +208,7 @@ public class UserApplicationService {
     private UserDTO convertToDTO(User user) {
         UserDTO dto = new UserDTO();
         BeanUtils.copyProperties(user, dto);
+        dto.setRealName(user.getNickname());
         return dto;
     }
 }

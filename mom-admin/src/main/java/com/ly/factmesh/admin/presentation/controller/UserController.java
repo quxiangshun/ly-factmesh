@@ -102,4 +102,26 @@ public class UserController {
         Boolean exists = userApplicationService.checkUserExists(id);
         return ResponseEntity.ok(exists);
     }
+
+    /**
+     * 获取用户的角色列表
+     */
+    @GetMapping("/{id}/roles")
+    @Operation(summary = "获取用户角色", description = "根据用户ID获取用户关联的角色列表")
+    public ResponseEntity<java.util.List<com.ly.factmesh.admin.application.dto.RoleDTO>> getUserRoles(
+            @PathVariable @Parameter(description = "用户ID") Long id) {
+        return ResponseEntity.ok(userApplicationService.getUserRoles(id));
+    }
+
+    /**
+     * 为用户分配角色
+     */
+    @PutMapping("/{id}/roles")
+    @Operation(summary = "分配用户角色", description = "为用户分配角色列表")
+    public ResponseEntity<Void> assignRoles(
+            @PathVariable @Parameter(description = "用户ID") Long id,
+            @RequestBody java.util.List<Long> roleIds) {
+        userApplicationService.assignRoles(id, roleIds);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -138,6 +138,15 @@ public class DictApplicationService {
     public Boolean checkDictExists(Long id) {
         return dictRepository.findById(id).isPresent();
     }
+
+    /**
+     * 根据字典类型获取字典列表（按 sort_order 排序）
+     */
+    public java.util.List<DictDTO> getDictsByType(String dictType) {
+        return dictRepository.findByDictType(dictType).stream()
+                .map(this::convertToDTO)
+                .collect(java.util.stream.Collectors.toList());
+    }
     
     /**
      * 将字典实体转换为DTO

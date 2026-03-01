@@ -25,6 +25,12 @@ dependencies {
     implementation "com.baomidou:mybatis-plus-spring-boot3-starter:${mybatisPlusVersion}"
     implementation "com.baomidou:mybatis-plus-core:${mybatisPlusVersion}"
     implementation "com.baomidou:mybatis-plus-extension:${mybatisPlusVersion}"
+
+    // JWT 与密码加密
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    implementation 'org.springframework.security:spring-security-crypto'
 }
 
 jar {

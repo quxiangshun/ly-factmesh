@@ -339,158 +339,68 @@ logging:
     org.springframework: INFO', 'e10adc3949ba59abbe56e057f20f883e', NOW(), NOW(), NULL, '127.0.0.1', NULL, 'prod', 'mom的系统管理配置', NULL, NULL, 'yaml', NULL, '');
 
 -- ----------------------------
--- 3.2 gateway服务配置
+-- 3.2 gateway 服务配置（路由保留在 application.yml，此处仅 management 与 app）
 -- ----------------------------
 
 -- gateway开发环境配置
 INSERT INTO `config_info` (`data_id`, `group_id`, `content`, `md5`, `gmt_create`, `gmt_modified`, `src_user`, `src_ip`, `app_name`, `tenant_id`, `c_desc`, `c_use`, `effect`, `type`, `c_schema`, `encrypted_data_key`)
 VALUES 
-('gateway', 'LY_MOM_GROUP', '# 开发环境配置（Gateway 5.0 使用 server.webflux 前缀）
-spring:
-  cloud:
-    gateway:
-      server:
-        webflux:
-          discovery:
-            locator:
-              enabled: false
-          httpclient:
-            connect-timeout: 3000
-            response-timeout: 30s
-          routes:
-            - id: api-docs-all
-              uri: forward:///local-api-docs
-              predicates:
-                - Path=/v3/api-docs/all
-            - id: api-admin
-              uri: lb://mom-admin
-              predicates:
-                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**
-            - id: api-iot
-              uri: lb://mom-iot
-              predicates:
-                - Path=/api/devices/**
-            - id: api-mes
-              uri: lb://mom-mes
-              predicates:
-                - Path=/api/work-orders/**
-            - id: api-wms
-              uri: lb://mom-wms
-              predicates:
-                - Path=/api/materials/**,/api/requisitions/**
-            - id: api-qms
-              uri: lb://mom-qms
-              predicates:
-                - Path=/api/inspection-tasks/**
+('gateway', 'LY_MOM_GROUP', 'management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers
+  endpoint:
+    health:
+      show-details: when_authorized
 
-server:
-  port: 8080
-  address: 0.0.0.0
-
-logging:
-  level:
-    org.springframework: INFO
-    org.apache.tomcat: DEBUG
-    com.alibaba.cloud: DEBUG
-    com.alibaba.nacos: DEBUG', 'e10adc3949ba59abbe56e057f20f883e', NOW(), NOW(), NULL, '127.0.0.1', NULL, 'dev', 'mom的网关配置', NULL, NULL, 'yaml', NULL, '');
+app:
+  jwt:
+    secret: ${JWT_SECRET:ly-factmesh-admin-jwt-secret-change-in-production}
+  rate-limit:
+    enabled: true
+    requests-per-minute: 200
+    window-seconds: 60', 'e10adc3949ba59abbe56e057f20f883e', NOW(), NOW(), NULL, '127.0.0.1', NULL, 'dev', 'mom的网关配置(management/app)', NULL, NULL, 'yaml', NULL, '');
 
 -- gateway测试环境配置
 INSERT INTO `config_info` (`data_id`, `group_id`, `content`, `md5`, `gmt_create`, `gmt_modified`, `src_user`, `src_ip`, `app_name`, `tenant_id`, `c_desc`, `c_use`, `effect`, `type`, `c_schema`, `encrypted_data_key`)
 VALUES 
-('gateway', 'LY_MOM_GROUP', '# 测试环境配置（Gateway 5.0 使用 server.webflux 前缀）
-spring:
-  cloud:
-    gateway:
-      server:
-        webflux:
-          discovery:
-            locator:
-              enabled: false
-          httpclient:
-            connect-timeout: 3000
-            response-timeout: 30s
-          routes:
-            - id: api-docs-all
-              uri: forward:///local-api-docs
-              predicates:
-                - Path=/v3/api-docs/all
-            - id: api-admin
-              uri: lb://mom-admin
-              predicates:
-                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**
-            - id: api-iot
-              uri: lb://mom-iot
-              predicates:
-                - Path=/api/devices/**
-            - id: api-mes
-              uri: lb://mom-mes
-              predicates:
-                - Path=/api/work-orders/**
-            - id: api-wms
-              uri: lb://mom-wms
-              predicates:
-                - Path=/api/materials/**,/api/requisitions/**
-            - id: api-qms
-              uri: lb://mom-qms
-              predicates:
-                - Path=/api/inspection-tasks/**
+('gateway', 'LY_MOM_GROUP', 'management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers
+  endpoint:
+    health:
+      show-details: when_authorized
 
-server:
-  port: 8080
-  address: 0.0.0.0
-
-logging:
-  level:
-    org.springframework: INFO', 'e10adc3949ba59abbe56e057f20f883e', NOW(), NOW(), NULL, '127.0.0.1', NULL, 'test', 'mom的网关配置', NULL, NULL, 'yaml', NULL, '');
+app:
+  jwt:
+    secret: ${JWT_SECRET:ly-factmesh-admin-jwt-secret-change-in-production}
+  rate-limit:
+    enabled: true
+    requests-per-minute: 200
+    window-seconds: 60', 'e10adc3949ba59abbe56e057f20f883e', NOW(), NOW(), NULL, '127.0.0.1', NULL, 'test', 'mom的网关配置(management/app)', NULL, NULL, 'yaml', NULL, '');
 
 -- gateway生产环境配置
 INSERT INTO `config_info` (`data_id`, `group_id`, `content`, `md5`, `gmt_create`, `gmt_modified`, `src_user`, `src_ip`, `app_name`, `tenant_id`, `c_desc`, `c_use`, `effect`, `type`, `c_schema`, `encrypted_data_key`)
 VALUES 
-('gateway', 'LY_MOM_GROUP', '# 生产环境配置（Gateway 5.0 使用 server.webflux 前缀）
-spring:
-  cloud:
-    gateway:
-      server:
-        webflux:
-          discovery:
-            locator:
-              enabled: false
-          httpclient:
-            connect-timeout: 3000
-            response-timeout: 30s
-          routes:
-            - id: api-docs-all
-              uri: forward:///local-api-docs
-              predicates:
-                - Path=/v3/api-docs/all
-            - id: api-admin
-              uri: lb://mom-admin
-              predicates:
-                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**
-            - id: api-iot
-              uri: lb://mom-iot
-              predicates:
-                - Path=/api/devices/**
-            - id: api-mes
-              uri: lb://mom-mes
-              predicates:
-                - Path=/api/work-orders/**
-            - id: api-wms
-              uri: lb://mom-wms
-              predicates:
-                - Path=/api/materials/**,/api/requisitions/**
-            - id: api-qms
-              uri: lb://mom-qms
-              predicates:
-                - Path=/api/inspection-tasks/**
+('gateway', 'LY_MOM_GROUP', 'management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers
+  endpoint:
+    health:
+      show-details: when_authorized
 
-server:
-  port: 8080
-  address: 0.0.0.0
-
-logging:
-  level:
-    org.springframework: INFO', 'e10adc3949ba59abbe56e057f20f883e', NOW(), NOW(), NULL, '127.0.0.1', NULL, 'prod', 'mom的网关配置', NULL, NULL, 'yaml', NULL, '');
+app:
+  jwt:
+    secret: ${JWT_SECRET:ly-factmesh-admin-jwt-secret-change-in-production}
+  rate-limit:
+    enabled: true
+    requests-per-minute: 200
+    window-seconds: 60', 'e10adc3949ba59abbe56e057f20f883e', NOW(), NOW(), NULL, '127.0.0.1', NULL, 'prod', 'mom的网关配置(management/app)', NULL, NULL, 'yaml', NULL, '');
 
 -- ----------------------------
 -- 3.3 IoT服务配置
