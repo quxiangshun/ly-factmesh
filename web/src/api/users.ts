@@ -34,11 +34,10 @@ export interface UserUpdateRequest {
 }
 
 export interface PageResult<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
+  records: T[];
+  total: number;
+  current: number;
   size: number;
-  number: number;
 }
 
 export async function getUsers(page = 1, size = 10): Promise<PageResult<UserDTO>> {

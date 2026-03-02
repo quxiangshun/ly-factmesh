@@ -69,16 +69,10 @@ const route = useRoute();
 const expanded = ref<Record<string, boolean>>({});
 
 onMounted(() => {
-  menuConfig.forEach((g) => {
-    expanded.value[g.id] = true;
-  });
   const currentPath = route.path;
-  for (const g of menuConfig) {
-    if (g.children?.some((c) => !c.external && currentPath.startsWith(c.path))) {
-      expanded.value[g.id] = true;
-      break;
-    }
-  }
+  menuConfig.forEach((g) => {
+    expanded.value[g.id] = !!g.children?.some((c) => !c.external && (currentPath === c.path || currentPath.startsWith(c.path + '/')));
+  });
 });
 
 function toggleGroup(id: string) {
