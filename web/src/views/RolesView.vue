@@ -117,7 +117,6 @@ import {
   deleteRole,
   getRolePermissions,
   assignRolePermissions,
-  getPermissionTree,
   type RoleDTO,
   type RoleCreateRequest,
   type RoleUpdateRequest
