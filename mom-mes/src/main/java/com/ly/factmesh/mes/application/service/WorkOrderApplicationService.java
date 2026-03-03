@@ -9,6 +9,7 @@ import com.ly.factmesh.mes.application.dto.WorkOrderCreateRequest;
 import com.ly.factmesh.mes.application.dto.WorkOrderDTO;
 import com.ly.factmesh.mes.application.dto.WorkOrderStatsDTO;
 import com.ly.factmesh.mes.application.dto.WorkOrderSummaryDTO;
+import com.ly.factmesh.common.enums.WorkOrderStatusEnum;
 import com.ly.factmesh.mes.domain.entity.WorkOrder;
 import com.ly.factmesh.mes.domain.repository.WorkOrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class WorkOrderApplicationService {
         wo.setProductName(request.getProductName());
         wo.setPlanQuantity(request.getPlanQuantity());
         wo.setActualQuantity(0);
-        wo.setStatus(WorkOrder.STATUS_DRAFT);
+        wo.setStatus(WorkOrderStatusEnum.DRAFT.getCode());
         wo.setLineId(request.getLineId());
         wo.setCreateTime(LocalDateTime.now());
         wo.setUpdateTime(LocalDateTime.now());
@@ -72,10 +73,10 @@ public class WorkOrderApplicationService {
     public WorkOrderDTO release(Long id) {
         WorkOrder wo = workOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("工单不存在: " + id));
-        if (wo.getStatus() != WorkOrder.STATUS_DRAFT) {
+        if (wo.getStatus() != null && wo.getStatus() != WorkOrderStatusEnum.DRAFT.getCode()) {
             throw new IllegalStateException("只有草稿状态工单可下发");
         }
-        wo.setStatus(WorkOrder.STATUS_RELEASED);
+        wo.setStatus(WorkOrderStatusEnum.RELEASED.getCode());
         wo.setUpdateTime(LocalDateTime.now());
         WorkOrder saved = workOrderRepository.save(wo);
         // 跨域：工单发布触发 WMS 领料单
@@ -93,10 +94,10 @@ public class WorkOrderApplicationService {
     public WorkOrderDTO start(Long id) {
         WorkOrder wo = workOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("工单不存在: " + id));
-        if (wo.getStatus() != WorkOrder.STATUS_RELEASED) {
+        if (wo.getStatus() == null || wo.getStatus() != WorkOrderStatusEnum.RELEASED.getCode()) {
             throw new IllegalStateException("只有已下发工单可开始");
         }
-        wo.setStatus(WorkOrder.STATUS_IN_PROGRESS);
+        wo.setStatus(WorkOrderStatusEnum.IN_PROGRESS.getCode());
         wo.setStartTime(LocalDateTime.now());
         wo.setUpdateTime(LocalDateTime.now());
         return toDTO(workOrderRepository.save(wo));
@@ -106,10 +107,10 @@ public class WorkOrderApplicationService {
     public WorkOrderDTO pause(Long id) {
         WorkOrder wo = workOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("工单不存在: " + id));
-        if (wo.getStatus() != WorkOrder.STATUS_IN_PROGRESS) {
+        if (wo.getStatus() == null || wo.getStatus() != WorkOrderStatusEnum.IN_PROGRESS.getCode()) {
             throw new IllegalStateException("只有进行中工单可暂停");
         }
-        wo.setStatus(WorkOrder.STATUS_PAUSED);
+        wo.setStatus(WorkOrderStatusEnum.PAUSED.getCode());
         wo.setUpdateTime(LocalDateTime.now());
         return toDTO(workOrderRepository.save(wo));
     }
@@ -118,10 +119,10 @@ public class WorkOrderApplicationService {
     public WorkOrderDTO resume(Long id) {
         WorkOrder wo = workOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("工单不存在: " + id));
-        if (wo.getStatus() != WorkOrder.STATUS_PAUSED) {
+        if (wo.getStatus() == null || wo.getStatus() != WorkOrderStatusEnum.PAUSED.getCode()) {
             throw new IllegalStateException("只有暂停工单可恢复");
         }
-        wo.setStatus(WorkOrder.STATUS_IN_PROGRESS);
+        wo.setStatus(WorkOrderStatusEnum.IN_PROGRESS.getCode());
         wo.setUpdateTime(LocalDateTime.now());
         return toDTO(workOrderRepository.save(wo));
     }
@@ -130,10 +131,10 @@ public class WorkOrderApplicationService {
     public WorkOrderDTO complete(Long id, Integer actualQuantity) {
         WorkOrder wo = workOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("工单不存在: " + id));
-        if (wo.getStatus() != WorkOrder.STATUS_IN_PROGRESS && wo.getStatus() != WorkOrder.STATUS_PAUSED) {
+        if (wo.getStatus() == null || (wo.getStatus() != WorkOrderStatusEnum.IN_PROGRESS.getCode() && wo.getStatus() != WorkOrderStatusEnum.PAUSED.getCode())) {
             throw new IllegalStateException("只有进行中或暂停工单可完成");
         }
-        wo.setStatus(WorkOrder.STATUS_COMPLETED);
+        wo.setStatus(WorkOrderStatusEnum.COMPLETED.getCode());
         wo.setActualQuantity(actualQuantity != null ? actualQuantity : wo.getActualQuantity());
         wo.setEndTime(LocalDateTime.now());
         wo.setUpdateTime(LocalDateTime.now());
@@ -157,11 +158,11 @@ public class WorkOrderApplicationService {
     public WorkOrderStatsDTO getStats() {
         WorkOrderStatsDTO stats = new WorkOrderStatsDTO();
         stats.setTotal(workOrderRepository.count());
-        stats.setDraftCount(workOrderRepository.countByStatus(WorkOrder.STATUS_DRAFT));
-        stats.setReleasedCount(workOrderRepository.countByStatus(WorkOrder.STATUS_RELEASED));
-        stats.setInProgressCount(workOrderRepository.countByStatus(WorkOrder.STATUS_IN_PROGRESS));
-        stats.setPausedCount(workOrderRepository.countByStatus(WorkOrder.STATUS_PAUSED));
-        stats.setCompletedCount(workOrderRepository.countByStatus(WorkOrder.STATUS_COMPLETED));
+        stats.setDraftCount(workOrderRepository.countByStatus(WorkOrderStatusEnum.DRAFT.getCode()));
+        stats.setReleasedCount(workOrderRepository.countByStatus(WorkOrderStatusEnum.RELEASED.getCode()));
+        stats.setInProgressCount(workOrderRepository.countByStatus(WorkOrderStatusEnum.IN_PROGRESS.getCode()));
+        stats.setPausedCount(workOrderRepository.countByStatus(WorkOrderStatusEnum.PAUSED.getCode()));
+        stats.setCompletedCount(workOrderRepository.countByStatus(WorkOrderStatusEnum.COMPLETED.getCode()));
         return stats;
     }
 
@@ -174,8 +175,8 @@ public class WorkOrderApplicationService {
         dto.setDate(target);
         dto.setCompletedCount(workOrderRepository.countCompletedOnDate(target));
         dto.setCompletedQuantity(workOrderRepository.sumActualQuantityCompletedOnDate(target));
-        dto.setInProgressCount(workOrderRepository.countByStatus(WorkOrder.STATUS_IN_PROGRESS));
-        dto.setPausedCount(workOrderRepository.countByStatus(WorkOrder.STATUS_PAUSED));
+        dto.setInProgressCount(workOrderRepository.countByStatus(WorkOrderStatusEnum.IN_PROGRESS.getCode()));
+        dto.setPausedCount(workOrderRepository.countByStatus(WorkOrderStatusEnum.PAUSED.getCode()));
         return dto;
     }
 

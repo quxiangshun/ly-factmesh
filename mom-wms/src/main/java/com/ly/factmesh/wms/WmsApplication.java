@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * @author 屈想顺
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.ly.factmesh")
 @MapperScan("com.ly.factmesh.wms.infrastructure.database.mapper")
 public class WmsApplication {
     

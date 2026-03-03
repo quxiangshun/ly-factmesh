@@ -1,9 +1,12 @@
 package com.ly.factmesh.wms.domain.entity;
 
+import com.ly.factmesh.common.enums.InventoryTransactionTypeEnum;
+
 import java.time.LocalDateTime;
 
 /**
  * 出入库记录领域实体
+ * 事务类型参见 {@link InventoryTransactionTypeEnum}
  *
  * @author LY-FactMesh
  */
@@ -22,17 +25,12 @@ public class InventoryTransaction {
     private String operator;
     private String referenceNo;
 
-    /** 入库 */
-    public static final int TYPE_INBOUND = 1;
-    /** 出库 */
-    public static final int TYPE_OUTBOUND = 2;
-    /** 盘点调整 */
-    public static final int TYPE_ADJUST = 3;
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getMaterialId() { return materialId; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public Integer getTransactionType() { return transactionType; }
     public void setTransactionType(Integer transactionType) { this.transactionType = transactionType; }
     public Integer getQuantity() { return quantity; }

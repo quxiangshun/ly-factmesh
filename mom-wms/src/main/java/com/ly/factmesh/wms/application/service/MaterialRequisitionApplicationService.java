@@ -7,6 +7,8 @@ import com.ly.factmesh.wms.application.dto.MaterialRequisitionDTO;
 import com.ly.factmesh.wms.application.dto.RequisitionCompleteRequest;
 import com.ly.factmesh.wms.application.dto.RequisitionManualCreateRequest;
 import com.ly.factmesh.wms.domain.entity.Material;
+import com.ly.factmesh.common.enums.RequisitionStatusEnum;
+import com.ly.factmesh.common.enums.RequisitionTypeEnum;
 import com.ly.factmesh.wms.domain.entity.MaterialRequisition;
 import com.ly.factmesh.wms.domain.entity.MaterialRequisitionDetail;
 import com.ly.factmesh.wms.domain.repository.MaterialRequisitionRepository;
@@ -45,8 +47,8 @@ public class MaterialRequisitionApplicationService {
         MaterialRequisition req = new MaterialRequisition();
         req.setReqNo(reqNo);
         req.setOrderId(request.getWorkOrderId());
-        req.setReqType(MaterialRequisition.REQ_TYPE_REQUISITION);
-        req.setStatus(MaterialRequisition.STATUS_SUBMITTED);
+        req.setReqType(RequisitionTypeEnum.REQUISITION.getCode());
+        req.setStatus(RequisitionStatusEnum.SUBMITTED.getCode());
         req.setCreateTime(LocalDateTime.now());
         req.setUpdateTime(LocalDateTime.now());
         MaterialRequisition saved = requisitionRepository.save(req);
@@ -83,8 +85,8 @@ public class MaterialRequisitionApplicationService {
         MaterialRequisition req = new MaterialRequisition();
         req.setReqNo(reqNo);
         req.setOrderId(request.getOrderId());
-        req.setReqType(request.getReqType() != null ? request.getReqType() : MaterialRequisition.REQ_TYPE_REQUISITION);
-        req.setStatus(MaterialRequisition.STATUS_DRAFT);
+        req.setReqType(request.getReqType() != null ? request.getReqType() : RequisitionTypeEnum.REQUISITION.getCode());
+        req.setStatus(RequisitionStatusEnum.DRAFT.getCode());
         req.setCreateTime(LocalDateTime.now());
         req.setUpdateTime(LocalDateTime.now());
         MaterialRequisition saved = requisitionRepository.save(req);
@@ -102,13 +104,13 @@ public class MaterialRequisitionApplicationService {
     public void cancel(Long id) {
         MaterialRequisition req = requisitionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("领料单不存在: " + id));
-        if (req.getStatus() == MaterialRequisition.STATUS_DONE) {
+        if (req.getStatus() != null && req.getStatus() == RequisitionStatusEnum.DONE.getCode()) {
             throw new IllegalArgumentException("已完成的领料单不能取消");
         }
-        if (req.getStatus() == MaterialRequisition.STATUS_CANCELLED) {
+        if (req.getStatus() != null && req.getStatus() == RequisitionStatusEnum.CANCELLED.getCode()) {
             throw new IllegalArgumentException("领料单已取消");
         }
-        req.setStatus(MaterialRequisition.STATUS_CANCELLED);
+        req.setStatus(RequisitionStatusEnum.CANCELLED.getCode());
         req.setUpdateTime(LocalDateTime.now());
         requisitionRepository.save(req);
     }
@@ -139,10 +141,10 @@ public class MaterialRequisitionApplicationService {
     public void submit(Long id) {
         MaterialRequisition req = requisitionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("领料单不存在: " + id));
-        if (req.getStatus() != MaterialRequisition.STATUS_DRAFT) {
+        if (req.getStatus() == null || req.getStatus() != RequisitionStatusEnum.DRAFT.getCode()) {
             throw new IllegalArgumentException("只有草稿状态可提交");
         }
-        req.setStatus(MaterialRequisition.STATUS_SUBMITTED);
+        req.setStatus(RequisitionStatusEnum.SUBMITTED.getCode());
         req.setUpdateTime(LocalDateTime.now());
         requisitionRepository.save(req);
     }
@@ -151,10 +153,10 @@ public class MaterialRequisitionApplicationService {
     public void complete(Long id, RequisitionCompleteRequest request) {
         MaterialRequisition req = requisitionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("领料单不存在: " + id));
-        if (req.getStatus() == MaterialRequisition.STATUS_DONE) {
+        if (req.getStatus() != null && req.getStatus() == RequisitionStatusEnum.DONE.getCode()) {
             throw new IllegalArgumentException("领料单已完成");
         }
-        if (req.getStatus() == MaterialRequisition.STATUS_CANCELLED) {
+        if (req.getStatus() != null && req.getStatus() == RequisitionStatusEnum.CANCELLED.getCode()) {
             throw new IllegalArgumentException("已取消的领料单不能完成");
         }
         List<MaterialRequisitionDetail> details = requisitionRepository.findDetailsByReqId(id);
@@ -181,7 +183,7 @@ public class MaterialRequisitionApplicationService {
         for (MaterialRequisitionDetail d : details) {
             int actualQty = d.getActualQuantity() != null ? d.getActualQuantity() : 0;
             if (actualQty <= 0) continue;
-            if (req.getReqType() == MaterialRequisition.REQ_TYPE_REQUISITION) {
+            if (req.getReqType() != null && req.getReqType() == RequisitionTypeEnum.REQUISITION.getCode()) {
                 int available = inventoryApplicationService.getTotalQuantityByMaterialId(d.getMaterialId());
                 if (available < actualQty) {
                     throw new IllegalArgumentException("物料ID " + d.getMaterialId() + " 库存不足，可用: " + available + ", 需: " + actualQty);
@@ -194,13 +196,13 @@ public class MaterialRequisitionApplicationService {
             String refNo = req.getReqNo();
             Long reqId = req.getId();
             Long orderId = req.getOrderId();
-            if (req.getReqType() == MaterialRequisition.REQ_TYPE_REQUISITION) {
+            if (req.getReqType() != null && req.getReqType() == RequisitionTypeEnum.REQUISITION.getCode()) {
                 inventoryApplicationService.deductForRequisition(d.getMaterialId(), actualQty, refNo, reqId, orderId);
-            } else if (req.getReqType() == MaterialRequisition.REQ_TYPE_RETURN) {
+            } else if (req.getReqType() != null && req.getReqType() == RequisitionTypeEnum.RETURN.getCode()) {
                 inventoryApplicationService.addForReturn(d.getMaterialId(), actualQty, refNo, reqId, orderId);
             }
         }
-        req.setStatus(MaterialRequisition.STATUS_DONE);
+        req.setStatus(RequisitionStatusEnum.DONE.getCode());
         req.setUpdateTime(LocalDateTime.now());
         requisitionRepository.save(req);
     }

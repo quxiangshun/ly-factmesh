@@ -3,6 +3,7 @@ package com.ly.factmesh.mes.infrastructure.repository;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.common.utils.SnowflakeIdGenerator;
+import com.ly.factmesh.common.enums.WorkOrderStatusEnum;
 import com.ly.factmesh.mes.domain.entity.WorkOrder;
 import com.ly.factmesh.mes.domain.repository.WorkOrderRepository;
 import com.ly.factmesh.mes.infrastructure.database.entity.WorkOrderEntity;
@@ -80,7 +81,7 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
         java.time.LocalDateTime start = date.atStartOfDay();
         java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
         LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
-        q.eq(WorkOrderEntity::getStatus, com.ly.factmesh.mes.domain.entity.WorkOrder.STATUS_COMPLETED);
+        q.eq(WorkOrderEntity::getStatus, WorkOrderStatusEnum.COMPLETED.getCode());
         q.ge(WorkOrderEntity::getEndTime, start);
         q.lt(WorkOrderEntity::getEndTime, end);
         return workOrderMapper.selectCount(q);
@@ -92,7 +93,7 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
         java.time.LocalDateTime start = date.atStartOfDay();
         java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
         LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
-        q.eq(WorkOrderEntity::getStatus, com.ly.factmesh.mes.domain.entity.WorkOrder.STATUS_COMPLETED);
+        q.eq(WorkOrderEntity::getStatus, WorkOrderStatusEnum.COMPLETED.getCode());
         q.ge(WorkOrderEntity::getEndTime, start);
         q.lt(WorkOrderEntity::getEndTime, end);
         return workOrderMapper.selectList(q).stream()
@@ -106,7 +107,7 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
         java.time.LocalDateTime start = date.atStartOfDay();
         java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
         LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
-        q.eq(WorkOrderEntity::getStatus, WorkOrder.STATUS_COMPLETED);
+        q.eq(WorkOrderEntity::getStatus, WorkOrderStatusEnum.COMPLETED.getCode());
         q.eq(WorkOrderEntity::getLineId, lineId);
         q.ge(WorkOrderEntity::getEndTime, start);
         q.lt(WorkOrderEntity::getEndTime, end);
@@ -119,7 +120,7 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
         java.time.LocalDateTime start = date.atStartOfDay();
         java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
         LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
-        q.eq(WorkOrderEntity::getStatus, WorkOrder.STATUS_COMPLETED);
+        q.eq(WorkOrderEntity::getStatus, WorkOrderStatusEnum.COMPLETED.getCode());
         q.eq(WorkOrderEntity::getLineId, lineId);
         q.ge(WorkOrderEntity::getEndTime, start);
         q.lt(WorkOrderEntity::getEndTime, end);

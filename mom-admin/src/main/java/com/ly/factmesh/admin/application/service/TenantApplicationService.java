@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.admin.application.dto.TenantCreateRequest;
 import com.ly.factmesh.admin.application.dto.TenantDTO;
 import com.ly.factmesh.admin.application.dto.TenantUpdateRequest;
+import com.ly.factmesh.common.enums.TenantStatusEnum;
 import com.ly.factmesh.admin.domain.entity.Tenant;
 import com.ly.factmesh.admin.domain.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class TenantApplicationService {
         t.setTenantName(request.getTenantName());
         t.setContact(request.getContact());
         t.setPhone(request.getPhone());
-        t.setStatus(request.getStatus() != null ? request.getStatus() : Tenant.STATUS_ENABLED);
+        t.setStatus(request.getStatus() != null ? request.getStatus() : TenantStatusEnum.ENABLED.getCode());
         t.setConfig(request.getConfig());
         return toDTO(tenantRepository.save(t));
     }

@@ -1,9 +1,12 @@
 package com.ly.factmesh.mes.domain.entity;
 
+import com.ly.factmesh.common.enums.WorkOrderStatusEnum;
+
 import java.time.LocalDateTime;
 
 /**
  * 工单领域实体
+ * 状态码参见 {@link WorkOrderStatusEnum}
  *
  * @author LY-FactMesh
  */
@@ -21,13 +24,6 @@ public class WorkOrder {
     private LocalDateTime endTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-
-    public static final int STATUS_DRAFT = 0;
-    public static final int STATUS_RELEASED = 1;
-    public static final int STATUS_IN_PROGRESS = 2;
-    public static final int STATUS_COMPLETED = 3;
-    public static final int STATUS_CLOSED = 4;
-    public static final int STATUS_PAUSED = 5;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

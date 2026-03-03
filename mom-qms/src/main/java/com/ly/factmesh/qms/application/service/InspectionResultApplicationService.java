@@ -2,6 +2,7 @@ package com.ly.factmesh.qms.application.service;
 
 import com.ly.factmesh.qms.application.dto.InspectionResultCreateRequest;
 import com.ly.factmesh.qms.application.dto.InspectionResultDTO;
+import com.ly.factmesh.common.enums.InspectionJudgmentEnum;
 import com.ly.factmesh.qms.domain.entity.InspectionResult;
 import com.ly.factmesh.qms.domain.repository.InspectionResultRepository;
 import com.ly.factmesh.qms.domain.repository.InspectionTaskRepository;
@@ -29,10 +30,10 @@ public class InspectionResultApplicationService {
         r.setInspectionItem(request.getInspectionItem());
         r.setStandardValue(request.getStandardValue());
         r.setActualValue(request.getActualValue());
-        r.setJudgment(request.getJudgment() != null ? request.getJudgment() : InspectionResult.JUDGMENT_PASS);
+        r.setJudgment(request.getJudgment() != null ? request.getJudgment() : InspectionJudgmentEnum.PASS.getCode());
         r.setInspector(request.getInspector());
         InspectionResult saved = inspectionResultRepository.save(r);
-        if (InspectionResult.JUDGMENT_FAIL == saved.getJudgment()) {
+        if (saved.getJudgment() != null && saved.getJudgment() == InspectionJudgmentEnum.FAIL.getCode()) {
             String productCode = task.getProductCode();
             if (productCode == null && task.getMaterialId() != null) {
                 productCode = "M" + task.getMaterialId();

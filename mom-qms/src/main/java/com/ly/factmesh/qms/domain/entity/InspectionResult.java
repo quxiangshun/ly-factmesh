@@ -1,9 +1,12 @@
 package com.ly.factmesh.qms.domain.entity;
 
+import com.ly.factmesh.common.enums.InspectionJudgmentEnum;
+
 import java.time.LocalDateTime;
 
 /**
  * 质检结果领域实体
+ * 判定结果参见 {@link InspectionJudgmentEnum}
  *
  * @author LY-FactMesh
  */
@@ -18,10 +21,6 @@ public class InspectionResult {
     private String inspector;
     private LocalDateTime inspectionTime;
     private LocalDateTime createTime;
-
-    /** 判定结果：0合格 1不合格 */
-    public static final int JUDGMENT_PASS = 0;
-    public static final int JUDGMENT_FAIL = 1;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

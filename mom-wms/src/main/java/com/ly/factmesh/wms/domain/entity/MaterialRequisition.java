@@ -1,9 +1,13 @@
 package com.ly.factmesh.wms.domain.entity;
 
+import com.ly.factmesh.common.enums.RequisitionStatusEnum;
+import com.ly.factmesh.common.enums.RequisitionTypeEnum;
+
 import java.time.LocalDateTime;
 
 /**
  * 领料单领域实体
+ * 状态码参见 {@link RequisitionStatusEnum}，类型参见 {@link RequisitionTypeEnum}
  *
  * @author LY-FactMesh
  */
@@ -16,13 +20,6 @@ public class MaterialRequisition {
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-
-    public static final int REQ_TYPE_REQUISITION = 1;
-    public static final int REQ_TYPE_RETURN = 2;
-    public static final int STATUS_DRAFT = 0;
-    public static final int STATUS_SUBMITTED = 1;
-    public static final int STATUS_DONE = 2;
-    public static final int STATUS_CANCELLED = 3;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

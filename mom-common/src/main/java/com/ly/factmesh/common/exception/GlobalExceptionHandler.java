@@ -51,8 +51,26 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Result<Object>> handleIllegal(IllegalArgumentException e) {
-        return ResponseEntity.badRequest()
-                .body(Result.fail(400, e.getMessage() != null ? e.getMessage() : "参数错误"));
+        String msg = e.getMessage() != null ? e.getMessage() : "参数错误";
+        if (isAuthError(msg)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.fail(401, msg));
+        }
+        return ResponseEntity.badRequest().body(Result.fail(400, msg));
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Result<Object>> handleRuntime(RuntimeException e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "操作失败";
+        if (isAuthError(msg)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.fail(401, msg));
+        }
+        return ResponseEntity.badRequest().body(Result.fail(400, msg));
+    }
+
+    /** 认证相关错误（如登录失败、账号禁用）返回 401 */
+    protected boolean isAuthError(String msg) {
+        return msg != null && (msg.contains("用户名或密码") || msg.contains("账号已禁用")
+                || msg.contains("用户不存在") || msg.contains("刷新令牌"));
     }
 
     @ExceptionHandler(Exception.class)

@@ -1,9 +1,12 @@
 package com.ly.factmesh.qms.domain.entity;
 
+import com.ly.factmesh.common.enums.InspectionTaskStatusEnum;
+
 import java.time.LocalDateTime;
 
 /**
  * 质检任务领域实体
+ * 状态码参见 {@link InspectionTaskStatusEnum}
  *
  * @author LY-FactMesh
  */
@@ -22,11 +25,6 @@ public class InspectionTask {
     private String operator;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-
-    public static final int STATUS_DRAFT = 0;
-    public static final int STATUS_IN_PROGRESS = 1;
-    public static final int STATUS_COMPLETED = 2;
-    public static final int STATUS_CLOSED = 3;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

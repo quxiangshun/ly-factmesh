@@ -5,6 +5,7 @@ import com.ly.factmesh.mes.application.dto.ProductionLineCapacityDTO;
 import com.ly.factmesh.mes.application.dto.ProductionLineCreateRequest;
 import com.ly.factmesh.mes.application.dto.ProductionLineDTO;
 import com.ly.factmesh.mes.application.dto.ProductionLineUpdateRequest;
+import com.ly.factmesh.common.enums.ProductionLineStatusEnum;
 import com.ly.factmesh.mes.domain.entity.ProductionLine;
 import com.ly.factmesh.mes.domain.repository.ProductionLineRepository;
 import com.ly.factmesh.mes.domain.repository.WorkOrderRepository;
@@ -40,7 +41,7 @@ public class ProductionLineApplicationService {
         pl.setLineName(request.getLineName());
         pl.setDescription(request.getDescription());
         pl.setSequence(request.getSequence() != null ? request.getSequence() : 0);
-        pl.setStatus(ProductionLine.STATUS_IDLE);
+        pl.setStatus(ProductionLineStatusEnum.IDLE.getCode());
         pl.setCreateTime(LocalDateTime.now());
         pl.setUpdateTime(LocalDateTime.now());
         ProductionLine saved = productionLineRepository.save(pl);
@@ -88,7 +89,7 @@ public class ProductionLineApplicationService {
     public ProductionLineDTO updateStatus(Long id, Integer status) {
         ProductionLine pl = productionLineRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("产线不存在: " + id));
-        if (status != null && status >= ProductionLine.STATUS_IDLE && status <= ProductionLine.STATUS_MAINTENANCE) {
+        if (status != null && status >= ProductionLineStatusEnum.IDLE.getCode() && status <= ProductionLineStatusEnum.MAINTENANCE.getCode()) {
             pl.setStatus(status);
             pl.setUpdateTime(LocalDateTime.now());
             return toDTO(productionLineRepository.save(pl));

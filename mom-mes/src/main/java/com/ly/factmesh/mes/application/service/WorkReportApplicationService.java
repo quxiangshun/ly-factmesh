@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.mes.application.dto.WorkReportCreateRequest;
 import com.ly.factmesh.mes.application.dto.WorkReportDTO;
 import com.ly.factmesh.mes.domain.entity.Process;
+import com.ly.factmesh.common.enums.WorkOrderStatusEnum;
 import com.ly.factmesh.mes.domain.entity.WorkOrder;
 import com.ly.factmesh.mes.domain.entity.WorkReport;
 import com.ly.factmesh.mes.domain.repository.ProcessRepository;
@@ -34,7 +35,7 @@ public class WorkReportApplicationService {
     public WorkReportDTO create(WorkReportCreateRequest request) {
         WorkOrder wo = workOrderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("工单不存在: " + request.getOrderId()));
-        if (wo.getStatus() != WorkOrder.STATUS_IN_PROGRESS && wo.getStatus() != WorkOrder.STATUS_RELEASED) {
+        if (wo.getStatus() == null || (wo.getStatus() != WorkOrderStatusEnum.IN_PROGRESS.getCode() && wo.getStatus() != WorkOrderStatusEnum.RELEASED.getCode())) {
             throw new IllegalStateException("只有已下发或进行中的工单可报工");
         }
         processRepository.findById(request.getProcessId())
@@ -57,8 +58,8 @@ public class WorkReportApplicationService {
         wo.setActualQuantity(Math.max(0, newActual));
         wo.setUpdateTime(LocalDateTime.now());
         WorkOrder updated = workOrderRepository.save(wo);
-        if (updated.getStatus() == WorkOrder.STATUS_RELEASED) {
-            updated.setStatus(WorkOrder.STATUS_IN_PROGRESS);
+        if (updated.getStatus() != null && updated.getStatus() == WorkOrderStatusEnum.RELEASED.getCode()) {
+            updated.setStatus(WorkOrderStatusEnum.IN_PROGRESS.getCode());
             updated.setStartTime(updated.getStartTime() != null ? updated.getStartTime() : LocalDateTime.now());
             workOrderRepository.save(updated);
         }

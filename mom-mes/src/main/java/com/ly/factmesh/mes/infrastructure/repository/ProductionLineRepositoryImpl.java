@@ -3,6 +3,7 @@ package com.ly.factmesh.mes.infrastructure.repository;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.common.utils.SnowflakeIdGenerator;
+import com.ly.factmesh.common.enums.ProductionLineStatusEnum;
 import com.ly.factmesh.mes.domain.entity.ProductionLine;
 import com.ly.factmesh.mes.domain.repository.ProductionLineRepository;
 import com.ly.factmesh.mes.infrastructure.database.entity.ProductionLineEntity;
@@ -81,7 +82,7 @@ public class ProductionLineRepositoryImpl implements ProductionLineRepository {
         e.setLineName(domain.getLineName());
         e.setDescription(domain.getDescription());
         e.setSequence(domain.getSequence());
-        e.setStatus(domain.getStatus() != null ? domain.getStatus() : ProductionLine.STATUS_IDLE);
+        e.setStatus(domain.getStatus() != null ? domain.getStatus() : ProductionLineStatusEnum.IDLE.getCode());
         e.setCreateTime(domain.getCreateTime());
         e.setUpdateTime(domain.getUpdateTime());
         return e;
@@ -94,7 +95,7 @@ public class ProductionLineRepositoryImpl implements ProductionLineRepository {
         d.setLineName(e.getLineName());
         d.setDescription(e.getDescription());
         d.setSequence(e.getSequence());
-        d.setStatus(e.getStatus() != null ? e.getStatus() : ProductionLine.STATUS_IDLE);
+        d.setStatus(e.getStatus() != null ? e.getStatus() : ProductionLineStatusEnum.IDLE.getCode());
         d.setCreateTime(e.getCreateTime());
         d.setUpdateTime(e.getUpdateTime());
         return d;

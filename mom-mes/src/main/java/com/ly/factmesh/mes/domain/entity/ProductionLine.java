@@ -1,9 +1,12 @@
 package com.ly.factmesh.mes.domain.entity;
 
+import com.ly.factmesh.common.enums.ProductionLineStatusEnum;
+
 import java.time.LocalDateTime;
 
 /**
  * 产线领域实体
+ * 状态码参见 {@link ProductionLineStatusEnum}
  *
  * @author LY-FactMesh
  */
@@ -14,13 +17,9 @@ public class ProductionLine {
     private String lineName;
     private String description;
     private Integer sequence;
-    /** 状态：0-空闲 1-运行 2-检修 */
+    /** 状态码参见 ProductionLineStatusEnum */
     private Integer status;
     private LocalDateTime createTime;
-
-    public static final int STATUS_IDLE = 0;
-    public static final int STATUS_RUNNING = 1;
-    public static final int STATUS_MAINTENANCE = 2;
     private LocalDateTime updateTime;
 
     public Long getId() { return id; }

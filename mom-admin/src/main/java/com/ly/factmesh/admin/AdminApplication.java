@@ -9,9 +9,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * @author 屈想顺
  */
-@SpringBootApplication(exclude = {
-    com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration.class
-})
+@SpringBootApplication(
+    scanBasePackages = "com.ly.factmesh",
+    exclude = { com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration.class }
+)
 @MapperScan("com.ly.factmesh.admin.infrastructure.database.mapper")
 public class AdminApplication {
     

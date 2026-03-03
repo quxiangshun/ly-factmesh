@@ -5,6 +5,7 @@ import com.ly.factmesh.wms.application.dto.InventoryAdjustRequest;
 import com.ly.factmesh.wms.application.dto.InventoryCountRequest;
 import com.ly.factmesh.wms.application.dto.InventoryDTO;
 import com.ly.factmesh.wms.application.dto.InventoryTransactionDTO;
+import com.ly.factmesh.common.enums.InventoryTransactionTypeEnum;
 import com.ly.factmesh.wms.domain.entity.Inventory;
 import com.ly.factmesh.wms.domain.entity.InventoryTransaction;
 import com.ly.factmesh.wms.domain.entity.Material;
@@ -93,7 +94,7 @@ public class InventoryApplicationService {
         inv.setLastUpdateTime(LocalDateTime.now());
         inventoryRepository.save(inv);
 
-        int txType = request.getQuantity() > 0 ? InventoryTransaction.TYPE_INBOUND : InventoryTransaction.TYPE_OUTBOUND;
+        int txType = request.getQuantity() > 0 ? InventoryTransactionTypeEnum.INBOUND.getCode() : InventoryTransactionTypeEnum.OUTBOUND.getCode();
         InventoryTransaction tx = new InventoryTransaction();
         tx.setMaterialId(request.getMaterialId());
         tx.setBatchNo(batchNo);
@@ -132,7 +133,7 @@ public class InventoryApplicationService {
         InventoryTransaction tx = new InventoryTransaction();
         tx.setMaterialId(inv.getMaterialId());
         tx.setBatchNo(inv.getBatchNo());
-        tx.setTransactionType(InventoryTransaction.TYPE_ADJUST);
+        tx.setTransactionType(InventoryTransactionTypeEnum.ADJUST.getCode());
         tx.setQuantity(Math.abs(diff));
         tx.setWarehouse(inv.getWarehouse());
         tx.setLocation(inv.getLocation());

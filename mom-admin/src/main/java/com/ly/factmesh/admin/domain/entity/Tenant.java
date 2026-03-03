@@ -1,9 +1,12 @@
 package com.ly.factmesh.admin.domain.entity;
 
+import com.ly.factmesh.common.enums.TenantStatusEnum;
+
 import java.time.LocalDateTime;
 
 /**
  * 租户领域实体
+ * 状态码参见 {@link TenantStatusEnum}
  *
  * @author LY-FactMesh
  */
@@ -18,9 +21,6 @@ public class Tenant {
     private String config;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-
-    public static final int STATUS_DISABLED = 0;
-    public static final int STATUS_ENABLED = 1;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
