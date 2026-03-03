@@ -1,4 +1,4 @@
--- mom-mes 初始表结构（Flyway 迁移，ly_factmesh_mes 独立库）
+-- mom-mes 初始化（Flyway 迁移，ly_factmesh_mes 独立库）
 -- id 由应用雪花算法生成
 
 -- 工单表
@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS work_order (
     plan_quantity INT NOT NULL,
     actual_quantity INT DEFAULT 0,
     status INT DEFAULT 1,
+    line_id BIGINT,
     start_time TIMESTAMP,
     end_time TIMESTAMP,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -18,6 +19,7 @@ CREATE TABLE IF NOT EXISTS work_order (
 
 CREATE INDEX IF NOT EXISTS idx_work_order_status ON work_order(status);
 CREATE INDEX IF NOT EXISTS idx_work_order_create_time ON work_order(create_time);
+CREATE INDEX IF NOT EXISTS idx_work_order_line_id ON work_order(line_id);
 
 -- 工序表
 CREATE TABLE IF NOT EXISTS process (
@@ -31,18 +33,20 @@ CREATE TABLE IF NOT EXISTS process (
 
 CREATE INDEX IF NOT EXISTS idx_process_sequence ON process(sequence);
 
--- 产线表
+-- 产线表（status: 0-空闲 1-运行 2-检修）
 CREATE TABLE IF NOT EXISTS production_line (
     id BIGINT PRIMARY KEY,
     line_code VARCHAR(50) NOT NULL UNIQUE,
     line_name VARCHAR(100) NOT NULL,
     description VARCHAR(500),
     sequence INT DEFAULT 0,
+    status INT DEFAULT 0,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_production_line_sequence ON production_line(sequence);
+CREATE INDEX IF NOT EXISTS idx_production_line_status ON production_line(status);
 
 -- 报工记录表（device_id 关联 IoT 设备，跨库不建 FK）
 CREATE TABLE IF NOT EXISTS work_report (

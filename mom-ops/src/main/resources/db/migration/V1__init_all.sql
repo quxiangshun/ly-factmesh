@@ -1,4 +1,4 @@
--- mom-ops 运维库初始表结构（Flyway 迁移，ly_factmesh_ops 独立库）
+-- mom-ops 初始化（Flyway 迁移，ly_factmesh_ops 独立库）
 -- id 由应用雪花算法生成
 
 -- 全局日志表
