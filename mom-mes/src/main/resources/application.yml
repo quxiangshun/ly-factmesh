@@ -32,12 +32,12 @@ spring:
         username: nacos
         password: nacos
 
-  # Flyway 数据库迁移（ly_factmesh_mes 独立库，脚本位于 classpath:db/migration）
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    baseline-version: 0
+    clean-disabled: true
+    validate-on-migrate: true
 
 # MyBatis Plus 配置
 mybatis-plus:
