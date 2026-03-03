@@ -1,18 +1,104 @@
 <template>
   <section class="help-page">
-    <h1 class="help-title">LY-FactMesh MOM 帮助文档</h1>
-    <p class="help-desc">业务逻辑说明与技术实现要点，按菜单结构组织</p>
+    <aside class="help-toc-sidebar">
+      <nav class="help-toc">
+        <div v-for="group in toc" :key="group.id" class="toc-group">
+          <a :href="'#' + group.id" class="toc-link">{{ group.name }}</a>
+          <template v-if="group.children?.length">
+            <a v-for="c in group.children" :key="c.id" :href="'#' + c.id" class="toc-child">{{ c.name }}</a>
+          </template>
+        </div>
+      </nav>
+    </aside>
+    <div class="help-content-wrap">
+      <h1 class="help-title">LY-FactMesh MOM 帮助文档</h1>
+      <p class="help-desc">业务逻辑说明与技术实现要点，按菜单结构组织</p>
+      <article class="help-content">
+      <section id="user-guide" class="help-section">
+        <h2>使用说明</h2>
+        <p>面向新用户的使用指南，说明本系统的基本用法、常见角色及各自操作流程。</p>
 
-    <nav class="help-toc">
-      <div v-for="group in toc" :key="group.id" class="toc-group">
-        <a :href="'#' + group.id" class="toc-link">{{ group.name }}</a>
-        <template v-if="group.children?.length">
-          <a v-for="c in group.children" :key="c.id" :href="'#' + c.id" class="toc-child">{{ c.name }}</a>
-        </template>
-      </div>
-    </nav>
+        <h3 id="user-guide-beginner">一、我是小白，该怎么使用这个系统？</h3>
+        <p><strong>第一步：登录</strong>。打开系统地址，输入管理员提供的账号和密码，点击登录。登录成功后进入「工作台」首页。</p>
+        <p><strong>第二步：熟悉菜单</strong>。左侧是功能菜单，分为：工作台、系统管理、设备物联、生产执行、仓储管理、质量管理、报表看板、运维管理、系统监控。根据你的岗位，你会用到其中某几块。</p>
+        <p><strong>第三步：按流程操作</strong>。典型生产流程：计划员创建并下发工单 → 仓库按领料单发料 → 现场开始生产、报工 → 工单完成后自动创建质检任务 → 质检员处理质检任务和不合格品。你可以先从「工作台」和「生产执行」入手，体验工单创建、下发、报工、完成的全流程。</p>
+        <p><strong>遇到问题</strong>：点击页面右上角的 <strong>?</strong> 图标，可跳转到本文档的使用说明部分；或访问「系统监控」下的「接口文档」查看 API 详情。</p>
 
-    <article class="help-content">
+        <h3 id="user-guide-roles">二、一般这样的系统会存在多少角色？</h3>
+        <p>MOM（制造运营管理）系统通常涉及以下角色，按职能划分：</p>
+        <table class="help-table">
+          <thead>
+            <tr><th>角色</th><th>职责简述</th><th>常用菜单</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>系统管理员</td><td>用户、角色、权限、租户、字典、配置、操作/审计日志</td><td>系统管理 (Admin)</td></tr>
+            <tr><td>生产计划/调度员</td><td>工序、产线维护；工单创建、下发、排产</td><td>生产执行 (MES) - 工序管理、产线管理、工单管理</td></tr>
+            <tr><td>生产现场/操作工</td><td>开始/暂停/恢复工单，录入报工；领料、完成领料单</td><td>生产执行 - 工单管理、报工管理；仓储管理 - 领料单</td></tr>
+            <tr><td>仓库管理员</td><td>物料主数据、领料单审核与发料、库存管理、盘点、调整</td><td>仓储管理 (WMS)</td></tr>
+            <tr><td>质量检验员</td><td>质检任务执行、质检结果录入、不合格品登记与处置</td><td>质量管理 (QMS)</td></tr>
+            <tr><td>设备管理员</td><td>设备注册与维护、遥测查看、告警规则、告警处理</td><td>设备物联 (IoT)</td></tr>
+            <tr><td>运维人员</td><td>全局日志、运维审计、系统事件监控</td><td>运维管理 (Ops)、系统监控</td></tr>
+            <tr><td>管理层</td><td>生产日报、设备 OEE、各类报表看板</td><td>报表看板 (Reports)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="user-guide-per-role">三、每个角色应该怎么使用？</h3>
+
+        <h4>系统管理员</h4>
+        <ul>
+          <li>在「用户管理」中创建、启用/禁用用户；「角色管理」中配置角色；「权限管理」中分配菜单与接口权限。</li>
+          <li>「租户管理」用于多租户场景；「字典管理」维护下拉选项；「系统配置」维护键值配置。</li>
+          <li>「操作日志」「审计日志」用于追溯用户操作。</li>
+        </ul>
+
+        <h4>生产计划/调度员</h4>
+        <ul>
+          <li>先在「工序管理」「产线管理」中维护主数据。</li>
+          <li>在「工单管理」中创建工单（编码、产品、计划数量、产线），再点击「下发」。下发后系统自动生成 WMS 领料单。</li>
+          <li>工单状态：草稿 → 已下发 → 进行中 → 已完成。可暂停、恢复。</li>
+        </ul>
+
+        <h4>生产现场/操作工</h4>
+        <ul>
+          <li>在「工单管理」中点击「开始」启动已下发工单；生产过程中可「暂停」「恢复」。</li>
+          <li>在「报工管理」中按工序、设备、数量录入报工；系统自动累加工单实际产量。</li>
+          <li>实际数量达到计划后可「完成」工单；完成后系统自动创建质检任务。</li>
+          <li>在「领料单」中查看并完成领料（若需现场确认发料）。</li>
+        </ul>
+
+        <h4>仓库管理员</h4>
+        <ul>
+          <li>在「物料管理」中维护物料主数据。</li>
+          <li>工单下发后，「领料单」中会出现待处理领料单；提交后发料，发料完成点击「完成」。</li>
+          <li>「库存管理」中查看、调整库存，处理盘点与安全库存。</li>
+        </ul>
+
+        <h4>质量检验员</h4>
+        <ul>
+          <li>工单完成后，「质检任务」中自动生成任务；点击「开始」执行检验，录入「质检结果」。</li>
+          <li>若有不合格项，在「不合格品处理 (NCR)」中登记并处置。</li>
+          <li>「质量追溯」中按产品编码、批次等查询追溯信息。</li>
+        </ul>
+
+        <h4>设备管理员</h4>
+        <ul>
+          <li>在「设备管理」中注册设备，维护设备信息。</li>
+          <li>「设备遥测」查看历史数据；配置告警规则后，超标会自动生成「设备告警」，需人工处理。</li>
+        </ul>
+
+        <h4>运维人员</h4>
+        <ul>
+          <li>「全局日志」查看各服务日志；「运维审计」追溯运维操作；「系统事件」查看系统级事件。</li>
+          <li>「服务状态」「接口文档」用于排查与联调。</li>
+        </ul>
+
+        <h4>管理层</h4>
+        <ul>
+          <li>「生产日报」按日查看完成工单数、产量、进行中/暂停数量及当日完成明细。</li>
+          <li>「设备 OEE」按产线查看产能统计；完整 OEE 需结合 IoT 设备运行数据（后续扩展）。</li>
+        </ul>
+      </section>
+
       <section id="intro" class="help-section">
         <h2>系统概述</h2>
         <p>LY-FactMesh 是面向制造业的制造运营管理（MOM）系统，采用 DDD 与微服务架构，实现设备物联、生产执行、仓储、质量等核心能力的统一管理。</p>
@@ -552,7 +638,8 @@ POST /count (inventoryId, actualQuantity) ──► 计算 diff=实盘-账面
           <li><strong>基础设施</strong>：mom-infra 提供 CacheService、MqttClientWrapper、OpcUaClient、ModbusTcpClient 等接口；配置对应属性后按需启用。</li>
         </ul>
       </section>
-    </article>
+      </article>
+    </div>
   </section>
 </template>
 
@@ -561,6 +648,15 @@ import { menuConfig } from '@/config/menu';
 import SwimlaneDiagram from '@/components/SwimlaneDiagram.vue';
 
 const toc = [
+  {
+    id: 'user-guide',
+    name: '使用说明',
+    children: [
+      { id: 'user-guide-beginner', name: '一、小白入门' },
+      { id: 'user-guide-roles', name: '二、系统角色' },
+      { id: 'user-guide-per-role', name: '三、各角色操作指南' }
+    ]
+  },
   {
     id: 'intro',
     name: '系统概述',
@@ -611,22 +707,60 @@ const toc = [
 </script>
 
 <style scoped>
-.help-page { max-width: 900px; margin: 0 auto; }
-.help-title { font-size: 1.75rem; margin: 0 0 0.25rem; color: #e5e7eb; }
-.help-desc { font-size: 0.95rem; color: #94a3b8; margin-bottom: 2rem; }
-
+.help-page {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: calc(100vh - 6.5rem);
+  overflow: hidden;
+}
+.help-toc-sidebar {
+  flex-shrink: 0;
+  width: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.help-toc-sidebar::-webkit-scrollbar {
+  display: none;
+}
 .help-toc {
   background: #1e293b;
   border: 1px solid #334155;
   border-radius: 8px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 2rem;
+  padding: 1rem 1.25rem;
 }
 .toc-group { margin-bottom: 0.5rem; }
-.toc-link { display: block; color: #38bdf8; text-decoration: none; font-weight: 500; margin-bottom: 0.25rem; }
+.toc-link { display: block; color: #38bdf8; text-decoration: none; font-weight: 500; margin-bottom: 0.25rem; font-size: 0.9rem; }
 .toc-link:hover { text-decoration: underline; }
-.toc-child { display: block; color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-left: 1rem; margin-bottom: 0.2rem; }
+.toc-child { display: block; color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: 0.75rem; margin-bottom: 0.2rem; }
 .toc-child:hover { color: #e5e7eb; }
+.help-content-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #475569 transparent;
+}
+.help-content-wrap::-webkit-scrollbar {
+  width: 6px;
+}
+.help-content-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.help-content-wrap::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+.help-content-wrap::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+.help-title { font-size: 1.75rem; margin: 0 0 0.25rem; color: #e5e7eb; }
+.help-desc { font-size: 0.95rem; color: #94a3b8; margin-bottom: 2rem; }
 
 .flow-diagram {
   background: #0f172a;
