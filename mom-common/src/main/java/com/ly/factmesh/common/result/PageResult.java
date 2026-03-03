@@ -30,6 +30,7 @@ public class PageResult<T> implements Serializable {
     /** 每页大小 */
     private long size;
 
+    /** 构造分页结果 */
     public static <T> PageResult<T> of(List<T> records, long total, long current, long size) {
         return new PageResult<T>(
                 records != null ? records : Collections.<T>emptyList(),
@@ -39,6 +40,7 @@ public class PageResult<T> implements Serializable {
         );
     }
 
+    /** 空分页结果 */
     public static <T> PageResult<T> empty(long current, long size) {
         return of(Collections.emptyList(), 0L, current, size);
     }

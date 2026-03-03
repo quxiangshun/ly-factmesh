@@ -12,7 +12,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.stream.Collectors;
 
 /**
- * 全局异常处理器（返回 Result 格式）
+ * 全局异常处理器
+ * <p>
+ * 统一返回 {@link com.ly.factmesh.common.result.Result} 格式。
+ * 业务异常 400；校验异常（@Valid、@Validated）400；认证类错误 401；系统异常 500。
+ * </p>
  *
  * @author LY-FactMesh
  */
@@ -20,12 +24,14 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /** 业务异常，直接返回错误码与消息 */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Result<Object>> handleBusiness(BusinessException e) {
         return ResponseEntity.badRequest()
                 .body(Result.fail(e.getCode(), e.getMessage()));
     }
 
+    /** 系统异常，记录日志并返回 500 */
     @ExceptionHandler(SystemException.class)
     public ResponseEntity<Result<Object>> handleSystem(SystemException e) {
         log.error("System exception", e);
@@ -41,6 +47,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Result.fail(400, msg));
     }
 
+    /** 方法参数校验失败（@Validated） */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Result<Object>> handleConstraint(ConstraintViolationException e) {
         String msg = e.getConstraintViolations().stream()

@@ -23,7 +23,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 领料单应用服务（支持 MES 工单发布触发领料）
+ * 领料单应用服务
+ * <p>
+ * 类型：领料（出库）、退料（入库）。来源：MES 工单下发触发 或 手动创建草稿。
+ * 流程：草稿 -> 提交 -> 完成。完成时根据类型执行库存扣减或入库，并记录事务。
+ * </p>
  *
  * @author LY-FactMesh
  */
@@ -36,7 +40,10 @@ public class MaterialRequisitionApplicationService {
     private final InventoryApplicationService inventoryApplicationService;
 
     /**
-     * 创建领料单（由 MES Feign 或 REST 调用）：按物料编码查找或创建物料，再创建领料单及明细
+     * 由 MES 工单下发触发的领料单创建。物料不存在时按编码自动创建，领料单直接为已提交状态
+     *
+     * @param request 领料请求（工单 ID、物料、数量）
+     * @return 领料单 ID
      */
     @Transactional(rollbackFor = Exception.class)
     public Long createFromRequest(RequisitionCreateRequest request) {
@@ -76,6 +83,9 @@ public class MaterialRequisitionApplicationService {
 
     /**
      * 手动创建领料单（草稿状态）
+     *
+     * @param request 领料参数
+     * @return 领料单 ID
      */
     @Transactional(rollbackFor = Exception.class)
     public Long createDraft(RequisitionManualCreateRequest request) {
@@ -100,6 +110,11 @@ public class MaterialRequisitionApplicationService {
         return saved.getId();
     }
 
+    /**
+     * 取消领料单，已完成或已取消的不可再取消
+     *
+     * @param id 领料单 ID
+     */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long id) {
         MaterialRequisition req = requisitionRepository.findById(id)
@@ -137,6 +152,11 @@ public class MaterialRequisitionApplicationService {
         return page;
     }
 
+    /**
+     * 提交领料单：草稿 -> 已提交，提交后仓库可安排发货
+     *
+     * @param id 领料单 ID
+     */
     @Transactional(rollbackFor = Exception.class)
     public void submit(Long id) {
         MaterialRequisition req = requisitionRepository.findById(id)
@@ -149,6 +169,12 @@ public class MaterialRequisitionApplicationService {
         requisitionRepository.save(req);
     }
 
+    /**
+     * 完成领料：录入实发数量，校验库存（领料需库存充足），按类型扣减或增加库存
+     *
+     * @param id      领料单 ID
+     * @param request 完成参数（各明细实发数量）
+     */
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long id, RequisitionCompleteRequest request) {
         MaterialRequisition req = requisitionRepository.findById(id)
@@ -178,7 +204,7 @@ public class MaterialRequisitionApplicationService {
                 }
             }
         }
-        // 重新加载更新后的明细，执行库存变动
+        // 先校验领料类单据库存是否充足，再执行库存变动
         details = requisitionRepository.findDetailsByReqId(id);
         for (MaterialRequisitionDetail d : details) {
             int actualQty = d.getActualQuantity() != null ? d.getActualQuantity() : 0;
@@ -190,6 +216,7 @@ public class MaterialRequisitionApplicationService {
                 }
             }
         }
+        // 领料：扣减库存；退料：增加库存。均记录事务用于追溯
         for (MaterialRequisitionDetail d : details) {
             int actualQty = d.getActualQuantity() != null ? d.getActualQuantity() : 0;
             if (actualQty <= 0) continue;

@@ -14,10 +14,12 @@ public final class DigestUtils {
     private DigestUtils() {
     }
 
+    /** MD5 摘要，返回 32 位十六进制小写字符串 */
     public static String md5Hex(String input) {
         return digestHex("MD5", input);
     }
 
+    /** SHA-256 摘要，返回 64 位十六进制小写字符串 */
     public static String sha256Hex(String input) {
         return digestHex("SHA-256", input);
     }

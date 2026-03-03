@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 
 /**
  * 产线应用服务
+ * <p>
+ * 产线状态：空闲、运行中、检修。产线可挂接工单，用于产能统计与生产排程。
+ * </p>
  *
  * @author LY-FactMesh
  */
@@ -31,6 +34,12 @@ public class ProductionLineApplicationService {
     private final ProductionLineRepository productionLineRepository;
     private final WorkOrderRepository workOrderRepository;
 
+    /**
+     * 新建产线，初始状态为空闲
+     *
+     * @param request 产线创建参数
+     * @return 创建后的产线 DTO
+     */
     @Transactional(rollbackFor = Exception.class)
     public ProductionLineDTO create(ProductionLineCreateRequest request) {
         if (productionLineRepository.findByLineCode(request.getLineCode()).isPresent()) {
@@ -48,12 +57,25 @@ public class ProductionLineApplicationService {
         return toDTO(saved);
     }
 
+    /**
+     * 根据 ID 查询产线
+     *
+     * @param id 产线 ID
+     * @return 产线 DTO
+     */
     public ProductionLineDTO getById(Long id) {
         return productionLineRepository.findById(id)
                 .map(this::toDTO)
                 .orElseThrow(() -> new IllegalArgumentException("产线不存在: " + id));
     }
 
+    /**
+     * 分页查询产线列表
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
     public Page<ProductionLineDTO> page(int pageNum, int pageSize) {
         long total = productionLineRepository.count();
         long offset = (long) (pageNum - 1) * pageSize;
@@ -64,6 +86,7 @@ public class ProductionLineApplicationService {
         return page;
     }
 
+    /** 查询所有产线（用于下拉等），最多 1000 条 */
     public List<ProductionLineDTO> listAll() {
         List<ProductionLine> list = productionLineRepository.findAll(0, 1000);
         return list.stream().map(this::toDTO).collect(Collectors.toList());
@@ -85,6 +108,13 @@ public class ProductionLineApplicationService {
         productionLineRepository.deleteById(id);
     }
 
+    /**
+     * 更新产线状态：0-空闲 1-运行 2-检修（检修时产线不可排产）
+     *
+     * @param id     产线 ID
+     * @param status 状态码
+     * @return 更新后的产线 DTO
+     */
     @Transactional(rollbackFor = Exception.class)
     public ProductionLineDTO updateStatus(Long id, Integer status) {
         ProductionLine pl = productionLineRepository.findById(id)
@@ -99,6 +129,9 @@ public class ProductionLineApplicationService {
 
     /**
      * 产线产能统计（按产线汇总完成工单数、产量）
+     *
+     * @param date 统计日期，为空时取当天
+     * @return 各产线当日完成工单数、产量
      */
     public List<ProductionLineCapacityDTO> getCapacitySummary(LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now();

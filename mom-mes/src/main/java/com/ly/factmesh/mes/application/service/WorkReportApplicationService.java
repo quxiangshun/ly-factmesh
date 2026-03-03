@@ -20,6 +20,10 @@ import java.util.stream.Collectors;
 
 /**
  * 报工应用服务
+ * <p>
+ * 逻辑：报工记录工位/工序的实际产量与报废量，并累加到工单实际数量。
+ * 首次报工时若工单为「已下发」状态，则自动推进为「进行中」。
+ * </p>
  *
  * @author LY-FactMesh
  */
@@ -31,6 +35,12 @@ public class WorkReportApplicationService {
     private final WorkOrderRepository workOrderRepository;
     private final ProcessRepository processRepository;
 
+    /**
+     * 创建报工记录。仅已下发或进行中的工单可报工；报工数量累加至工单实际数量
+     *
+     * @param request 报工参数（工单、工序、产量、报废量等）
+     * @return 报工记录 DTO
+     */
     @Transactional(rollbackFor = Exception.class)
     public WorkReportDTO create(WorkReportCreateRequest request) {
         WorkOrder wo = workOrderRepository.findById(request.getOrderId())
@@ -51,13 +61,14 @@ public class WorkReportApplicationService {
         wr.setOperator(request.getOperator());
         WorkReport saved = workReportRepository.save(wr);
 
-        // 更新工单实际数量（累加）
+        // 业务逻辑：实际数量 = 累计报工合格量 - 累计报废量
         int newActual = (wo.getActualQuantity() != null ? wo.getActualQuantity() : 0)
                 + request.getReportQuantity()
                 - (request.getScrapQuantity() != null ? request.getScrapQuantity() : 0);
         wo.setActualQuantity(Math.max(0, newActual));
         wo.setUpdateTime(LocalDateTime.now());
         WorkOrder updated = workOrderRepository.save(wo);
+        // 首次报工时若工单仍为「已下发」，则自动推进为「进行中」并记录开始时间
         if (updated.getStatus() != null && updated.getStatus() == WorkOrderStatusEnum.RELEASED.getCode()) {
             updated.setStatus(WorkOrderStatusEnum.IN_PROGRESS.getCode());
             updated.setStartTime(updated.getStartTime() != null ? updated.getStartTime() : LocalDateTime.now());
@@ -67,6 +78,12 @@ public class WorkReportApplicationService {
         return toDTO(saved, wo.getOrderCode(), processRepository.findById(request.getProcessId()).map(Process::getProcessName).orElse(null));
     }
 
+    /**
+     * 根据 ID 查询报工记录
+     *
+     * @param id 报工记录 ID
+     * @return 报工 DTO
+     */
     public WorkReportDTO getById(Long id) {
         WorkReport wr = workReportRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("报工记录不存在: " + id));
@@ -75,6 +92,7 @@ public class WorkReportApplicationService {
         return toDTO(wr, orderCode, processName);
     }
 
+    /** 分页查询报工记录 */
     public Page<WorkReportDTO> page(int pageNum, int pageSize) {
         long total = workReportRepository.count();
         long offset = (long) (pageNum - 1) * pageSize;
@@ -89,6 +107,7 @@ public class WorkReportApplicationService {
         return page;
     }
 
+    /** 按工单 ID 分页查询报工记录 */
     public Page<WorkReportDTO> pageByOrderId(Long orderId, int pageNum, int pageSize) {
         long total = workReportRepository.countByOrderId(orderId);
         long offset = (long) (pageNum - 1) * pageSize;
@@ -103,6 +122,7 @@ public class WorkReportApplicationService {
         return page;
     }
 
+    /** 删除报工记录 */
     @Transactional(rollbackFor = Exception.class)
     public void deleteById(Long id) {
         workReportRepository.deleteById(id);

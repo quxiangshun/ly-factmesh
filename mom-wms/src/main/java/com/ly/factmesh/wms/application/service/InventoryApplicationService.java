@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
 
 /**
  * 库存应用服务
+ * <p>
+ * 库存按物料+仓库+库位+批次维度过账；调整/盘点/领料完成 均会记录事务用于追溯。
+ * 支持安全库存预警（pageBelowSafeStock）。
+ * </p>
  *
  * @author LY-FactMesh
  */
@@ -33,12 +37,14 @@ public class InventoryApplicationService {
     private final InventoryTransactionRepository transactionRepository;
     private final MaterialRepository materialRepository;
 
+    /** 根据 ID 查询库存记录 */
     public InventoryDTO getById(Long id) {
         Inventory inv = inventoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("库存记录不存在: " + id));
         return toDTO(inv);
     }
 
+    /** 按物料 ID 查询所有库存（多仓库/批次） */
     public List<InventoryDTO> findByMaterialId(Long materialId) {
         return inventoryRepository.findByMaterialId(materialId).stream().map(this::toDTO).collect(Collectors.toList());
     }
@@ -63,7 +69,7 @@ public class InventoryApplicationService {
     }
 
     /**
-     * 调整库存（入库/出库），并记录事务
+     * 调整库存：正数为入库，负数为出库。按物料+仓+库位+批次查找或创建库存记录，并写入事务
      */
     @Transactional(rollbackFor = Exception.class)
     public void adjust(InventoryAdjustRequest request) {
@@ -112,6 +118,8 @@ public class InventoryApplicationService {
 
     /**
      * 盘点确认：录入实盘数量，系统自动计算差异并调整库存，记录盘点调整事务
+     *
+     * @param request 盘点参数（库存 ID、实盘数量）
      */
     @Transactional(rollbackFor = Exception.class)
     public void count(InventoryCountRequest request) {
@@ -143,6 +151,7 @@ public class InventoryApplicationService {
         transactionRepository.save(tx);
     }
 
+    /** 更新安全库存 */
     @Transactional(rollbackFor = Exception.class)
     public void updateSafeStock(Long inventoryId, Integer safeStock) {
         if (safeStock != null && safeStock < 0) {
@@ -155,6 +164,7 @@ public class InventoryApplicationService {
         inventoryRepository.save(inv);
     }
 
+    /** 库存低于安全库存的物料列表，用于采购/生产预警 */
     public Page<InventoryDTO> pageBelowSafeStock(int pageNum, int pageSize) {
         long offset = (long) (pageNum - 1) * pageSize;
         long total = inventoryRepository.countBelowSafeStock();
@@ -167,6 +177,12 @@ public class InventoryApplicationService {
 
     /**
      * 内部方法：领料出库（由领料完成流程调用），记录 orderId/reqId 用于追溯
+     *
+     * @param materialId   物料 ID
+     * @param quantity     出库数量
+     * @param referenceNo  参考单号
+     * @param reqId        领料单 ID
+     * @param orderId      工单 ID
      */
     @Transactional(rollbackFor = Exception.class)
     public void deductForRequisition(Long materialId, int quantity, String referenceNo, Long reqId, Long orderId) {
@@ -182,6 +198,12 @@ public class InventoryApplicationService {
 
     /**
      * 内部方法：退料入库（由退料流程调用），记录 orderId/reqId 用于追溯
+     *
+     * @param materialId   物料 ID
+     * @param quantity     入库数量
+     * @param referenceNo  参考单号
+     * @param reqId        领料单 ID
+     * @param orderId      工单 ID
      */
     @Transactional(rollbackFor = Exception.class)
     public void addForReturn(Long materialId, int quantity, String referenceNo, Long reqId, Long orderId) {

@@ -12,12 +12,17 @@ import java.time.LocalDateTime;
  */
 public class ProductionLine {
 
+    /** 主键 */
     private Long id;
+    /** 产线编码，唯一 */
     private String lineCode;
+    /** 产线名称 */
     private String lineName;
+    /** 描述 */
     private String description;
+    /** 排序号，用于展示顺序 */
     private Integer sequence;
-    /** 状态码参见 ProductionLineStatusEnum */
+    /** 状态：0-空闲 1-运行 2-检修，参见 ProductionLineStatusEnum */
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

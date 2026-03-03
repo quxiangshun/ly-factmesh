@@ -13,10 +13,15 @@ import java.time.LocalDateTime;
  */
 public class MaterialRequisition {
 
+    /** 主键 */
     private Long id;
+    /** 领料单号，唯一 */
     private String reqNo;
+    /** 关联工单 ID（MES 触发时有值） */
     private Long orderId;
+    /** 类型：1-领料 2-退料，参见 RequisitionTypeEnum */
     private Integer reqType;
+    /** 状态：0-草稿 1-已提交 2-已完成 3-已取消，参见 RequisitionStatusEnum */
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

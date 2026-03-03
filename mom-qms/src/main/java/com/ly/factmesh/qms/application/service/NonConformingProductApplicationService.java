@@ -16,6 +16,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 不合格品（NCR）应用服务
+ * <p>
+ * 处置方式：待处置、返工、报废、让步接收、退货。创建时自动关联质量追溯。
+ * </p>
+ *
+ * @author LY-FactMesh
+ */
 @Service
 @RequiredArgsConstructor
 public class NonConformingProductApplicationService {
@@ -24,6 +32,7 @@ public class NonConformingProductApplicationService {
     private final InspectionTaskRepository inspectionTaskRepository;
     private final QualityTraceabilityService qualityTraceabilityService;
 
+    /** 创建不合格品记录，自动生成 NCR 编号并建立质量追溯 */
     @Transactional(rollbackFor = Exception.class)
     public NonConformingProductDTO create(NonConformingProductCreateRequest request) {
         NonConformingProduct p = new NonConformingProduct();
@@ -74,6 +83,7 @@ public class NonConformingProductApplicationService {
         return page;
     }
 
+    /** 处置不合格品，更新处置方式并标记为已处置 */
     @Transactional(rollbackFor = Exception.class)
     public NonConformingProductDTO dispose(Long id, NcrDisposeRequest request) {
         NonConformingProduct p = nonConformingProductRepository.findById(id)

@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 
 /**
  * 租户应用服务
+ * <p>
+ * 多租户模式下，租户为业务数据隔离单位。状态：启用 / 禁用（禁用后该租户下用户不可登录）。
+ * </p>
  *
  * @author LY-FactMesh
  */
@@ -26,6 +29,7 @@ public class TenantApplicationService {
 
     private final TenantRepository tenantRepository;
 
+    /** 创建租户，编码唯一；未指定状态时默认启用 */
     @Transactional(rollbackFor = Exception.class)
     public TenantDTO create(TenantCreateRequest request) {
         tenantRepository.findByTenantCode(request.getTenantCode())
@@ -56,6 +60,7 @@ public class TenantApplicationService {
         return page;
     }
 
+    /** 更新租户信息；可将状态改为禁用以禁止该租户访问 */
     @Transactional(rollbackFor = Exception.class)
     public TenantDTO update(Long id, TenantUpdateRequest request) {
         Tenant t = tenantRepository.findById(id)

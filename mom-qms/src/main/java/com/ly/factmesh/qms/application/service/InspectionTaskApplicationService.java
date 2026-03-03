@@ -16,6 +16,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 质检任务应用服务
+ * <p>
+ * 流程：草稿 -> 进行中 -> 完成。可由 MES 工单完成时同步创建。
+ * 完成规则：存在不合格项时，需先创建不合格品（NCR）或选择「强制完成」方可结案。
+ * </p>
+ *
+ * @author LY-FactMesh
+ */
 @Service
 @RequiredArgsConstructor
 public class InspectionTaskApplicationService {
@@ -23,6 +32,12 @@ public class InspectionTaskApplicationService {
     private final InspectionTaskRepository inspectionTaskRepository;
     private final InspectionResultRepository inspectionResultRepository;
 
+    /**
+     * 创建质检任务，初始状态为草稿
+     *
+     * @param request 任务创建参数
+     * @return 创建后的任务 DTO
+     */
     @Transactional(rollbackFor = Exception.class)
     public InspectionTaskDTO create(InspectionTaskCreateRequest request) {
         if (inspectionTaskRepository.findByTaskCode(request.getTaskCode()).isPresent()) {
@@ -43,12 +58,14 @@ public class InspectionTaskApplicationService {
         return toDTO(saved);
     }
 
+    /** 根据 ID 查询质检任务 */
     public InspectionTaskDTO getById(Long id) {
         return inspectionTaskRepository.findById(id)
                 .map(this::toDTO)
                 .orElseThrow(() -> new IllegalArgumentException("质检任务不存在: " + id));
     }
 
+    /** 分页查询质检任务，可按状态筛选 */
     public Page<InspectionTaskDTO> page(int pageNum, int pageSize, Integer status) {
         long total = inspectionTaskRepository.countByStatus(status);
         long offset = (long) (pageNum - 1) * pageSize;
@@ -59,6 +76,12 @@ public class InspectionTaskApplicationService {
         return page;
     }
 
+    /**
+     * 开始检验：草稿 -> 进行中
+     *
+     * @param id 任务 ID
+     * @return 更新后的任务 DTO
+     */
     @Transactional(rollbackFor = Exception.class)
     public InspectionTaskDTO start(Long id) {
         InspectionTask t = inspectionTaskRepository.findById(id)
@@ -71,6 +94,13 @@ public class InspectionTaskApplicationService {
         return toDTO(inspectionTaskRepository.save(t));
     }
 
+    /**
+     * 完成质检任务。存在不合格项时须先创建 NCR 或传 forceComplete=true 才能完成
+     *
+     * @param id      任务 ID
+     * @param request 完成参数（操作人、是否强制完成）
+     * @return 更新后的任务 DTO
+     */
     @Transactional(rollbackFor = Exception.class)
     public InspectionTaskDTO complete(Long id, InspectionTaskCompleteRequest request) {
         InspectionTask t = inspectionTaskRepository.findById(id)
@@ -80,6 +110,7 @@ public class InspectionTaskApplicationService {
         }
         List<InspectionResult> results = inspectionResultRepository.findByTaskId(id);
         long failCount = results.stream().filter(r -> r.getJudgment() != null && r.getJudgment() == InspectionJudgmentEnum.FAIL.getCode()).count();
+        // 业务规则：不合格项未处置完不允许结案，除非强制完成
         if (failCount > 0 && (request == null || !Boolean.TRUE.equals(request.getForceComplete()))) {
             throw new IllegalArgumentException("存在 " + failCount + " 项不合格，请先创建不合格品或选择强制完成");
         }
@@ -92,6 +123,7 @@ public class InspectionTaskApplicationService {
         return toDTO(inspectionTaskRepository.save(t));
     }
 
+    /** 质检任务状态统计 */
     public InspectionTaskStatsDTO getStats() {
         InspectionTaskStatsDTO stats = new InspectionTaskStatsDTO();
         stats.setTotal(inspectionTaskRepository.countByStatus(null));
@@ -101,6 +133,12 @@ public class InspectionTaskApplicationService {
         return stats;
     }
 
+    /**
+     * 获取创建 NCR 时的上下文（任务、物料、工单信息），便于关联不合格品
+     *
+     * @param taskId 任务 ID
+     * @return NCR 上下文 DTO
+     */
     public InspectionTaskNcrContextDTO getNcrContext(Long taskId) {
         InspectionTask t = inspectionTaskRepository.findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("质检任务不存在: " + taskId));

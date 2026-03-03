@@ -9,12 +9,19 @@ import java.time.LocalDateTime;
  */
 public class Inventory {
 
+    /** 主键 */
     private Long id;
+    /** 物料 ID */
     private Long materialId;
+    /** 批次号，可选 */
     private String batchNo;
+    /** 仓库 */
     private String warehouse;
+    /** 库位 */
     private String location;
+    /** 当前数量 */
     private Integer quantity;
+    /** 安全库存，低于此值时预警 */
     private Integer safeStock;
     private LocalDateTime lastUpdateTime;
 

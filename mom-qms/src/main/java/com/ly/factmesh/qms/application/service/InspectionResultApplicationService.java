@@ -13,6 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 质检结果应用服务
+ * <p>
+ * 每条记录对应一个检验项（合格/不合格）。不合格时自动创建质量追溯记录。
+ * </p>
+ *
+ * @author LY-FactMesh
+ */
 @Service
 @RequiredArgsConstructor
 public class InspectionResultApplicationService {
@@ -21,6 +29,9 @@ public class InspectionResultApplicationService {
     private final InspectionTaskRepository inspectionTaskRepository;
     private final QualityTraceabilityService qualityTraceabilityService;
 
+    /**
+     * 录入检验结果。判定为不合格时，自动创建质量追溯以便跟踪
+     */
     @Transactional(rollbackFor = Exception.class)
     public InspectionResultDTO create(InspectionResultCreateRequest request) {
         var task = inspectionTaskRepository.findById(request.getTaskId())
@@ -33,6 +44,7 @@ public class InspectionResultApplicationService {
         r.setJudgment(request.getJudgment() != null ? request.getJudgment() : InspectionJudgmentEnum.PASS.getCode());
         r.setInspector(request.getInspector());
         InspectionResult saved = inspectionResultRepository.save(r);
+        // 不合格项需记录质量追溯，用于后续 NCR 关联与质量分析
         if (saved.getJudgment() != null && saved.getJudgment() == InspectionJudgmentEnum.FAIL.getCode()) {
             String productCode = task.getProductCode();
             if (productCode == null && task.getMaterialId() != null) {
