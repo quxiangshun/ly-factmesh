@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { logout } from '@/api/auth';
@@ -71,15 +71,29 @@ const route = useRoute();
 
 const expanded = ref<Record<string, boolean>>({});
 
-onMounted(() => {
+function syncExpandedToRoute() {
   const currentPath = route.path;
-  menuConfig.forEach((g) => {
-    expanded.value[g.id] = !!g.children?.some((c) => !c.external && (currentPath === c.path || currentPath.startsWith(c.path + '/')));
-  });
-});
+  let openedId: string | null = null;
+  for (const g of menuConfig) {
+    const isActive = !!g.children?.some((c) => !c.external && (currentPath === c.path || currentPath.startsWith(c.path + '/')));
+    if (isActive && !openedId) openedId = g.id;
+  }
+  const next: Record<string, boolean> = {};
+  for (const g of menuConfig) {
+    next[g.id] = g.id === openedId;
+  }
+  expanded.value = next;
+}
+
+onMounted(syncExpandedToRoute);
+watch(() => route.path, syncExpandedToRoute);
 
 function toggleGroup(id: string) {
-  expanded.value[id] = !expanded.value[id];
+  const next: Record<string, boolean> = {};
+  for (const g of menuConfig) {
+    next[g.id] = g.id === id ? !expanded.value[g.id] : false;
+  }
+  expanded.value = next;
 }
 
 const currentTitle = computed(() => {

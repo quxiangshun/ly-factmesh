@@ -130,6 +130,21 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
     }
 
     @Override
+    public List<WorkOrder> findCompletedByDate(java.time.LocalDate date, long offset, long limit) {
+        if (date == null) return List.of();
+        java.time.LocalDateTime start = date.atStartOfDay();
+        java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
+        LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
+        q.eq(WorkOrderEntity::getStatus, WorkOrderStatusEnum.COMPLETED.getCode());
+        q.ge(WorkOrderEntity::getEndTime, start);
+        q.lt(WorkOrderEntity::getEndTime, end);
+        q.orderByDesc(WorkOrderEntity::getEndTime);
+        Page<WorkOrderEntity> page = new Page<>(offset / limit + 1, limit);
+        Page<WorkOrderEntity> result = workOrderMapper.selectPage(page, q);
+        return result.getRecords().stream().map(this::toDomain).collect(Collectors.toList());
+    }
+
+    @Override
     public void deleteById(Long id) {
         workOrderMapper.deleteById(id);
     }

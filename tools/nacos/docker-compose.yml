@@ -1,5 +1,5 @@
 # Nacos 服务注册与配置中心 + MySQL 存储
-# 使用方式：docker compose -f tools/docker-compose-nacos.yml up -d
+# 使用方式：cd tools/nacos && docker compose up -d
 
 services:
   mysql-nacos:
@@ -15,7 +15,7 @@ services:
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_general_ci
     volumes:
-      - ./sql/nacos-all-init.sql:/docker-entrypoint-initdb.d/1_nacos-all-init.sql
+      - ../sql/mysql-init:/docker-entrypoint-initdb.d
     command: >
       --default-authentication-plugin=mysql_native_password
       --skip-host-cache
@@ -23,7 +23,7 @@ services:
       --require_secure_transport=OFF
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_general_ci
-      --init-connect='SET NAMES utf8mb4'
+      --init-connect="SET NAMES utf8mb4"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -proot || exit 1"]
@@ -47,12 +47,20 @@ services:
       - "9848:9848"
       - "9849:9849"
     environment:
-      - MODE=standalone
-      - JVM_XMS=512m
-      - JVM_XMX=512m
-      - JVM_XMN=256m
+      MODE: standalone
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
+      # MySQL 数据源
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql-nacos
+      MYSQL_SERVICE_PORT: "3306"
+      MYSQL_SERVICE_DB_NAME: ly_factmesh_nacos
+      MYSQL_SERVICE_USER: nacos
+      MYSQL_SERVICE_PASSWORD: nacos
+      MYSQL_SERVICE_DB_PARAM: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     volumes:
-      - ../nacos-config/application.properties:/home/nacos/conf/application.properties
+      - ./application.properties:/home/nacos/conf/application.properties
     restart: always
     depends_on:
       mysql-nacos:

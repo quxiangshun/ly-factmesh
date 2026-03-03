@@ -1,5 +1,5 @@
 /**
- * 企业级 MOM 菜单配置（admin 登录后显示全部）
+ * 企业级 MOM 菜单配置（与 README 功能对应）
  */
 export interface MenuItem {
   id: string;
@@ -23,21 +23,23 @@ export const menuConfig: MenuItem[] = [
   },
   {
     id: 'admin',
-    name: '系统管理（Admin）',
+    name: '系统管理 (Admin)',
     path: '/admin',
     icon: 'mdi:cog',
     children: [
       { id: 'admin-users', name: '用户管理', path: '/admin/users' },
+      { id: 'admin-tenants', name: '租户管理', path: '/admin/tenants' },
       { id: 'admin-roles', name: '角色管理', path: '/admin/roles' },
       { id: 'admin-permissions', name: '权限管理', path: '/admin/permissions' },
       { id: 'admin-dicts', name: '字典管理', path: '/admin/dicts' },
       { id: 'admin-configs', name: '系统配置', path: '/admin/configs' },
-      { id: 'admin-logs', name: '操作日志', path: '/admin/logs' }
+      { id: 'admin-operation-logs', name: '操作日志', path: '/admin/operation-logs' },
+      { id: 'admin-audit-logs', name: '审计日志', path: '/admin/audit-logs' }
     ]
   },
   {
     id: 'iot',
-    name: '设备物联（IoT）',
+    name: '设备物联 (IoT)',
     path: '/iot',
     icon: 'mdi:factory',
     children: [
@@ -48,7 +50,7 @@ export const menuConfig: MenuItem[] = [
   },
   {
     id: 'mes',
-    name: '生产执行（MES）',
+    name: '生产执行 (MES)',
     path: '/mes',
     icon: 'mdi:clipboard-list',
     children: [
@@ -60,23 +62,26 @@ export const menuConfig: MenuItem[] = [
   },
   {
     id: 'wms',
-    name: '仓储管理（WMS）',
+    name: '仓储管理 (WMS)',
     path: '/wms',
     icon: 'mdi:warehouse',
     children: [
       { id: 'wms-materials', name: '物料管理', path: '/wms/materials' },
       { id: 'wms-requisitions', name: '领料单', path: '/wms/requisitions' },
-      { id: 'wms-inventory', name: '库存管理', path: '/wms/inventory' }
+      { id: 'wms-inventory', name: '库存管理', path: '/wms/inventory' },
+      { id: 'wms-trace', name: '物料追溯', path: '/wms/trace' }
     ]
   },
   {
     id: 'qms',
-    name: '质量管理（QMS）',
+    name: '质量管理 (QMS)',
     path: '/qms',
     icon: 'mdi:quality-high',
     children: [
       { id: 'qms-inspection-tasks', name: '质检任务', path: '/qms/inspection-tasks' },
-      { id: 'qms-ncr', name: '不合格品', path: '/qms/ncr' }
+      { id: 'qms-inspection-results', name: '质检结果', path: '/qms/inspection-results' },
+      { id: 'qms-ncr', name: '不合格品处理 (NCR)', path: '/qms/ncr' },
+      { id: 'qms-quality-trace', name: '质量追溯', path: '/qms/quality-trace' }
     ]
   },
   {
@@ -90,8 +95,19 @@ export const menuConfig: MenuItem[] = [
     ]
   },
   {
+    id: 'ops',
+    name: '运维管理 (Ops)',
+    path: '/ops',
+    icon: 'mdi:server',
+    children: [
+      { id: 'ops-global-logs', name: '全局日志', path: '/ops/global-logs' },
+      { id: 'ops-audit-logs', name: '运维审计', path: '/ops/audit-logs' },
+      { id: 'ops-system-events', name: '系统事件', path: '/ops/system-events' }
+    ]
+  },
+  {
     id: 'monitor',
-    name: '系统监控',
+    name: '系统监控 (Monitor)',
     path: '/monitor',
     icon: 'mdi:monitor-dashboard',
     children: [

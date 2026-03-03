@@ -1,0 +1,176 @@
+# LY-FactMesh 基础环境：PostgreSQL + Nacos(MySQL) + InfluxDB + EMQX(MQTT) + Seata
+# 使用方式：./start-env.bat 或 ./start-env.sh
+# 或手动：docker compose -f tools/docker-compose-base.yml up -d
+# 国内网络：已使用 DaoCloud 镜像加速；Seata 用 apache/seata-server（Apache 官方）
+# 若拉取失败：配置 Docker 镜像加速后重试，或先启动核心 4 项 docker compose ... up -d postgres mysql-nacos nacos influxdb
+
+services:
+  postgres:
+    image: docker.m.daocloud.io/postgres:16.4
+    container_name: ly-factmesh-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ly_factmesh_main
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/ly_factmesh_admin.sql:/docker-entrypoint-initdb.d/1_ly_factmesh_admin.sql
+      - ./sql/ly_factmesh_ops.sql:/docker-entrypoint-initdb.d/2_ly_factmesh_ops.sql
+      - ./sql/ly_factmesh_iot.sql:/docker-entrypoint-initdb.d/3_ly_factmesh_iot.sql
+      - ./sql/ly_factmesh_mes.sql:/docker-entrypoint-initdb.d/4_ly_factmesh_mes.sql
+      - ./sql/ly_factmesh_qms.sql:/docker-entrypoint-initdb.d/5_ly_factmesh_qms.sql
+      - ./sql/ly_factmesh_wms.sql:/docker-entrypoint-initdb.d/6_ly_factmesh_wms.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ly_factmesh_main"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mom-base
+    restart: unless-stopped
+
+  mysql-nacos:
+    image: docker.m.daocloud.io/mysql:8.0
+    container_name: ly-factmesh-mysql-nacos
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ly_factmesh_nacos
+      MYSQL_USER: nacos
+      MYSQL_PASSWORD: nacos
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_general_ci
+    volumes:
+      - mysql_nacos_data:/var/lib/mysql
+      - ./sql/mysql-init:/docker-entrypoint-initdb.d
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --skip-host-cache --skip-name-resolve
+      --require_secure_transport=OFF
+      --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+      --init-connect="SET NAMES utf8mb4"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -proot || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 2GB
+    networks:
+      - mom-base
+    restart: unless-stopped
+
+  nacos:
+    image: docker.m.daocloud.io/nacos/nacos-server:v2.3.2
+    container_name: ly-factmesh-nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    environment:
+      MODE: standalone
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
+      # MySQL 数据源（Docker 环境下环境变量比 application.properties 更可靠）
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql-nacos
+      MYSQL_SERVICE_PORT: "3306"
+      MYSQL_SERVICE_DB_NAME: ly_factmesh_nacos
+      MYSQL_SERVICE_USER: nacos
+      MYSQL_SERVICE_PASSWORD: nacos
+      MYSQL_SERVICE_DB_PARAM: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    volumes:
+      - ./nacos/application.properties:/home/nacos/conf/application.properties
+    depends_on:
+      mysql-nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mom-base
+    restart: unless-stopped
+
+  influxdb:
+    image: docker.m.daocloud.io/influxdb:2.7-alpine
+    container_name: ly-factmesh-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: admin123
+      DOCKER_INFLUXDB_INIT_ORG: ly-factmesh
+      DOCKER_INFLUXDB_INIT_BUCKET: iot-telemetry
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ly-factmesh-iot-token
+    healthcheck:
+      test: ["CMD-SHELL", "influx ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - mom-base
+    restart: unless-stopped
+
+  emqx:
+    image: docker.m.daocloud.io/emqx/emqx:5.4.0
+    container_name: ly-factmesh-emqx
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "8087:8083"
+      - "18083:18083"
+    environment:
+      EMQX_NAME: emqx
+      EMQX_HOST: 0.0.0.0
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    healthcheck:
+      test: ["CMD-SHELL", "emqx ctl status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mom-base
+    restart: unless-stopped
+
+  seata-server:
+    image: docker.m.daocloud.io/apache/seata-server:2.2.0
+    container_name: ly-factmesh-seata
+    hostname: seata-server
+    ports:
+      - "8091:8091"
+    environment:
+      - SEATA_PORT=8091
+      - STORE_MODE=file
+    volumes:
+      - seata_data:/root/seata/data
+    networks:
+      - mom-base
+    restart: unless-stopped
+
+networks:
+  mom-base:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  mysql_nacos_data:
+    driver: local
+  emqx_data:
+    driver: local
+  emqx_log:
+    driver: local
+  seata_data:
+    driver: local

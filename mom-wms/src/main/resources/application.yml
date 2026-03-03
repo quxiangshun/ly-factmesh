@@ -1,10 +1,16 @@
 # 应用名称
 server:
-  port: 8084  # 网关 8080，mom-wms 独立端口
+  port: 9094  # 网关 9090，mom-wms 独立端口
 
 spring:
   application:
     name: mom-wms
+  autoconfigure:
+    exclude:
+      - org.apache.seata.spring.boot.autoconfigure.SeataAutoConfiguration
+      - org.apache.seata.spring.boot.autoconfigure.SeataCoreAutoConfiguration
+      - org.apache.seata.spring.boot.autoconfigure.SeataSpringFenceAutoConfiguration
+      - org.apache.seata.spring.boot.autoconfigure.SeataDataSourceAutoConfiguration
   profiles:
     active: dev  # 默认使用开发环境
   config:

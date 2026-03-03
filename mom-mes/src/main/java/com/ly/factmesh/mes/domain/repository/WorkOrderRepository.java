@@ -32,5 +32,7 @@ public interface WorkOrderRepository {
 
     int sumActualQuantityByLineIdCompletedOnDate(Long lineId, java.time.LocalDate date);
 
+    List<WorkOrder> findCompletedByDate(java.time.LocalDate date, long offset, long limit);
+
     void deleteById(Long id);
 }

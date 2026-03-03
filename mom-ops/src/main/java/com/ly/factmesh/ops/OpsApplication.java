@@ -3,6 +3,10 @@ package com.ly.factmesh.ops;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+
+import com.ly.factmesh.infra.database.MyBatisPlusConfig;
 
 /**
  * 运维模块应用入口
@@ -13,6 +17,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(
     scanBasePackages = "com.ly.factmesh",
     exclude = { com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration.class }
+)
+@ComponentScan(
+    basePackages = "com.ly.factmesh",
+    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = MyBatisPlusConfig.class)
 )
 @MapperScan("com.ly.factmesh.ops.infrastructure.database.mapper")
 public class OpsApplication {

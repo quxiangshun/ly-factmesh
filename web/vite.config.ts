@@ -7,14 +7,14 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:9090',
         changeOrigin: true
       },
       // 开发时接口文档走网关，便于同源访问
-      '/doc.html': { target: 'http://localhost:8080', changeOrigin: true },
-      '/v3': { target: 'http://localhost:8080', changeOrigin: true },
-      '/webjars': { target: 'http://localhost:8080', changeOrigin: true },
-      '/swagger-resources': { target: 'http://localhost:8080', changeOrigin: true }
+      '/doc.html': { target: 'http://localhost:9090', changeOrigin: true },
+      '/v3': { target: 'http://localhost:9090', changeOrigin: true },
+      '/webjars': { target: 'http://localhost:9090', changeOrigin: true },
+      '/swagger-resources': { target: 'http://localhost:9090', changeOrigin: true }
     }
   },
   resolve: {

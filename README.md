@@ -197,7 +197,14 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
    ./gradlew build
    ```
 
-4. **启动服务**
+4. **启动基础环境（必选，Nacos 等微服务依赖）**
+   ```bash
+   tools\start-env.bat
+   # 或：docker compose -f tools/docker-compose-base.yml up -d
+   ```
+   等待约 30～60 秒，确认 Nacos 就绪：访问 http://localhost:8848/nacos
+
+5. **启动服务**
    - 启动系统管理模块
      ```bash
      ./gradlew :mom-admin:bootRun
@@ -214,15 +221,38 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
      ./gradlew :mom-gateway:bootRun
      ```
 
-5. **访问系统**
-   - 网关地址：http://localhost:8080
-   - API 文档：http://localhost:8080/swagger-ui.html（网关聚合）/ http://localhost:8081/swagger-ui.html（admin 单服务）
-   - 聚合 OpenAPI JSON：http://localhost:8080/swagger-ui.html
+6. **访问系统**
+   - 网关地址：http://localhost:9090
+   - API 文档：http://localhost:9090/swagger-ui.html（网关聚合）/ http://localhost:9091/swagger-ui.html（admin 单服务）
+   - 聚合 OpenAPI JSON：http://localhost:9090/v3/api-docs/all
    - 注册中心地址：http://localhost:8848
 
-6. **常见问题**
-   - **端口 8080 被占用**：`Get-Process -Id (Get-NetTCPConnection -LocalPort 8080).OwningProcess | Stop-Process -Force`
-   - **swagger-ui.html 访问失败**：需先启动 Nacos 和 mom-admin，再启动网关；或直接访问 http://localhost:8080/v3/api-docs/all 查看聚合文档
+7. **常见问题**
+   - **Gateway 连接 Nacos 失败**（`Server check fail, port 9848`）：先执行步骤 4 启动基础环境，待 Nacos 就绪后再启动网关
+   - **端口被占用**：`Get-Process -Id (Get-NetTCPConnection -LocalPort <端口>).OwningProcess | Stop-Process -Force`
+   - **swagger-ui.html 访问失败**：需先启动 Nacos 和 mom-admin，再启动网关；或直接访问 http://localhost:9090/v3/api-docs/all 查看聚合文档
+   - **QMS 不合格品/质检任务/质检结果返回 500**：若数据库由旧版 Docker 脚本初始化，表结构可能与实体不一致。可执行 `tools/sql/ly_factmesh_qms_fix_existing.sql` 补充缺失列：`psql -U postgres -d ly_factmesh_qms -f tools/sql/ly_factmesh_qms_fix_existing.sql`
+
+### 本项目所有端口一览
+
+| 端口 | 服务 | 说明 |
+|------|------|------|
+| 9090 | mom-gateway | API 网关，系统统一入口 |
+| 9091 | mom-admin | 系统管理（用户、角色、租户、字典等） |
+| 9092 | mom-iot | 设备物联域 |
+| 9093 | mom-mes | 生产执行域 |
+| 9094 | mom-wms | 仓储管理域 |
+| 9095 | mom-qms | 质量管理域 |
+| 9096 | mom-ops | 运维模块（全局日志、审计、系统事件） |
+| 5173 | web | 前端开发服务器（Vite） |
+| 5432 | PostgreSQL | 业务数据库 |
+| 3306 | MySQL | Nacos 配置持久化 |
+| 8848 | Nacos | 服务注册与配置中心（HTTP） |
+| 9848 | Nacos | 服务注册与配置中心（gRPC） |
+| 8086 | InfluxDB | IoT 遥测时序数据 |
+| 1883 | EMQX | MQTT Broker |
+| 18083 | EMQX | MQTT 控制台 |
+| 8091 | Seata | 分布式事务 TC |
 
 ### Docker部署
 
@@ -237,16 +267,16 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
    ```
 
 3. **访问系统**
-   - 网关地址：http://localhost:8080
+   - 网关地址：http://localhost:9090
    - 注册中心地址：http://localhost:8848
-   - PostgreSQL地址：localhost:5432
+   - PostgreSQL 地址：localhost:5432
 
 ### Nacos + MySQL（可选，供微服务注册与配置使用）
 
-使用 `tools/docker-compose-nacos.yml` 启动 MySQL（Nacos 存储）、Nacos：
+使用 `tools/nacos/docker-compose.yml` 启动 MySQL（Nacos 存储）、Nacos：
 
 ```bash
-cd tools && docker compose -f docker-compose-nacos.yml up -d
+cd tools/nacos && docker compose up -d
 ```
 
 | 服务 | 端口 | 说明 |
@@ -328,7 +358,7 @@ ly-factmesh/
 │   ├── pgsql/          # PostgreSQL 主从集群（读写分离）
 │   ├── seata/          # Seata Server 分布式事务 docker-compose
 │   ├── sql/            # 数据库初始化脚本
-│   ├── docker-compose-nacos.yml  # Nacos+MySQL 编排
+│   ├── nacos/                    # Nacos 配置与编排
 │   └── docker-compose-influxdb.yml  # InfluxDB 编排
 ├── DDD_ARCHITECTURE_OVERVIEW.md  # DDD架构文档
 ├── DOCKER_README.md    # Docker部署文档

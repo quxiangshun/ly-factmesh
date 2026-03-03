@@ -34,14 +34,14 @@ WORKDIR /app
 COPY --from=builder /app/mom-wms/build/libs/mom-wms-1.0-SNAPSHOT.jar app.jar
 
 # 暴露端口
-EXPOSE 8080
+EXPOSE 9094
 
 # 设置环境变量
 ENV SPRING_PROFILES_ACTIVE=prod
 
 # 健康检查配置
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+  CMD curl -f http://localhost:9094/actuator/health || exit 1
 
 # 启动应用
 ENTRYPOINT ["java", "-jar", "app.jar"]

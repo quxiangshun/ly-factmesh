@@ -4,8 +4,8 @@ CREATE DATABASE ly_factmesh_mes WITH ENCODING='UTF8' OWNER=postgres;
 -- 切换到创建的数据库
 \c ly_factmesh_mes;
 
--- 创建工单表
-CREATE TABLE work_order (
+-- 创建工单表（与 Flyway V1 一致）
+CREATE TABLE IF NOT EXISTS work_order (
     id BIGINT PRIMARY KEY,
     order_code VARCHAR(50) NOT NULL UNIQUE,
     product_code VARCHAR(50) NOT NULL,
@@ -13,11 +13,13 @@ CREATE TABLE work_order (
     plan_quantity INT NOT NULL,
     actual_quantity INT DEFAULT 0,
     status INT DEFAULT 1,
+    line_id BIGINT,
     start_time TIMESTAMP,
     end_time TIMESTAMP,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_work_order_line_id ON work_order(line_id);
 
 -- 创建工序表
 CREATE TABLE process (
@@ -43,16 +45,18 @@ CREATE TABLE work_report (
     FOREIGN KEY (process_id) REFERENCES process(id)
 );
 
--- 创建产线表
-CREATE TABLE production_line (
+-- 创建产线表（status: 0-空闲 1-运行 2-检修）
+CREATE TABLE IF NOT EXISTS production_line (
     id BIGINT PRIMARY KEY,
     line_code VARCHAR(50) NOT NULL UNIQUE,
     line_name VARCHAR(100) NOT NULL,
     description VARCHAR(500),
     sequence INT DEFAULT 0,
+    status INT DEFAULT 0,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_production_line_status ON production_line(status);
 
 -- 创建设备告警记录表
 CREATE TABLE device_alert (

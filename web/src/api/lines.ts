@@ -67,3 +67,18 @@ export async function updateLine(id: number, body: ProductionLineUpdateRequest):
 export async function deleteLine(id: number): Promise<void> {
   await request(`${BASE}/${id}`, { method: 'DELETE' });
 }
+
+export interface ProductionLineCapacityDTO {
+  lineId: number;
+  lineCode: string;
+  lineName: string;
+  status?: number;
+  date?: string;
+  completedOrderCount?: number;
+  completedQuantity?: number;
+}
+
+export async function getCapacitySummary(date?: string): Promise<ProductionLineCapacityDTO[]> {
+  const qs = date ? `?date=${date}` : '';
+  return requestJson(`${BASE}/capacity-summary${qs}`);
+}

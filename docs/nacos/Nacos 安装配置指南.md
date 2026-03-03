@@ -80,7 +80,7 @@ docker run -d \
 
 #### 3.3.3 使用Docker Compose启动
 
-创建 `docker-compose-nacos.yml` 文件：
+创建 `docker-compose.yml` 文件：
 
 ```yaml
 version: '3.8'
@@ -106,7 +106,7 @@ services:
 然后执行：
 
 ```bash
-docker-compose -f docker-compose-nacos.yml up -d
+docker compose up -d
 ```
 
 #### 3.3.4 验证Docker方式启动成功
@@ -397,7 +397,7 @@ docker stop nacos
 #### 7.2.2 使用Docker Compose停止
 
 ```bash
-docker-compose -f docker-compose-nacos.yml down
+docker compose down
 ```
 
 ## 8. 常见问题

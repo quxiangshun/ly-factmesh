@@ -1,7 +1,17 @@
 # 应用名称
+server:
+  port: 9091
+
 spring:
   application:
     name: mom-admin
+  autoconfigure:
+    # Seata 2.2.0 与 Spring Boot 4 不兼容，且 mom-admin 未启用分布式事务，排除全部 Seata 自动配置
+    exclude:
+      - org.apache.seata.spring.boot.autoconfigure.SeataAutoConfiguration
+      - org.apache.seata.spring.boot.autoconfigure.SeataCoreAutoConfiguration
+      - org.apache.seata.spring.boot.autoconfigure.SeataSpringFenceAutoConfiguration
+      - org.apache.seata.spring.boot.autoconfigure.SeataDataSourceAutoConfiguration
   profiles:
     active: dev  # 默认使用开发环境
   config:

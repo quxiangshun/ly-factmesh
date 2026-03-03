@@ -76,3 +76,24 @@ export async function getWorkOrderStats(): Promise<{
 }> {
   return requestJson(`${BASE}/stats`);
 }
+
+export interface WorkOrderSummaryDTO {
+  date: string;
+  completedCount: number;
+  completedQuantity: number;
+  inProgressCount: number;
+  pausedCount: number;
+}
+
+export async function getWorkOrderSummary(date?: string): Promise<WorkOrderSummaryDTO> {
+  const qs = date ? `?date=${date}` : '';
+  return requestJson(`${BASE}/summary${qs}`);
+}
+
+export async function getWorkOrderSummaryDetail(date?: string, page = 1, size = 20): Promise<WorkOrderDTO[]> {
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  params.set('page', String(page));
+  params.set('size', String(size));
+  return requestJson(`${BASE}/summary/detail?${params}`);
+}

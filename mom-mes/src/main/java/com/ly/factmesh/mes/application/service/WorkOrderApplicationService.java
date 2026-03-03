@@ -247,6 +247,14 @@ public class WorkOrderApplicationService {
         return dto;
     }
 
+    /** 按日查询已完成工单列表（生产日报明细） */
+    public List<WorkOrderDTO> getCompletedByDate(LocalDate date, int pageNum, int pageSize) {
+        LocalDate target = date != null ? date : LocalDate.now();
+        long offset = (long) (pageNum - 1) * pageSize;
+        List<WorkOrder> list = workOrderRepository.findCompletedByDate(target, offset, pageSize);
+        return list.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
     private WorkOrderDTO toDTO(WorkOrder wo) {
         WorkOrderDTO dto = new WorkOrderDTO();
         dto.setId(wo.getId());

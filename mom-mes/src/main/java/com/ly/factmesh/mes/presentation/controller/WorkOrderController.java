@@ -11,9 +11,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 /**
  * 工单 REST 控制器
@@ -50,9 +53,19 @@ public class WorkOrderController {
     @GetMapping("/summary")
     @Operation(summary = "生产汇总", description = "按日统计完成工单数、产量及进行中/暂停数量")
     public ResponseEntity<WorkOrderSummaryDTO> getSummary(
-            @RequestParam(required = false) @Parameter(description = "统计日期，默认当天") java.time.LocalDate date
+            @RequestParam(required = false) @Parameter(description = "统计日期，默认当天") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         return ResponseEntity.ok(workOrderApplicationService.getSummary(date));
+    }
+
+    @GetMapping("/summary/detail")
+    @Operation(summary = "生产日报明细", description = "按日查询已完成工单列表")
+    public ResponseEntity<java.util.List<WorkOrderDTO>> getSummaryDetail(
+            @RequestParam(required = false) @Parameter(description = "统计日期，默认当天") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size
+    ) {
+        return ResponseEntity.ok(workOrderApplicationService.getCompletedByDate(date, page, size));
     }
 
     @GetMapping

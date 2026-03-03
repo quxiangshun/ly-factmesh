@@ -5,7 +5,7 @@ Vite + Vue 3 + TypeScript 单页应用，对接网关统一入口。
 ## 环境
 
 - Node 18+
-- 本地开发时需先启动网关（默认 `http://localhost:8080`）
+- 本地开发时需先启动网关（默认 `http://localhost:9090`）
 
 ## 开发
 
@@ -15,7 +15,7 @@ npm run dev
 ```
 
 - 前端：<http://localhost:5173>
-- 接口请求通过 Vite 代理 `/api` → 网关 `http://localhost:8080`
+- 接口请求通过 Vite 代理 `/api` → 网关 `http://localhost:9090`
 - 接口文档通过代理 `/swagger-ui.html`、`/v3`、`/webjars`、`/swagger-resources` → 网关，开发时可直接打开 [http://localhost:5173/swagger-ui.html](http://localhost:5173/swagger-ui.html)
 
 ## 构建

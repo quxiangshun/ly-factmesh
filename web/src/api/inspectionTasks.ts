@@ -9,6 +9,8 @@ export interface InspectionTaskDTO {
   id: number;
   taskCode: string;
   orderId?: number;
+  orderCode?: string;
+  productCode?: string;
   materialId?: number;
   deviceId?: number;
   inspectionType?: number;

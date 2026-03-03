@@ -69,7 +69,7 @@ services:
       JVM_XMX: 512m
       JVM_XMN: 256m
     volumes:
-      - ./nacos-config/application.properties:/home/nacos/conf/application.properties
+      - ./tools/nacos/application.properties:/home/nacos/conf/application.properties
     depends_on:
       mysql-nacos:
         condition: service_healthy
@@ -88,7 +88,7 @@ services:
       dockerfile: mom-gateway/Dockerfile
     container_name: mom-gateway
     ports:
-      - "8080:8080"
+      - "9090:9090"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -97,7 +97,7 @@ services:
       nacos:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9090/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -112,7 +112,7 @@ services:
       dockerfile: mom-admin/Dockerfile
     container_name: mom-admin
     ports:
-      - "8081:8080"
+      - "9091:9091"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -126,7 +126,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9091/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -141,7 +141,7 @@ services:
       dockerfile: mom-iot/Dockerfile
     container_name: mom-iot
     ports:
-      - "8082:8080"
+      - "9092:9092"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -170,7 +170,7 @@ services:
       dockerfile: mom-mes/Dockerfile
     container_name: mom-mes
     ports:
-      - "8083:8080"
+      - "9093:9093"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -184,7 +184,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9093/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -199,7 +199,7 @@ services:
       dockerfile: mom-wms/Dockerfile
     container_name: mom-wms
     ports:
-      - "8084:8080"
+      - "9094:9094"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -213,7 +213,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9094/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -228,7 +228,7 @@ services:
       dockerfile: mom-qms/Dockerfile
     container_name: mom-qms
     ports:
-      - "8085:8080"
+      - "9095:9095"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -242,7 +242,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9095/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -257,7 +257,7 @@ services:
       dockerfile: mom-ops/Dockerfile
     container_name: mom-ops
     ports:
-      - "8086:8080"
+      - "9096:9096"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -271,7 +271,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9096/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

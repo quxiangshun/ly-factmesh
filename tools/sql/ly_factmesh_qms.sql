@@ -1,26 +1,30 @@
--- 创建数据库
+-- 创建数据库（与 Flyway V1__init_all.sql 保持一致）
 CREATE DATABASE ly_factmesh_qms WITH ENCODING='UTF8' OWNER=postgres;
-
--- 切换到创建的数据库
 \c ly_factmesh_qms;
 
--- 创建质检任务表
-CREATE TABLE inspection_task (
+-- 质检任务表
+CREATE TABLE IF NOT EXISTS inspection_task (
     id BIGINT PRIMARY KEY,
     task_code VARCHAR(50) NOT NULL UNIQUE,
     order_id BIGINT,
+    order_code VARCHAR(50),
     material_id BIGINT,
+    product_code VARCHAR(50),
     device_id BIGINT,
-    inspection_type INT NOT NULL,
+    inspection_type INT NOT NULL DEFAULT 0,
     inspection_time TIMESTAMP,
-    status INT DEFAULT 1,
+    status INT DEFAULT 0,
     operator VARCHAR(50),
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_inspection_task_status ON inspection_task(status);
+CREATE INDEX IF NOT EXISTS idx_inspection_task_order_id ON inspection_task(order_id);
+CREATE INDEX IF NOT EXISTS idx_inspection_task_create_time ON inspection_task(create_time);
+CREATE INDEX IF NOT EXISTS idx_inspection_task_order_code ON inspection_task(order_code);
 
--- 创建质检结果表
-CREATE TABLE inspection_result (
+-- 质检结果表
+CREATE TABLE IF NOT EXISTS inspection_result (
     id BIGINT PRIMARY KEY,
     task_id BIGINT NOT NULL,
     inspection_item VARCHAR(100) NOT NULL,
@@ -29,24 +33,33 @@ CREATE TABLE inspection_result (
     judgment INT NOT NULL,
     inspector VARCHAR(50),
     inspection_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (task_id) REFERENCES inspection_task(id)
 );
+CREATE INDEX IF NOT EXISTS idx_inspection_result_task_id ON inspection_result(task_id);
 
--- 创建不合格品记录表
-CREATE TABLE non_conforming_product (
+-- 不合格品记录表
+CREATE TABLE IF NOT EXISTS non_conforming_product (
     id BIGINT PRIMARY KEY,
     product_code VARCHAR(50) NOT NULL,
     batch_no VARCHAR(50),
-    quantity INT NOT NULL,
+    ncr_no VARCHAR(50) UNIQUE,
+    quantity INT NOT NULL DEFAULT 1,
+    task_id BIGINT,
     reason TEXT NOT NULL,
     disposal_method INT,
     disposal_result INT DEFAULT 0,
+    remark TEXT,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     dispose_time TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_ncp_product_code ON non_conforming_product(product_code);
+CREATE INDEX IF NOT EXISTS idx_ncp_create_time ON non_conforming_product(create_time);
+CREATE INDEX IF NOT EXISTS idx_ncp_ncr_no ON non_conforming_product(ncr_no);
+CREATE INDEX IF NOT EXISTS idx_ncp_task_id ON non_conforming_product(task_id);
 
--- 创建质量追溯信息表
-CREATE TABLE quality_traceability (
+-- 质量追溯信息表
+CREATE TABLE IF NOT EXISTS quality_traceability (
     id BIGINT PRIMARY KEY,
     product_code VARCHAR(50) NOT NULL,
     batch_no VARCHAR(50),
@@ -58,3 +71,4 @@ CREATE TABLE quality_traceability (
     FOREIGN KEY (inspection_record_id) REFERENCES inspection_result(id),
     FOREIGN KEY (non_conforming_id) REFERENCES non_conforming_product(id)
 );
+CREATE INDEX IF NOT EXISTS idx_quality_traceability_product ON quality_traceability(product_code);
