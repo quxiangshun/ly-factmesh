@@ -33,6 +33,7 @@ flowchart TB
 
     subgraph IOT["IoT mom-iot"]
         I1[reportTelemetry]
+        I1a[数据清洗]
         I2[写入InfluxDB]
         I3[规则引擎评估]
         I3a[规则缓存60s/大小写不敏感]
@@ -67,7 +68,7 @@ flowchart TB
     end
 
     U1 --> U2 --> G1 --> G2 --> A1 --> A2 --> A3 --> U3
-    D1 --> G1 --> G2 --> I1 --> I2 --> I3 --> I3a --> I4
+    D1 --> G1 --> G2 --> I1 --> I1a --> I2 --> I3 --> I3a --> I4
     I4 -->|是| I5 --> I6 --> I7
     I4 -->|否| I3
     U3 --> U4 --> G1 --> G2 --> M1 --> M2

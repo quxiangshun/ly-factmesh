@@ -34,10 +34,11 @@
           <p><strong>步骤</strong>：访问前端 → 输入账号密码 → POST /api/auth/login → 网关 lb 转发 → AuthService.login → 校验用户存在 → BCrypt.matches 校验密码 → 签发 JWT → 返回 token/userId/nickname → 前端存 Token，跳转业务页。</p>
           <p><strong>前置条件</strong>：用户已创建且未禁用；密码正确。</p>
 
-          <h4 id="flow-device">二、设备上报</h4>
-          <p><strong>业务逻辑</strong>：设备或采集端通过 POST /api/devices/{id}/telemetry 上报遥测数据；请求经网关转发至 IoT；DeviceTelemetryService 校验设备存在后，将 data（测点名→数值）写入 InfluxDB 时序库；写入完成后同步调用 AlertRuleEngineService.evaluate() 触发规则评估。</p>
-          <p><strong>请求体</strong>：{ deviceId, deviceCode?, data: { "temperature": 85.2, "humidity": 60 }, collectTime? }；data 为 key-value，key 为测点名称。</p>
-          <p><strong>步骤</strong>：设备上报 → 网关 Path /api/devices/** → IoT reportTelemetry → 校验设备存在 → 批量写入 InfluxDB（device_id、field、value、time）→ 调用 AlertRuleEngineService.evaluate(deviceId, deviceCode, data)。</p>
+          <h4 id="flow-device">二、设备上报（实时遥测）</h4>
+          <p><strong>业务逻辑</strong>：设备或采集端通过 POST /api/devices/telemetry/report 上报遥测数据；请求经网关转发至 IoT；DeviceTelemetryService 校验设备存在后，经 TelemetryDataCleaner 清洗（过滤 NaN/Inf、范围校验），将 data（测点名→数值）写入 InfluxDB 时序库；写入完成后同步调用 AlertRuleEngineService.evaluate() 触发规则评估。</p>
+          <p><strong>请求体</strong>：{ deviceId, deviceCode?, timestamp?, data: { "temperature": 85.2, "humidity": 60, "voltage": 220 } }；data 为 key-value，key 为测点名称；timestamp 毫秒级，不传则用服务端时间。</p>
+          <p><strong>步骤</strong>：设备上报 → 网关 Path /api/devices/** → IoT reportTelemetry → 校验设备存在 → TelemetryDataCleaner.clean 数据清洗 → 批量写入 InfluxDB（measurement: device_telemetry，tags: device_id/device_code/field，field: value）→ 调用 AlertRuleEngineService.evaluate(deviceId, deviceCode, data)。</p>
+          <p><strong>查询接口</strong>：GET /api/devices/telemetry/{deviceId}?field=&start=&end=&limit=，按测点、时间范围、分页查询历史遥测数据（Flux 查询 InfluxDB）。</p>
 
           <h4 id="flow-alert">三、告警触发</h4>
           <p><strong>业务逻辑</strong>：遥测上报后，规则引擎遍历所有启用规则，逐条评估；满足条件且非冷却期时创建告警；人工在告警列表点击「处理」调用 resolve 更新状态。</p>
@@ -68,7 +69,7 @@
             </thead>
             <tbody>
               <tr><td>用户登录</td><td>POST /api/auth/login，用户名+密码</td><td>BCrypt 校验通过 → 签发 JWT</td></tr>
-              <tr><td>设备遥测</td><td>POST /api/devices/{id}/telemetry，deviceId + data</td><td>写入 InfluxDB → 触发规则引擎</td></tr>
+              <tr><td>设备遥测</td><td>POST /api/devices/telemetry/report，deviceId + data</td><td>数据清洗 → 写入 InfluxDB → 触发规则引擎</td></tr>
               <tr><td>告警创建</td><td>规则匹配：deviceId/type、field、operator、threshold 满足；且非冷却期</td><td>创建 DeviceAlert，待人工 resolve</td></tr>
               <tr><td>工单下发</td><td>工单状态=草稿，调用 release(id)</td><td>状态→已下发；Feign 调用 WMS 创建领料单</td></tr>
               <tr><td>工单完成</td><td>工单状态=进行中，调用 complete(id)</td><td>状态→已完成；Feign 调用 QMS 创建质检任务</td></tr>
@@ -275,15 +276,15 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         <p>mom-iot 模块，DDD 分层，独立库 ly_factmesh_iot；遥测数据存 InfluxDB。</p>
 
         <h3 id="iot-overview">IoT 业务流转概览</h3>
-        <p><strong>业务逻辑</strong>：设备从注册到运行的全生命周期管理；遥测数据上报写入 InfluxDB，同时触发告警规则引擎评估；满足阈值的规则自动创建告警，待处理告警由人工 resolve。</p>
-        <p><strong>解决方案</strong>：DeviceAggregate 聚合根管理设备状态（在线/离线/运行/故障）；遥测上报时 DeviceTelemetryService 写入 InfluxDB 并调用 AlertRuleEngineService.evaluate()；规则匹配 deviceId/deviceType、field、operator、threshold，cooldown 防重复。</p>
-        <p><strong>流程图描述</strong>：设备生命周期：注册 → 上线 → 运行/停止 → 故障/离线；遥测+告警联动：遥测上报 → 写入 InfluxDB → 规则引擎评估 → 满足条件且非冷却期 → 创建告警 → 人工处理 resolve。</p>
+        <p><strong>业务逻辑</strong>：设备从注册到运行的全生命周期管理；遥测数据通过 POST /api/devices/telemetry/report 上报，经数据清洗后写入 InfluxDB，同时触发告警规则引擎评估；满足阈值的规则自动创建告警，待处理告警由人工 resolve。</p>
+        <p><strong>解决方案</strong>：DeviceAggregate 聚合根管理设备状态（在线/离线/运行/故障）；遥测上报时 DeviceTelemetryService 先经 TelemetryDataCleaner 清洗，再写入 InfluxDB 并调用 AlertRuleEngineService.evaluate()；规则匹配 deviceId/deviceType、field、operator、threshold，cooldown 防重复。</p>
+        <p><strong>流程图描述</strong>：设备生命周期：注册 → 上线 → 运行/停止 → 故障/离线；遥测+告警联动：遥测上报 → 数据清洗 → 写入 InfluxDB → 规则引擎评估 → 满足条件且非冷却期 → 创建告警 → 人工处理 resolve。</p>
         <div class="flow-diagram">
           <pre class="flow-mermaid">设备生命周期:
   注册 ──► 上线(online) ──► 运行(running)/停止(idle) ──► 故障(fault)/离线(offline)
 
 遥测+告警联动:
-  遥测上报 ──► 写入InfluxDB ──► AlertRuleEngineService.evaluate()
+  遥测上报(POST /api/devices/telemetry/report) ──► 数据清洗 ──► 写入InfluxDB ──► AlertRuleEngineService.evaluate()
       │                              │
       │                              ├─ 规则缓存(60s, 增删改失效) / 测点大小写不敏感
       │                              ├─ 匹配规则(deviceId/type, field, operator, threshold)
@@ -297,10 +298,11 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         <p><strong>解决方案</strong>：DeviceAggregate 聚合根统一管理设备生命周期；状态机控制 onlineStatus、runningStatus 流转；遥测上报时更新 statusLastUpdateTime 与测点值；GET /stats 聚合统计。</p>
         <p><strong>技术点</strong>：DeviceAggregate 聚合根；DeviceRepository；状态机（在线/离线/运行/故障）；GET /stats 统计总数/在线/故障。</p>
 
-        <h3 id="iot-telemetry">设备遥测</h3>
-        <p><strong>业务逻辑</strong>：按设备、测点、时间范围查询历史采集数据；支持遥测上报写入。</p>
-        <p><strong>解决方案</strong>：遥测数据存 InfluxDB 时序库，按 deviceId、field、时间范围 Flux 查询；reportTelemetry 支持批量测点写入；queryTelemetry 支持 start/end/limit 分页。</p>
-        <p><strong>技术点</strong>：InfluxDB 时序库；Flux 查询；reportTelemetry 写入；queryTelemetry 按 deviceId/field/start/end 查询。</p>
+        <h3 id="iot-telemetry">设备遥测（实时上报）</h3>
+        <p><strong>业务逻辑</strong>：设备/采集端实时上报遥测数据，系统经数据清洗后写入 InfluxDB 时序库，并触发告警规则引擎；支持按设备、测点、时间范围查询历史数据。</p>
+        <p><strong>上报流程</strong>：① POST /api/devices/telemetry/report，请求体 { deviceId, deviceCode?, timestamp?, data }；② DeviceTelemetryService 校验设备存在；③ TelemetryDataCleaner 清洗（过滤 NaN/Inf、范围校验，iot.telemetry.cleaner.enabled 可关闭）；④ 逐测点写入 InfluxDB，measurement 为 device_telemetry，tags 含 device_id、device_code、field，field 为 value；⑤ 写入完成后调用 AlertRuleEngineService.evaluate() 触发规则评估。</p>
+        <p><strong>查询接口</strong>：GET /api/devices/telemetry/{deviceId}?field=&start=&end=&limit=，Flux 查询 InfluxDB，支持按测点、ISO-8601 时间范围、limit（默认 1000，最大 10000）分页。</p>
+        <p><strong>技术点</strong>：InfluxDB 时序库；TelemetryDataCleaner 数据清洗；reportTelemetry 批量测点写入；queryTelemetry Flux 查询；measurement device_telemetry。</p>
 
         <h3 id="iot-alerts">设备告警</h3>
         <p><strong>业务逻辑</strong>：告警记录（待处理/全部）、告警规则（阈值自动告警）、处理告警。</p>
