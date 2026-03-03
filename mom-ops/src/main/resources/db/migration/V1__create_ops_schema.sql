@@ -1,11 +1,8 @@
--- 创建数据库
-CREATE DATABASE ly_factmesh_common WITH ENCODING='UTF8' OWNER=postgres;
+-- mom-ops 运维库初始表结构（Flyway 迁移，ly_factmesh_ops 独立库）
+-- id 由应用雪花算法生成
 
--- 切换到创建的数据库
-\c ly_factmesh_common;
-
--- 创建全局日志表
-CREATE TABLE global_log (
+-- 全局日志表
+CREATE TABLE IF NOT EXISTS global_log (
     id BIGINT PRIMARY KEY,
     service_name VARCHAR(50) NOT NULL,
     log_type INT NOT NULL,
@@ -16,8 +13,11 @@ CREATE TABLE global_log (
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 创建审计记录表
-CREATE TABLE audit_log (
+CREATE INDEX IF NOT EXISTS idx_global_log_service ON global_log(service_name);
+CREATE INDEX IF NOT EXISTS idx_global_log_create_time ON global_log(create_time);
+
+-- 审计记录表（跨服务审计）
+CREATE TABLE IF NOT EXISTS audit_log (
     id BIGINT PRIMARY KEY,
     service_name VARCHAR(50) NOT NULL,
     user_id BIGINT,
@@ -30,8 +30,11 @@ CREATE TABLE audit_log (
     request_params TEXT
 );
 
--- 创建系统事件表
-CREATE TABLE system_event (
+CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_create_time ON audit_log(operation_time);
+
+-- 系统事件表
+CREATE TABLE IF NOT EXISTS system_event (
     id BIGINT PRIMARY KEY,
     event_type VARCHAR(50) NOT NULL,
     event_level INT NOT NULL,
@@ -42,3 +45,6 @@ CREATE TABLE system_event (
     processed INT DEFAULT 0,
     process_time TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_system_event_type ON system_event(event_type);
+CREATE INDEX IF NOT EXISTS idx_system_event_create_time ON system_event(create_time);

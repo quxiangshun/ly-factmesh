@@ -1,0 +1,72 @@
+# PostgreSQL 主从集群，用于读写分离
+# 主库 5432（写），从库 5433（读）
+# 使用方式：infra.datasource.read-write-split.enabled=true，配置 master-url、slave-url
+# 在 Service/Mapper 读方法上标注 @ReadOnly 自动路由到从库
+
+x-postgres-common: &postgres-common
+  image: postgres:16.4
+  user: postgres
+  restart: always
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U postgres -d ly_factmesh_main && psql -U postgres -lqt | cut -d \\| -f 1 | grep -qw ly_factmesh_wms"]
+    interval: 10s
+    timeout: 5s
+    retries: 10
+
+services:
+  postgres_primary:
+    <<: *postgres-common
+    container_name: ly-factmesh-pgsql-primary
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ly_factmesh_main
+    volumes:
+      - ./00_init_replication.sh:/docker-entrypoint-initdb.d/00_init_replication.sh
+      - ./01_init_replication.sql:/docker-entrypoint-initdb.d/01_init_replication.sql
+      - ../sql/ly_factmesh_admin.sql:/docker-entrypoint-initdb.d/10_ly_factmesh_admin.sql
+      - ../sql/ly_factmesh_ops.sql:/docker-entrypoint-initdb.d/11_ly_factmesh_ops.sql
+      - ../sql/ly_factmesh_iot.sql:/docker-entrypoint-initdb.d/12_ly_factmesh_iot.sql
+      - ../sql/ly_factmesh_mes.sql:/docker-entrypoint-initdb.d/13_ly_factmesh_mes.sql
+      - ../sql/ly_factmesh_qms.sql:/docker-entrypoint-initdb.d/14_ly_factmesh_qms.sql
+      - ../sql/ly_factmesh_wms.sql:/docker-entrypoint-initdb.d/15_ly_factmesh_wms.sql
+    command: >
+      postgres
+      -c wal_level=replica
+      -c hot_standby=on
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+      -c hot_standby_feedback=on
+    networks:
+      - pgsql-network
+
+  postgres_replica:
+    <<: *postgres-common
+    container_name: ly-factmesh-pgsql-replica
+    ports:
+      - "5433:5432"
+    environment:
+      PGPASSWORD: replicator_password
+    user: root
+    entrypoint: []
+    command: >
+      bash -c "
+      until pg_basebackup -h postgres_primary -p 5432 -U replicator -D /var/lib/postgresql/data -R -S replication_slot -X stream
+      do
+        echo 'Waiting for primary to be ready...'
+        sleep 2
+      done
+      chown -R postgres:postgres /var/lib/postgresql/data
+      exec gosu postgres postgres
+      "
+    depends_on:
+      postgres_primary:
+        condition: service_healthy
+    networks:
+      - pgsql-network
+
+networks:
+  pgsql-network:
+    driver: bridge

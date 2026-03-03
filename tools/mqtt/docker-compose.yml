@@ -1,0 +1,41 @@
+# EMQX MQTT Broker - 供 mom-iot 设备遥测、领域事件等使用
+# 启动: docker compose -f tools/mqtt/docker-compose.yml up -d
+# 配置: infra.mqtt.broker-url=tcp://localhost:1883
+version: '3.8'
+
+services:
+  emqx:
+    image: emqx/emqx:5.4.0
+    container_name: ly-factmesh-emqx
+    ports:
+      - "1883:1883"    # MQTT
+      - "8883:8883"    # MQTT over TLS
+      - "8083:8083"    # WebSocket
+      - "18083:18083"  # Dashboard
+    environment:
+      EMQX_NAME: emqx
+      EMQX_HOST: 0.0.0.0
+      # 可选：开启认证，与 MqttProperties username/password 对应
+      # EMQX_DASHBOARD__DEFAULT_USERNAME: admin
+      # EMQX_DASHBOARD__DEFAULT_PASSWORD: public
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    healthcheck:
+      test: ["CMD-SHELL", "emqx ctl status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mqtt-network
+    restart: unless-stopped
+
+networks:
+  mqtt-network:
+    driver: bridge
+
+volumes:
+  emqx_data:
+    driver: local
+  emqx_log:
+    driver: local

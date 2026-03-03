@@ -1,0 +1,28 @@
+# Seata Server - 分布式事务协调器，供 mom-mes/wms/qms 等跨库事务使用
+# 启动: docker compose -f tools/seata/docker-compose.yml up -d
+# 配置: seata.enabled=true, seata.service.grouplist.default=127.0.0.1:8091
+version: '3.8'
+
+services:
+  seata-server:
+    image: seataio/seata-server:2.2.0
+    container_name: ly-factmesh-seata
+    hostname: seata-server
+    ports:
+      - "8091:8091"
+    environment:
+      - SEATA_PORT=8091
+      - STORE_MODE=file
+    volumes:
+      - seata_data:/root/seata/data
+    networks:
+      - seata-network
+    restart: unless-stopped
+
+networks:
+  seata-network:
+    driver: bridge
+
+volumes:
+  seata_data:
+    driver: local

@@ -1,5 +1,8 @@
-package com.ly.factmesh.mes.config;
+package com.ly.factmesh.ops.config;
 
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.context.annotation.Bean;
@@ -21,11 +24,18 @@ public class MyBatisPlusConfig {
     public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
         MybatisSqlSessionFactoryBean factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(dataSource);
-        factory.setTypeAliasesPackage("com.ly.factmesh.mes.infrastructure.database.entity");
+        factory.setTypeAliasesPackage("com.ly.factmesh.ops.infrastructure.database.entity");
         var resources = new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/**/*.xml");
         if (resources != null && resources.length > 0) {
             factory.setMapperLocations(resources);
         }
         return factory.getObject();
+    }
+
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.POSTGRE_SQL));
+        return interceptor;
     }
 }

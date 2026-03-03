@@ -65,6 +65,10 @@ spring:
               uri: lb://mom-qms
               predicates:
                 - Path=/api/inspection-tasks/**,/api/inspection-results/**,/api/ncr/**,/api/quality-trace/**
+            - id: api-ops
+              uri: lb://mom-ops
+              predicates:
+                - Path=/api/global-logs/**,/api/ops-audit-logs/**,/api/system-events/**
 
 server:
   port: 8080

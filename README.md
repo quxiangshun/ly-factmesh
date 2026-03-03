@@ -184,12 +184,13 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 2. **配置数据库**
    - 创建数据库：为每个模块创建独立的数据库
+     - ly_factmesh_admin
      - ly_factmesh_iot
      - ly_factmesh_mes
      - ly_factmesh_wms
      - ly_factmesh_qms
-     - ly_factmesh_admin
-   - 导入SQL脚本：执行 `sql` 目录下的对应SQL脚本
+     - ly_factmesh_ops（运维库：全局日志、审计、系统事件）
+   - 导入SQL脚本：执行 `tools/sql` 目录下的对应SQL脚本
 
 3. **构建项目**
    ```bash
@@ -240,6 +241,75 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
    - 注册中心地址：http://localhost:8848
    - PostgreSQL地址：localhost:5432
 
+### Nacos + MySQL（可选，供微服务注册与配置使用）
+
+使用 `tools/docker-compose-nacos.yml` 启动 MySQL（Nacos 存储）、Nacos：
+
+```bash
+cd tools && docker compose -f docker-compose-nacos.yml up -d
+```
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| MySQL | 3306 | Nacos 配置持久化 |
+| Nacos | 8848 | 服务注册与配置中心 |
+
+### InfluxDB（可选，供 mom-iot 遥测数据存储）
+
+使用 `tools/docker-compose-influxdb.yml` 启动 InfluxDB：
+
+```bash
+cd tools && docker compose -f docker-compose-influxdb.yml up -d
+```
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| InfluxDB | 8086 | IoT 遥测时序数据 |
+
+### MQTT 服务端（可选，供 mom-iot 遥测、事件等使用）
+
+使用 `tools/mqtt` 目录下的 docker-compose 启动 EMQX：
+
+```bash
+docker compose -f tools/mqtt/docker-compose.yml up -d
+```
+
+| 端口  | 协议         | 说明                          |
+|-------|--------------|-------------------------------|
+| 1883  | MQTT         | 默认连接，配置 `infra.mqtt.broker-url=tcp://localhost:1883` |
+| 8883  | MQTT over TLS | 加密连接                      |
+| 8083  | WebSocket    | 浏览器端 MQTT                 |
+| 18083 | HTTP         | 控制台，默认账号 admin/public |
+
+### Seata Server（可选，供跨库分布式事务使用）
+
+使用 `tools/seata` 目录下的 docker-compose 启动 Seata 服务端：
+
+```bash
+docker compose -f tools/seata/docker-compose.yml up -d
+```
+
+| 端口  | 说明                          |
+|-------|-------------------------------|
+| 8091  | Seata TC RPC，配置 `seata.service.grouplist.default=127.0.0.1:8091` |
+
+启用后在各业务模块配置 `seata.enabled=true`，业务方法加 `@GlobalTransactional` 即可参与分布式事务。
+
+### PostgreSQL 主从集群（可选，供读写分离使用）
+
+使用 `tools/pgsql` 目录下的 docker-compose 启动 PostgreSQL 主从集群：
+
+```bash
+cd tools/pgsql && docker compose up -d
+```
+
+| 端口  | 说明                              |
+|-------|-----------------------------------|
+| 5432  | 主库（写）                        |
+| 5433  | 从库（读）                        |
+
+在各业务模块中启用读写分离：`infra.datasource.read-write-split.enabled=true`，配置 `master-url`、`slave-url`。在 Service/Mapper 的读方法上标注 `@ReadOnly` 即可自动路由到从库。详见 [tools/pgsql/README.md](tools/pgsql/README.md)。
+
 ## 项目结构
 
 ```
@@ -251,8 +321,15 @@ ly-factmesh/
 ├── mom-mes/            # 生产执行域
 ├── mom-wms/            # 仓储管理域
 ├── mom-qms/            # 质量管理域
+├── mom-ops/            # 运维模块（全局日志、审计、系统事件）
 ├── mom-gateway/        # 网关模块
-├── sql/                # 数据库初始化脚本
+├── tools/              # 辅助工具
+│   ├── mqtt/           # MQTT 服务端 (EMQX) docker-compose
+│   ├── pgsql/          # PostgreSQL 主从集群（读写分离）
+│   ├── seata/          # Seata Server 分布式事务 docker-compose
+│   ├── sql/            # 数据库初始化脚本
+│   ├── docker-compose-nacos.yml  # Nacos+MySQL 编排
+│   └── docker-compose-influxdb.yml  # InfluxDB 编排
 ├── DDD_ARCHITECTURE_OVERVIEW.md  # DDD架构文档
 ├── DOCKER_README.md    # Docker部署文档
 ├── docker-compose.yml  # Docker Compose配置
@@ -270,6 +347,7 @@ mom-mes → mom-infra → mom-common
 mom-wms → mom-infra → mom-common
 mom-qms → mom-infra → mom-common
 mom-admin → mom-infra → mom-common
+mom-ops → mom-infra → mom-common
 mom-gateway → mom-admin, mom-common
 ```
 

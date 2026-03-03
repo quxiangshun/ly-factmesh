@@ -13,12 +13,12 @@ services:
       POSTGRES_DB: ly_factmesh_main
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./sql/ly_factmesh_admin.sql:/docker-entrypoint-initdb.d/1_ly_factmesh_admin.sql
-      - ./sql/ly_factmesh_common.sql:/docker-entrypoint-initdb.d/2_ly_factmesh_common.sql
-      - ./sql/ly_factmesh_iot.sql:/docker-entrypoint-initdb.d/3_ly_factmesh_iot.sql
-      - ./sql/ly_factmesh_mes.sql:/docker-entrypoint-initdb.d/4_ly_factmesh_mes.sql
-      - ./sql/ly_factmesh_qms.sql:/docker-entrypoint-initdb.d/5_ly_factmesh_qms.sql
-      - ./sql/ly_factmesh_wms.sql:/docker-entrypoint-initdb.d/6_ly_factmesh_wms.sql
+      - ./tools/sql/ly_factmesh_admin.sql:/docker-entrypoint-initdb.d/1_ly_factmesh_admin.sql
+      - ./tools/sql/ly_factmesh_ops.sql:/docker-entrypoint-initdb.d/2_ly_factmesh_ops.sql
+      - ./tools/sql/ly_factmesh_iot.sql:/docker-entrypoint-initdb.d/3_ly_factmesh_iot.sql
+      - ./tools/sql/ly_factmesh_mes.sql:/docker-entrypoint-initdb.d/4_ly_factmesh_mes.sql
+      - ./tools/sql/ly_factmesh_qms.sql:/docker-entrypoint-initdb.d/5_ly_factmesh_qms.sql
+      - ./tools/sql/ly_factmesh_wms.sql:/docker-entrypoint-initdb.d/6_ly_factmesh_wms.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ly_factmesh_main"]
       interval: 5s
@@ -42,7 +42,7 @@ services:
       MYSQL_COLLATION: utf8mb4_general_ci
     volumes:
       - mysql_nacos_data:/var/lib/mysql
-      - ./sql/nacos-all-init.sql:/docker-entrypoint-initdb.d/1_nacos-all-init.sql
+      - ./tools/sql/nacos-all-init.sql:/docker-entrypoint-initdb.d/1_nacos-all-init.sql
     command: >
       --default-authentication-plugin=mysql_native_password
       --skip-host-cache --skip-name-resolve
@@ -234,6 +234,35 @@ services:
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
       SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ly_factmesh_qms
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      nacos:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mom-network
+    restart: unless-stopped
+
+  mom-ops:
+    build:
+      context: .
+      dockerfile: mom-ops/Dockerfile
+    container_name: mom-ops
+    ports:
+      - "8086:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ly_factmesh_ops
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
     depends_on:
