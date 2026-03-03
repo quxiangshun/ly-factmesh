@@ -2,6 +2,7 @@ package com.ly.factmesh.wms.application.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.wms.application.dto.InventoryAdjustRequest;
+import com.ly.factmesh.wms.application.dto.InventoryCountRequest;
 import com.ly.factmesh.wms.application.dto.InventoryDTO;
 import com.ly.factmesh.wms.application.dto.InventoryTransactionDTO;
 import com.ly.factmesh.wms.domain.entity.Inventory;
@@ -50,10 +51,10 @@ public class InventoryApplicationService {
                 .sum();
     }
 
-    public Page<InventoryDTO> page(int pageNum, int pageSize, Long materialId, String warehouse) {
+    public Page<InventoryDTO> page(int pageNum, int pageSize, Long materialId, String warehouse, String batchNo) {
         long offset = (long) (pageNum - 1) * pageSize;
-        long total = inventoryRepository.count(materialId, warehouse);
-        List<Inventory> list = inventoryRepository.findAll(offset, pageSize, materialId, warehouse);
+        long total = inventoryRepository.count(materialId, warehouse, batchNo);
+        List<Inventory> list = inventoryRepository.findAll(offset, pageSize, materialId, warehouse, batchNo);
         List<InventoryDTO> records = list.stream().map(this::toDTO).collect(Collectors.toList());
         Page<InventoryDTO> page = new Page<>(pageNum, pageSize, total);
         page.setRecords(records);
@@ -70,11 +71,13 @@ public class InventoryApplicationService {
         }
         String warehouse = request.getWarehouse() != null ? request.getWarehouse() : "";
         String location = request.getLocation() != null ? request.getLocation() : "";
+        String batchNo = (request.getBatchNo() != null && !request.getBatchNo().isBlank()) ? request.getBatchNo() : null;
 
-        Inventory inv = inventoryRepository.findByMaterialAndLocation(request.getMaterialId(), warehouse, location)
+        Inventory inv = inventoryRepository.findByMaterialAndLocation(request.getMaterialId(), warehouse, location, batchNo)
                 .orElseGet(() -> {
                     Inventory i = new Inventory();
                     i.setMaterialId(request.getMaterialId());
+                    i.setBatchNo(batchNo);
                     i.setWarehouse(warehouse);
                     i.setLocation(location);
                     i.setQuantity(0);
@@ -93,13 +96,49 @@ public class InventoryApplicationService {
         int txType = request.getQuantity() > 0 ? InventoryTransaction.TYPE_INBOUND : InventoryTransaction.TYPE_OUTBOUND;
         InventoryTransaction tx = new InventoryTransaction();
         tx.setMaterialId(request.getMaterialId());
+        tx.setBatchNo(batchNo);
         tx.setTransactionType(txType);
         tx.setQuantity(Math.abs(request.getQuantity()));
         tx.setWarehouse(warehouse);
         tx.setLocation(location);
+        tx.setOrderId(request.getOrderId());
+        tx.setReqId(request.getReqId());
         tx.setTransactionTime(LocalDateTime.now());
         tx.setOperator(request.getOperator());
         tx.setReferenceNo(request.getReferenceNo());
+        transactionRepository.save(tx);
+    }
+
+    /**
+     * 盘点确认：录入实盘数量，系统自动计算差异并调整库存，记录盘点调整事务
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void count(InventoryCountRequest request) {
+        if (request.getActualQuantity() == null || request.getActualQuantity() < 0) {
+            throw new IllegalArgumentException("实盘数量不能为负数");
+        }
+        Inventory inv = inventoryRepository.findById(request.getInventoryId())
+                .orElseThrow(() -> new IllegalArgumentException("库存记录不存在: " + request.getInventoryId()));
+        int bookQty = inv.getQuantity() != null ? inv.getQuantity() : 0;
+        int actualQty = request.getActualQuantity();
+        int diff = actualQty - bookQty;
+        if (diff == 0) {
+            return; // 账实相符，无需调整
+        }
+        inv.setQuantity(actualQty);
+        inv.setLastUpdateTime(LocalDateTime.now());
+        inventoryRepository.save(inv);
+
+        InventoryTransaction tx = new InventoryTransaction();
+        tx.setMaterialId(inv.getMaterialId());
+        tx.setBatchNo(inv.getBatchNo());
+        tx.setTransactionType(InventoryTransaction.TYPE_ADJUST);
+        tx.setQuantity(Math.abs(diff));
+        tx.setWarehouse(inv.getWarehouse());
+        tx.setLocation(inv.getLocation());
+        tx.setTransactionTime(LocalDateTime.now());
+        tx.setOperator(request.getOperator() != null ? request.getOperator() : "system");
+        tx.setReferenceNo("COUNT-" + inv.getId());
         transactionRepository.save(tx);
     }
 
@@ -126,28 +165,32 @@ public class InventoryApplicationService {
     }
 
     /**
-     * 内部方法：领料出库（由领料完成流程调用）
+     * 内部方法：领料出库（由领料完成流程调用），记录 orderId/reqId 用于追溯
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deductForRequisition(Long materialId, int quantity, String referenceNo) {
+    public void deductForRequisition(Long materialId, int quantity, String referenceNo, Long reqId, Long orderId) {
         InventoryAdjustRequest req = new InventoryAdjustRequest();
         req.setMaterialId(materialId);
         req.setQuantity(-quantity);
         req.setReferenceNo(referenceNo);
         req.setOperator("system");
+        req.setReqId(reqId);
+        req.setOrderId(orderId);
         adjust(req);
     }
 
     /**
-     * 内部方法：退料入库（由退料流程调用）
+     * 内部方法：退料入库（由退料流程调用），记录 orderId/reqId 用于追溯
      */
     @Transactional(rollbackFor = Exception.class)
-    public void addForReturn(Long materialId, int quantity, String referenceNo) {
+    public void addForReturn(Long materialId, int quantity, String referenceNo, Long reqId, Long orderId) {
         InventoryAdjustRequest req = new InventoryAdjustRequest();
         req.setMaterialId(materialId);
         req.setQuantity(quantity);
         req.setReferenceNo(referenceNo);
         req.setOperator("system");
+        req.setReqId(reqId);
+        req.setOrderId(orderId);
         adjust(req);
     }
 
@@ -155,6 +198,19 @@ public class InventoryApplicationService {
         long offset = (long) (pageNum - 1) * pageSize;
         long total = transactionRepository.countByMaterialId(materialId);
         List<InventoryTransactionDTO> records = transactionRepository.findByMaterialId(materialId, offset, pageSize).stream()
+                .map(this::toTransactionDTO).collect(Collectors.toList());
+        Page<InventoryTransactionDTO> page = new Page<>(pageNum, pageSize, total);
+        page.setRecords(records);
+        return page;
+    }
+
+    /**
+     * 物料追溯：按物料、批次、工单、领料单查询出入库记录
+     */
+    public Page<InventoryTransactionDTO> trace(Long materialId, String batchNo, Long orderId, Long reqId, int pageNum, int pageSize) {
+        long offset = (long) (pageNum - 1) * pageSize;
+        long total = transactionRepository.countByTraceCriteria(materialId, batchNo, orderId, reqId);
+        List<InventoryTransactionDTO> records = transactionRepository.findByTraceCriteria(materialId, batchNo, orderId, reqId, offset, pageSize).stream()
                 .map(this::toTransactionDTO).collect(Collectors.toList());
         Page<InventoryTransactionDTO> page = new Page<>(pageNum, pageSize, total);
         page.setRecords(records);
@@ -183,10 +239,13 @@ public class InventoryApplicationService {
         InventoryTransactionDTO dto = new InventoryTransactionDTO();
         dto.setId(tx.getId());
         dto.setMaterialId(tx.getMaterialId());
+        dto.setBatchNo(tx.getBatchNo());
         dto.setTransactionType(tx.getTransactionType());
         dto.setQuantity(tx.getQuantity());
         dto.setWarehouse(tx.getWarehouse());
         dto.setLocation(tx.getLocation());
+        dto.setOrderId(tx.getOrderId());
+        dto.setReqId(tx.getReqId());
         dto.setTransactionTime(tx.getTransactionTime());
         dto.setOperator(tx.getOperator());
         dto.setReferenceNo(tx.getReferenceNo());

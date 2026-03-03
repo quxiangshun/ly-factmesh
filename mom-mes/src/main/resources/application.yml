@@ -45,3 +45,24 @@ mybatis-plus:
   type-aliases-package: com.ly.factmesh.mes.infrastructure.database.entity
   configuration:
     map-underscore-to-camel-case: true
+
+# 读写分离（可选，需主从库）
+# infra:
+#   datasource:
+#     read-write-split:
+#       enabled: true
+#       master-url: jdbc:postgresql://localhost:5432/ly_factmesh_mes
+#       slave-url: jdbc:postgresql://slave-host:5432/ly_factmesh_mes
+#       username: postgres
+#       password: postgres
+
+# Seata 分布式事务（可选，需部署 Seata Server）
+# seata:
+#   enabled: true
+#   application-id: mom-mes
+#   tx-service-group: ly_mom_tx_group
+#   service:
+#     vgroup-mapping:
+#       ly_mom_tx_group: default
+#     grouplist:
+#       default: 127.0.0.1:8091

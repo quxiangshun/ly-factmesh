@@ -2,6 +2,7 @@ package com.ly.factmesh.wms.presentation.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.wms.application.dto.InventoryAdjustRequest;
+import com.ly.factmesh.wms.application.dto.InventoryCountRequest;
 import com.ly.factmesh.wms.application.dto.InventoryDTO;
 import com.ly.factmesh.wms.application.dto.InventoryTransactionDTO;
 import com.ly.factmesh.wms.application.service.InventoryApplicationService;
@@ -47,9 +48,10 @@ public class InventoryController {
             @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
             @RequestParam(defaultValue = "10") @Parameter(description = "每页大小") Integer size,
             @RequestParam(required = false) @Parameter(description = "物料ID") Long materialId,
-            @RequestParam(required = false) @Parameter(description = "仓库") String warehouse
+            @RequestParam(required = false) @Parameter(description = "仓库") String warehouse,
+            @RequestParam(required = false) @Parameter(description = "批次号") String batchNo
     ) {
-        return ResponseEntity.ok(inventoryApplicationService.page(page, size, materialId, warehouse));
+        return ResponseEntity.ok(inventoryApplicationService.page(page, size, materialId, warehouse, batchNo));
     }
 
     @GetMapping("/below-safe-stock")
@@ -65,6 +67,13 @@ public class InventoryController {
     @Operation(summary = "调整库存", description = "正数入库、负数出库")
     public ResponseEntity<Void> adjust(@Valid @RequestBody InventoryAdjustRequest request) {
         inventoryApplicationService.adjust(request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/count")
+    @Operation(summary = "盘点确认", description = "录入实盘数量，系统自动计算差异并调整库存")
+    public ResponseEntity<Void> count(@Valid @RequestBody InventoryCountRequest request) {
+        inventoryApplicationService.count(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -86,5 +95,18 @@ public class InventoryController {
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size
     ) {
         return ResponseEntity.ok(inventoryApplicationService.getTransactions(materialId, page, size));
+    }
+
+    @GetMapping("/trace")
+    @Operation(summary = "物料追溯", description = "按物料、批次、工单、领料单查询出入库记录，支持多条件组合")
+    public ResponseEntity<Page<InventoryTransactionDTO>> trace(
+            @RequestParam(required = false) @Parameter(description = "物料ID") Long materialId,
+            @RequestParam(required = false) @Parameter(description = "批次号") String batchNo,
+            @RequestParam(required = false) @Parameter(description = "工单ID") Long orderId,
+            @RequestParam(required = false) @Parameter(description = "领料单ID") Long reqId,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size
+    ) {
+        return ResponseEntity.ok(inventoryApplicationService.trace(materialId, batchNo, orderId, reqId, page, size));
     }
 }

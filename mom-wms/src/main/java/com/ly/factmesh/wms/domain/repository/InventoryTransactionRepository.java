@@ -16,4 +16,8 @@ public interface InventoryTransactionRepository {
     List<InventoryTransaction> findByMaterialId(Long materialId, long offset, long limit);
 
     long countByMaterialId(Long materialId);
+
+    List<InventoryTransaction> findByTraceCriteria(Long materialId, String batchNo, Long orderId, Long reqId, long offset, long limit);
+
+    long countByTraceCriteria(Long materialId, String batchNo, Long orderId, Long reqId);
 }

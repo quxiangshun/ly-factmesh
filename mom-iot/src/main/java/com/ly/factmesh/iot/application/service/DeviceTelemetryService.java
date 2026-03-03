@@ -41,13 +41,21 @@ public class DeviceTelemetryService {
     @Value("${influxdb.org:ly-factmesh}")
     private String influxOrg;
 
+    private final TelemetryDataCleaner telemetryDataCleaner;
+
     /**
-     * 上报设备遥测数据
+     * 上报设备遥测数据（经数据清洗后写入）
      */
     public void reportTelemetry(DeviceTelemetryRequest request) {
         if (request.getData() == null || request.getData().isEmpty()) {
             return;
         }
+        Map<String, Number> cleaned = telemetryDataCleaner.clean(request.getData());
+        if (cleaned.isEmpty()) {
+            log.debug("设备 {} 遥测数据经清洗后无有效数据，跳过写入", request.getDeviceId());
+            return;
+        }
+
         var device = deviceRepository.findById(request.getDeviceId())
                 .orElseThrow(() -> new IllegalArgumentException("设备不存在: " + request.getDeviceId()));
         String deviceCode = request.getDeviceCode() != null ? request.getDeviceCode() : device.getDeviceCode();
@@ -55,7 +63,7 @@ public class DeviceTelemetryService {
         WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
         Instant time = request.getCollectTime();
 
-        for (Map.Entry<String, Number> entry : request.getData().entrySet()) {
+        for (Map.Entry<String, Number> entry : cleaned.entrySet()) {
             Point point = Point.measurement(MEASUREMENT)
                     .addTag("device_id", String.valueOf(request.getDeviceId()))
                     .addTag("device_code", deviceCode != null ? deviceCode : "")
@@ -68,7 +76,7 @@ public class DeviceTelemetryService {
 
         // 根据规则引擎评估并触发自动告警
         try {
-            alertRuleEngineService.evaluate(request.getDeviceId(), deviceCode, request.getData());
+            alertRuleEngineService.evaluate(request.getDeviceId(), deviceCode, cleaned);
         } catch (Exception e) {
             log.warn("告警规则评估异常: {}", e.getMessage());
         }

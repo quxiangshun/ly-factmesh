@@ -22,6 +22,8 @@ public class MaterialRequisitionDetailDTO {
     private String materialCode;
     @Schema(description = "物料名称")
     private String materialName;
+    @Schema(description = "批次号")
+    private String batchNo;
     @Schema(description = "申请数量")
     private Integer quantity;
     @Schema(description = "实发数量")

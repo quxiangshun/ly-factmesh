@@ -16,6 +16,14 @@ dependencies {
     // Spring Boot Actuator（用于监控）
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    // JWT 校验（与 mom-admin 共用 secret）
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // Sentinel 限流、熔断、降级（可选，需启动 Sentinel Dashboard）
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-sentinel:${springCloudAlibabaVersion}"
+
     // 测试依赖
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

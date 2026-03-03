@@ -52,4 +52,9 @@ public class UserCreateRequest {
      * 状态：0-禁用，1-启用
      */
     private Integer status;
+
+    /**
+     * 租户ID（多租户数据隔离）
+     */
+    private Long tenantId;
 }

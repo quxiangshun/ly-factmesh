@@ -12,7 +12,9 @@ public class InspectionTask {
     private Long id;
     private String taskCode;
     private Long orderId;
+    private String orderCode;
     private Long materialId;
+    private String productCode;
     private Long deviceId;
     private Integer inspectionType;
     private LocalDateTime inspectionTime;
@@ -32,7 +34,11 @@ public class InspectionTask {
     public void setTaskCode(String taskCode) { this.taskCode = taskCode; }
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public String getOrderCode() { return orderCode; }
+    public void setOrderCode(String orderCode) { this.orderCode = orderCode; }
     public Long getMaterialId() { return materialId; }
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
     public Long getDeviceId() { return deviceId; }
     public void setDeviceId(Long deviceId) { this.deviceId = deviceId; }

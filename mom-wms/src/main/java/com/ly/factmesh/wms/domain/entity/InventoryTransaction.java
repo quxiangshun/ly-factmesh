@@ -11,10 +11,13 @@ public class InventoryTransaction {
 
     private Long id;
     private Long materialId;
+    private String batchNo;
     private Integer transactionType;
     private Integer quantity;
     private String warehouse;
     private String location;
+    private Long orderId;
+    private Long reqId;
     private LocalDateTime transactionTime;
     private String operator;
     private String referenceNo;
@@ -38,6 +41,10 @@ public class InventoryTransaction {
     public void setWarehouse(String warehouse) { this.warehouse = warehouse; }
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+    public Long getOrderId() { return orderId; }
+    public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public Long getReqId() { return reqId; }
+    public void setReqId(Long reqId) { this.reqId = reqId; }
     public LocalDateTime getTransactionTime() { return transactionTime; }
     public void setTransactionTime(LocalDateTime transactionTime) { this.transactionTime = transactionTime; }
     public String getOperator() { return operator; }

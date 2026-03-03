@@ -17,6 +17,8 @@ public class InventoryAdjustRequest {
     @NotNull
     @Schema(description = "物料ID")
     private Long materialId;
+    @Schema(description = "批次号，可选")
+    private String batchNo;
     @NotNull
     @Schema(description = "数量，正数入库、负数出库")
     private Integer quantity;
@@ -28,4 +30,8 @@ public class InventoryAdjustRequest {
     private String referenceNo;
     @Schema(description = "操作人")
     private String operator;
+    @Schema(description = "关联工单ID，用于追溯")
+    private Long orderId;
+    @Schema(description = "关联领料单ID，用于追溯")
+    private Long reqId;
 }

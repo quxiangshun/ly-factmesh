@@ -23,6 +23,15 @@ spring:
         username: nacos
         password: nacos
     gateway:
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+            allowedHeaders: "*"
+            exposedHeaders: Authorization
+            allowCredentials: true
       server:
         webflux:
           discovery:
@@ -39,7 +48,7 @@ spring:
             - id: api-admin
               uri: lb://mom-admin
               predicates:
-                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**
+                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**,/api/tenants/**,/api/operation-logs/**,/api/audit-logs/**
             - id: api-iot
               uri: lb://mom-iot
               predicates:
@@ -55,10 +64,23 @@ spring:
             - id: api-qms
               uri: lb://mom-qms
               predicates:
-                - Path=/api/inspection-tasks/**,/api/inspection-results/**,/api/ncr/**
+                - Path=/api/inspection-tasks/**,/api/inspection-results/**,/api/ncr/**,/api/quality-trace/**
 
 server:
   port: 8080
   max-http-header-size: 32KB
 
-# management、app.jwt、app.rate-limit 由 Nacos 配置中心提供（见 sql/nacos-all-init.sql）
+# 本地兜底（Nacos 未连接时使用）
+app:
+  jwt:
+    secret: ${JWT_SECRET:ly-factmesh-admin-jwt-secret-change-in-production}
+    gateway-auth-enabled: false
+  rate-limit:
+    enabled: false
+    requests-per-minute: 200
+
+# Sentinel（可选，需启动 Sentinel Dashboard）
+# spring.cloud.sentinel:
+#   transport:
+#     dashboard: localhost:8858
+#   eager: true

@@ -23,7 +23,7 @@
         <div class="flow-legend">
           <h4>图例说明</h4>
           <ul>
-            <li><strong>泳道</strong>：用户/设备、网关、Admin、IoT、MES、WMS、QMS，每列表示一个参与方或微服务。</li>
+            <li><strong>泳道</strong>：用户/设备、网关、Admin、IoT、MES、WMS、QMS、基础设施（mom-infra），每列表示一个参与方或微服务。</li>
             <li><strong>实线箭头</strong>：同步调用或顺序执行。</li>
             <li><strong>虚线箭头</strong>：Feign 跨域调用（如工单下发→WMS 领料、工单完成→QMS 质检）。</li>
             <li><strong>菱形</strong>：条件判断（如告警规则匹配）。</li>
@@ -123,10 +123,63 @@
         <ul>
           <li><strong>前端</strong>：Vite + Vue 3 + TypeScript + Vue Router + Iconify</li>
           <li><strong>网关</strong>：Spring Cloud Gateway，统一入口、路由、鉴权</li>
+          <li><strong>基础设施</strong>：mom-infra 封装数据库、缓存、MQTT、工业协议、监控等，业务域依赖即可使用</li>
           <li><strong>后端</strong>：Spring Boot 4.x、JDK 25，各域独立微服务</li>
           <li><strong>持久化</strong>：PostgreSQL 16.x、MyBatis-Plus，一域一库</li>
           <li><strong>ID 生成</strong>：Snowflake 雪花算法，分布式唯一</li>
         </ul>
+      </section>
+
+      <section id="infra" class="help-section">
+        <h2>基础设施（Infra）</h2>
+        <p>mom-infra 模块，封装技术层能力，为业务域（admin/iot/mes/wms/qms）提供「技术工具」，隔离底层实现。无独立数据库，被各业务模块依赖。</p>
+
+        <h3 id="infra-overview">能力概览</h3>
+        <p><strong>业务逻辑</strong>：DDD 基础设施层落地，业务域通过接口调用技术能力，无需关心 Redis/MQTT/OPC UA 等具体实现。</p>
+        <div class="flow-diagram">
+          <pre class="flow-mermaid">业务域依赖 mom-infra 能力:
+  mom-admin ──┬──► DB/Druid ──┬──► PostgreSQL
+  mom-iot   ──┤              ├──► CacheService(Redis)
+  mom-mes   ──┤              ├──► MqttClientWrapper(EMQX)
+  mom-wms   ──┤              ├──► OpcUaClient / ModbusTcpClient
+  mom-qms   ──┘              ├──► Prometheus/Micrometer
+                             ├──► 读写分离(DynamicDataSource + @ReadOnly)
+                             └──► Seata(分布式事务)</pre>
+        </div>
+        <table class="help-table">
+          <thead>
+            <tr><th>能力</th><th>说明</th><th>配置/接口</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>数据库适配</td><td>PostgreSQL + Druid 连接池、MyBatis-Plus 分页</td><td>spring.datasource.*</td></tr>
+            <tr><td>读写分离</td><td>DynamicDataSource 主从路由；@ReadOnly 注解标注读方法路由到从库</td><td>infra.datasource.read-write-split.enabled=true，master-url、slave-url</td></tr>
+            <tr><td>缓存</td><td>Redis 客户端封装，CacheService 接口（set/get/delete/expire）</td><td>spring.data.redis.host</td></tr>
+            <tr><td>消息队列</td><td>MQTT 客户端接口 MqttClientWrapper（publish/subscribe）、MqttProperties</td><td>infra.mqtt.broker-url</td></tr>
+            <tr><td>工业协议</td><td>OPC UA、Modbus TCP 客户端接口（业务域实现）</td><td>OpcUaClient、ModbusTcpClient</td></tr>
+            <tr><td>监控告警</td><td>Actuator + Micrometer Prometheus 埋点</td><td>management.endpoints.*</td></tr>
+            <tr><td>分布式事务</td><td>Seata 2.2.0，seata-spring-boot-starter 自动装配</td><td>seata.enabled=true，application-id，tx-service-group</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="infra-read-write-split">读写分离</h3>
+        <p><strong>使用方式</strong>：配置 infra.datasource.read-write-split.enabled=true，并填写 master-url、slave-url。在 Service 或 Mapper 的读方法上标注 @ReadOnly，执行时自动路由到从库。</p>
+        <p><strong>配置示例</strong>：infra.datasource.read-write-split.master-url、slave-url、username、password；未配置时从 spring.datasource 继承。</p>
+
+        <h3 id="infra-seata">分布式事务（Seata）</h3>
+        <p><strong>使用方式</strong>：配置 seata.enabled=true，部署 Seata Server；业务方法加 @GlobalTransactional 即可参与分布式事务。</p>
+        <p><strong>配置示例</strong>：seata.application-id、tx-service-group、service.vgroup-mapping、service.grouplist。</p>
+
+        <h3 id="infra-cache">缓存（Redis）</h3>
+        <p><strong>使用方式</strong>：注入 CacheService，配置 spring.data.redis.host 后自动生效。</p>
+        <p><strong>接口</strong>：set(key, value)、set(key, value, timeout, unit)、get(key, clazz)、delete(key)、hasKey(key)、expire(key, timeout, unit)。</p>
+
+        <h3 id="infra-mqtt">消息队列（MQTT）</h3>
+        <p><strong>使用方式</strong>：实现 MqttClientWrapper 接口，对接 EMQX；配置 infra.mqtt.broker-url 启用。</p>
+        <p><strong>接口</strong>：publish(topic, payload)、subscribe(topic, callback)、unsubscribe(topic)、isConnected()、disconnect()。</p>
+
+        <h3 id="infra-protocol">工业协议</h3>
+        <p><strong>OPC UA</strong>：OpcUaClient 接口，connect、readValue、writeValue、readValues；业务域（如 mom-iot）引入 OPC UA 库后实现。</p>
+        <p><strong>Modbus TCP</strong>：ModbusTcpClient 接口，connect、readHoldingRegisters、readInputRegisters、writeSingleRegister、writeMultipleRegisters。</p>
       </section>
 
       <section id="gateway" class="help-section">
@@ -138,13 +191,13 @@
         <p><strong>解决方案</strong>：采用 Spring Cloud Gateway + Nacos Discovery；路由配置由 application.yml 或 Nacos 配置中心 gateway.yaml 提供；支持 lb:// 负载均衡转发；认证接口 /api/auth/** 与用户/角色/权限等接口转发至 mom-admin；设备、工单、物料、质检等按路径前缀转发至对应服务。</p>
         <p><strong>流程图描述</strong>：请求 → 网关入口 → 路径匹配（Predicate）→ 路由选择（admin/iot/mes/wms/qms）→ 负载均衡转发（lb://）→ 下游微服务返回。若路径为 /v3/api-docs/all，则走本地聚合控制器，返回统一 OpenAPI 文档。</p>
         <div class="flow-diagram">
-          <pre class="flow-mermaid">  ┌────────────┐  Path匹配  ┌────────────────┐  lb转发  ┌────────────────┐
-  │ 前端请求   │ ────────► │  mom-gateway   │ ──────► │  mom-admin     │
-  │ /api/*     │           │  路由/鉴权     │         │  mom-iot       │
-  └────────────┘           └───────┬───────┘         │  mom-mes       │
-                                   │                  │  mom-wms       │
-                                   │ /v3/api-docs/all │  mom-qms       │
-                                   ▼                  └────────────────┘
+          <pre class="flow-mermaid">  ┌────────────┐  Path匹配  ┌────────────────┐  lb转发  ┌────────────────────────┐
+  │ 前端请求   │ ────────► │  mom-gateway   │ ──────► │ mom-admin/iot/mes/wms  │
+  │ /api/*     │           │  路由/鉴权     │         │ /qms (均依赖mom-infra) │
+  └────────────┘           └───────┬───────┘         └────────────────────────┘
+                                   │
+                                   │ /v3/api-docs/all
+                                   ▼
                            ┌────────────────┐
                            │ OpenAPI 聚合文档 │
                            └────────────────┘</pre>
@@ -232,7 +285,9 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
 遥测+告警联动:
   遥测上报 ──► 写入InfluxDB ──► AlertRuleEngineService.evaluate()
       │                              │
+      │                              ├─ 规则缓存(60s, 增删改失效) / 测点大小写不敏感
       │                              ├─ 匹配规则(deviceId/type, field, operator, threshold)
+      │                              │   operator: gt/gte/lt/lte/eq/ne/between/outside
       │                              ├─ 冷却期检查(cooldown_seconds)
       │                              └─ 创建告警 ──► 人工resolve</pre>
         </div>
@@ -284,20 +339,21 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         <h3 id="mes-overview">MES 业务流转概览</h3>
         <p><strong>业务逻辑</strong>：生产执行从基础配置到工单完成的闭环流程。先维护工序与产线主数据，再创建工单并下发，现场通过报工录入产量，系统自动累加实际数量；当实际数量达到计划数量时工单完成，否则继续报工。工单下发触发 WMS 领料单创建，工单完成触发 QMS 质检任务创建。</p>
         <p><strong>解决方案</strong>：采用「配置先行、工单驱动、报工闭环」模式。工序与产线支持 CRUD 与编辑（编码不可改）；工单状态机控制流转；报工时校验工单/工序存在且工单已下发或进行中，报工后自动更新工单 actualQuantity 与 status，实现生产进度实时反馈。跨域通过 Feign 调用 WmsFeignClient、QmsFeignClient。</p>
-        <p><strong>流程图描述</strong>：主流程：工序管理 → 产线管理 → 工单创建 → 工单下发（触发 WMS 领料）→ 报工录入 → 实际数量累加 → 工单完成（触发 QMS 质检）。工单状态：草稿(0) → 已下发(1) → 进行中(2) → 已完成(3)；报工后已下发自动转进行中；实际≥计划时可完成。</p>
+        <p><strong>流程图描述</strong>：主流程：工序管理 → 产线管理 → 工单创建 → 工单下发（触发 WMS 领料）→ 报工录入 → 实际数量累加 → 工单完成（触发 QMS 质检）。工单状态：草稿(0) → 已下发(1) → 进行中(2) ⇄ 暂停(5) → 已完成(3)；报工后已下发自动转进行中；支持暂停/恢复；实际≥计划时可完成。</p>
         <div class="flow-diagram">
           <pre class="flow-mermaid">工单状态流转:
   草稿(0) ──release──► 已下发(1) ──报工──► 进行中(2) ──complete──► 已完成(3)
       │                    │                    │
-      │                    ├─ 触发WMS领料单      └─ 触发QMS质检任务
+      │                    ├─ 触发WMS领料单      ├─ pause ⇄ resume
+      │                    │                    └─ 触发QMS质检任务
       │
 跨域联动: 工单下发→WmsFeignClient.createRequisition(); 工单完成→QmsFeignClient.createInspectionTask()</pre>
         </div>
 
         <h3 id="mes-work-orders">工单管理</h3>
-        <p><strong>业务逻辑</strong>：工单 CRUD、状态流转（草稿→已下发→进行中→已完成）、分页查询、计划数量与实际数量跟踪；支持手动完成并填写实际数量。</p>
+        <p><strong>业务逻辑</strong>：工单 CRUD、状态流转（草稿→已下发→进行中⇄暂停→已完成）、分页查询、计划数量与实际数量跟踪；支持暂停/恢复、手动完成并填写实际数量。</p>
         <p><strong>解决方案</strong>：WorkOrder 实体维护 status、plannedQuantity、actualQuantity；下发后状态变为已下发；报工自动累加 actualQuantity 并将已下发转为进行中；完成时可手动确认实际数量。</p>
-        <p><strong>技术点</strong>：WorkOrder 实体；MyBatis-Plus 分页；GET /stats 统计各状态数量；完成弹窗支持填写 actualQuantity。</p>
+        <p><strong>技术点</strong>：WorkOrder 实体；MyBatis-Plus 分页；GET /stats 统计各状态数量；POST /{id}/pause、/{id}/resume 暂停/恢复；GET /summary?date= 生产汇总；完成弹窗支持填写 actualQuantity。</p>
 
         <h3 id="mes-processes">工序管理</h3>
         <p><strong>业务逻辑</strong>：工序 CRUD、编码唯一、名称、排序号、工作中心；编辑时工序编码不可改；分页、创建时间展示、空状态提示。</p>
@@ -323,6 +379,7 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         <div class="flow-diagram">
           <pre class="flow-mermaid">物料管理 ──► 库存初始化(调整) ──► 领料单创建 ──► 领料完成(扣库存) ──► 出入库记录
       │              │                    │                    │
+      │              │                    ├─ MES工单下发Feign触发
       │              └── 安全库存预警 ◄─────┴────────────────────┘
       └── 删除前校验: 无库存、无领料引用</pre>
         </div>
@@ -365,10 +422,12 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         <h3 id="wms-inventory">库存管理</h3>
         <p><strong>业务逻辑</strong>：</p>
         <ul>
-          <li><strong>库存查询</strong>：按物料、仓库分页；按物料 ID 查全部库位</li>
-          <li><strong>库存调整</strong>：正数入库、负数出库，自动创建 inventory 记录并写入 inventory_transaction</li>
+          <li><strong>库存查询</strong>：按物料、仓库、批次号分页；按物料 ID 查全部库位</li>
+          <li><strong>库存调整</strong>：正数入库、负数出库，支持 batchNo 指定批次；自动创建 inventory 记录并写入 inventory_transaction</li>
+          <li><strong>盘点</strong>：POST /count 录入实盘数量，系统自动计算差异并调整库存，记录 TYPE_ADJUST 事务</li>
           <li><strong>安全库存</strong>：可设置 safe_stock；低于安全库存查询接口用于预警</li>
-          <li><strong>出入库记录</strong>：分页查询某物料的出入库流水，含 total</li>
+          <li><strong>出入库记录</strong>：分页查询某物料的出入库流水，含 total；记录 orderId/reqId 用于追溯</li>
+          <li><strong>物料追溯</strong>：GET /trace 按物料、批次、工单、领料单多条件组合查询出入库记录</li>
         </ul>
         <p><strong>库存调整流程图</strong>：</p>
         <div class="flow-diagram">
@@ -378,9 +437,13 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         │
         └─ quantity &lt; 0 ──► 出库: 校验quantity+qty≥0, 扣减, 记录TYPE_OUTBOUND
                             │
-                            └─ 不足则抛「库存不足」</pre>
+                            └─ 不足则抛「库存不足」
+
+POST /count (inventoryId, actualQuantity) ──► 计算 diff=实盘-账面
+        │
+        └─ diff≠0 ──► 更新 inventory.quantity=actualQuantity, 记录 TYPE_ADJUST</pre>
         </div>
-        <p><strong>技术点</strong>：Inventory、InventoryTransaction 实体；findByMaterialAndLocation 支持空仓库/库位；findAllBelowSafeStock 条件 safe_stock&gt;0 AND quantity&lt;safe_stock；Page 分页返回。</p>
+        <p><strong>技术点</strong>：Inventory、InventoryTransaction 实体；findByMaterialAndLocation 支持空仓库/库位；findAllBelowSafeStock 条件 safe_stock&gt;0 AND quantity&lt;safe_stock；Page 分页返回；count 盘点确认自动生成调整事务。</p>
       </section>
 
       <section id="qms" class="help-section">
@@ -391,7 +454,7 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         <div class="flow-diagram">
           <pre class="flow-mermaid">质检任务创建 ──► 开始检验 ──► 录入检验结果(合格/不合格) ──► 完成质检
       │                    │                    │
-      │                    │                    ├─ 存在不合格项 ──► 创建NCR ──► 选择处置方式 ──► 处置完成
+      │ MES工单完成Feign触发│                    ├─ 存在不合格项 ──► 创建NCR ──► 选择处置方式 ──► 处置完成
       │                    │                    │   (返工/报废/让步接收/退货)
       │                    │                    └─ 无不合格项 ──► 直接完成
       │                    │
@@ -484,6 +547,7 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
           <li><strong>网关路由</strong>：/api/auth/**、/api/users/** 等按路径前缀转发至对应服务。</li>
           <li><strong>跨域</strong>：前端 Vite 代理 /api 到网关；网关到各服务通过 lb:// 负载均衡。</li>
           <li><strong>Flyway</strong>：各模块 db/migration 下 SQL 自动执行，版本号递增。</li>
+          <li><strong>基础设施</strong>：mom-infra 提供 CacheService、MqttClientWrapper、OpcUaClient、ModbusTcpClient 等接口；配置对应属性后按需启用。</li>
         </ul>
       </section>
     </article>
@@ -508,6 +572,7 @@ const toc = [
       { id: 'intro-flow', name: '系统运转流程' }
     ]
   },
+  { id: 'infra', name: '基础设施（Infra）', children: [{ id: 'infra-overview', name: '能力概览' }, { id: 'infra-cache', name: '缓存' }, { id: 'infra-mqtt', name: '消息队列' }, { id: 'infra-protocol', name: '工业协议' }] },
   { id: 'gateway', name: '网关（Gateway）', children: [{ id: 'gateway-overview', name: '网关概览' }, { id: 'gateway-routes', name: '路由规则' }] },
   ...menuConfig.map((g) => {
     const base = { id: g.id, name: g.name, children: g.children?.map((c) => ({ id: c.id, name: c.name })) };

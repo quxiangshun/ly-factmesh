@@ -111,6 +111,7 @@ public class MaterialRequisitionRepositoryImpl implements MaterialRequisitionRep
         e.setId(d.getId());
         e.setReqId(d.getReqId());
         e.setMaterialId(d.getMaterialId());
+        e.setBatchNo(d.getBatchNo());
         e.setQuantity(d.getQuantity());
         e.setActualQuantity(d.getActualQuantity() != null ? d.getActualQuantity() : 0);
         return e;
@@ -121,6 +122,7 @@ public class MaterialRequisitionRepositoryImpl implements MaterialRequisitionRep
         d.setId(e.getId());
         d.setReqId(e.getReqId());
         d.setMaterialId(e.getMaterialId());
+        d.setBatchNo(e.getBatchNo());
         d.setQuantity(e.getQuantity());
         d.setActualQuantity(e.getActualQuantity());
         return d;

@@ -19,22 +19,29 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 #### ✅ mom-common（公共核心模块）
 **核心职责**：存放全系统复用的通用能力，与业务无关，仅做基础支撑
-- 通用工具类（日期、加密、校验、JSON 解析）
-- 全局枚举（设备状态、工单状态、质检类型等）
-- 公共 DTO/VO/Command/Query（分页、响应体、通用入参）
-- 全局异常体系（业务异常、系统异常、统一异常处理器）
-- 通用注解（权限、日志、数据校验）
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 通用工具类 | ✅ 已实现 | DateUtils（日期格式化/解析）、JsonUtils（JSON 序列化）、ValidationUtils（校验）、DigestUtils（MD5/SHA256）、SnowflakeIdGenerator |
+| 全局枚举 | ✅ 已实现 | DeviceStatusEnum、WorkOrderStatusEnum、InspectionTypeEnum |
+| 公共 DTO/Query | ✅ 已实现 | Result、PageResult、PageRequest；Feign 契约 DTO |
+| 全局异常体系 | ✅ 已实现 | BusinessException、SystemException；GlobalExceptionHandler 统一返回 Result |
+| 通用注解 | ✅ 已实现 | @OperationLog（操作日志）、@NoAuth（免认证） |
 
 **创建依据**：避免各业务模块重复写通用代码，降低维护成本，是开源项目的基础规范。
 
 #### ✅ mom-infra（基础设施模块）
 **核心职责**：封装技术层能力，为业务域提供 "技术工具"，隔离底层技术细节
-- 数据库适配（PostgreSQL 连接池、分表分库、读写分离）
-- 消息队列（EMQX/MQTT 客户端封装、领域事件发送 / 消费）
-- 工业协议接入（OPC UA/Modbus/TCP 客户端封装）
-- 缓存（Redis 客户端封装、缓存策略）
-- 监控告警（Prometheus/Grafana 埋点、告警推送）
-- 分布式事务（Seata 客户端封装）
+
+| 能力 | 实现状态 | 说明 | 配置/依赖 |
+|------|----------|------|-----------|
+| 数据库适配 | ✅ 已实现 | PostgreSQL + Druid 连接池、MyBatis-Plus 分页；PostgresConfig、DruidDataSourceConfig | spring.datasource.* |
+| 读写分离 | ✅ 已实现 | DynamicDataSource + @ReadOnly 注解；主库写、从库读 | infra.datasource.read-write-split.enabled=true，master-url、slave-url |
+| 缓存 | ✅ 已实现 | CacheService 接口 + RedisCacheServiceImpl；RedisCacheConfig 条件装配 | spring.data.redis.host |
+| 消息队列 | ✅ 已实现 | MqttClientWrapper 接口、MqttProperties；EmqxMqttClientConfig 配置绑定，实现由业务域提供 | infra.mqtt.broker-url |
+| 工业协议 | ✅ 接口已定义 | OpcUaClient、ModbusTcpClient 接口，业务域引入 OPC UA/Modbus 库后实现 | - |
+| 监控告警 | ✅ 已实现 | Actuator + Micrometer Prometheus；PrometheusMetricsConfig 公共标签 | management.endpoints.* |
+| 分布式事务 | ✅ 已实现 | Seata 2.2.0，seata-spring-boot-starter 自动装配 | seata.enabled=true，application-id，tx-service-group |
 
 **创建依据**：DDD 中 "基础设施层" 的落地，让业务域（如 iot/mes）无需关注技术实现，仅调用接口即可，符合 "业务与技术解耦" 的核心思想。
 
@@ -42,37 +49,61 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 #### ✅ mom-iot（设备物联域）
 **核心职责**：覆盖设备全生命周期管理，是 MOM 系统的 "数据入口"
-- 设备注册 / 上下线 / 状态监控
-- 设备数据采集（实时 / 定时）、数据清洗、数据存储
-- 设备故障告警、远程控制
-- 设备台账管理（型号、参数、维保记录）
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 设备注册 / 上下线 / 状态监控 | ✅ 已实现 | 设备 CRUD、POST /api/devices/{id}/online、/offline、/start、/stop、/fault；GET /api/devices/stats 统计 |
+| 设备数据采集（实时） | ✅ 已实现 | POST /api/devices/telemetry 遥测上报，写入 InfluxDB 时序库 |
+| 设备数据存储 | ✅ 已实现 | InfluxDB 存储遥测数据，支持按设备/时间范围查询 |
+| 设备故障告警 | ✅ 已实现 | 告警规则引擎 /api/devices/alert-rules；阈值触发自动告警；告警处理 /api/devices/alerts |
+| 远程控制 | ✅ 已实现 | POST /api/devices/{id}/start、/stop 启停控制 |
+| 设备台账（型号、参数） | ✅ 已实现 | Device 含 model、manufacturer、installLocation；PATCH /api/devices/{id}/status 更新采集数据 |
+| 设备台账（维保记录） | ✅ 已实现 | POST /api/devices/maintenance 新增；GET /api/devices/maintenance/device/{id} 按设备查询 |
+| 定时采集 | ✅ 已实现 | ScheduledTelemetryCollectJob 每 5 分钟将在线设备 Device 表状态同步到 InfluxDB；iot.scheduled-collect.enabled=true 开启 |
+| 数据清洗 | ✅ 已实现 | TelemetryDataCleaner 过滤 NaN/Inf、范围校验（temperature/humidity/voltage/current）；iot.telemetry.cleaner.enabled 可关闭 |
 
 **创建依据**：制造企业的核心生产要素是设备，设备数据是 MES/WMS/QMS 的基础，必须独立成域。
 
 #### ✅ mom-mes（生产执行域）
 **核心职责**：MOM 系统的核心，覆盖生产全流程
-- 工单管理（创建 / 下发 / 暂停 / 完成）
-- 工序管理（工序拆分、工序执行、报工）
-- 产线管理（产线状态、产能统计）
-- 生产进度监控、生产报表
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 工单管理 | ✅ 已实现 | 创建、下发、开始、暂停、恢复、完成；POST /api/work-orders/{id}/pause、/resume |
+| 工序管理 | ✅ 已实现 | 工序 CRUD /api/processes；工序执行通过报工体现 |
+| 产线管理 | ✅ 已实现 | 产线 CRUD /api/lines；编码唯一、排序 |
+| 报工 | ✅ 已实现 | POST /api/work-reports 报工录入；自动累加工单 actualQuantity、已下发→进行中 |
+| 生产进度监控 | ✅ 已实现 | GET /api/work-orders/stats 各状态数量；工单 planQuantity/actualQuantity 跟踪 |
+| 生产报表 | ✅ 已实现 | GET /api/work-orders/summary?date= 按日统计完成工单数、产量、进行中/暂停数 |
+| 产线状态 | ✅ 已实现 | production_line.status：0-空闲 1-运行 2-检修；PUT /api/lines/{id}/status |
+| 产线产能统计 | ✅ 已实现 | work_order.line_id 关联产线；GET /api/lines/capacity-summary?date= 按产线汇总完成工单数、产量 |
 
 **创建依据**：生产执行是 MOM 系统的核心价值，需独立成域保证业务内聚。
 
 #### ✅ mom-wms（仓储管理域）
 **核心职责**：物料流转管理，衔接生产与供应链
-- 物料入库 / 出库 / 盘点
-- 库存查询、库存预警
-- 物料批次管理、物料追溯
-- 生产领料 / 退料管理
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 物料入库 / 出库 | ✅ 已实现 | POST /api/inventory/adjust 正数入库、负数出库；领料完成自动扣库存、退料完成自动加库存 |
+| 盘点 | ✅ 已实现 | POST /api/inventory/count 录入实盘数量，系统自动计算差异并调整库存，记录 TYPE_ADJUST 事务 |
+| 库存查询 | ✅ 已实现 | GET /api/inventory 分页查询，支持按物料/仓库/批次号筛选；GET /api/inventory/material/{id} 按物料 ID 查全部库位 |
+| 库存预警 | ✅ 已实现 | PUT /api/inventory/{id}/safe-stock 设置安全库存；GET /api/inventory/below-safe-stock 低于安全库存预警 |
+| 生产领料 / 退料 | ✅ 已实现 | 领料单 /api/requisitions CRUD；MES 工单下发 Feign 触发创建；POST /{id}/complete 完成领料扣库存、退料加库存 |
+| 物料批次管理 | ✅ 已实现 | 库存/出入库/领料明细表支持 batch_no；adjust 请求可指定 batchNo 入库；库存分页支持 batchNo 筛选 |
+| 物料追溯 | ✅ 已实现 | GET /api/inventory/trace 按物料/批次/工单/领料单多条件查询；领料完成自动记录 order_id、req_id 到出入库事务 |
 
 **创建依据**：生产离不开物料，仓储是生产执行的 "后勤保障"，独立成域避免与 MES 耦合。
 
 #### ✅ mom-qms（质量管理域）
 **核心职责**：质量管控与追溯，制造企业合规必备
-- 质检任务创建 / 执行
-- 质检数据采集、质量判定
-- 不合格品处理（返工 / 报废）
-- 质量追溯（关联工单 / 设备 / 物料）
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 质检任务创建 / 执行 | ✅ 已实现 | POST /api/inspection-tasks 创建；POST /{id}/start 开始、/{id}/complete 完成；MES 工单完成 Feign 触发创建 |
+| 质检数据采集、质量判定 | ✅ 已实现 | POST /api/inspection-results 录入检验项、标准值、实际值、判定（合格/不合格） |
+| 不合格品处理（返工/报废） | ✅ 已实现 | POST /api/ncr 创建；POST /{id}/dispose 处置（返工/报废/让步接收/退货） |
+| 质量追溯（关联工单/设备/物料） | ✅ 已实现 | GET /api/quality-trace?productCode=&batchNo=&productionOrder= 多条件查询；质检不合格、NCR 创建时自动写入追溯 |
 
 **创建依据**：质量是制造企业的生命线，独立成域可灵活扩展质检规则，不影响核心生产流程。
 
@@ -80,11 +111,14 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 #### ✅ mom-admin（系统管理域）
 **核心职责**：用户 / 租户 / 字典等基础信息统一维护，独立成域避免与业务耦合
-- 用户管理（创建、授权、认证）
-- 租户管理（多租户数据隔离、租户配置）
-- 字典管理（统一维护系统基础配置）
-- 角色权限管理（RBAC权限模型）
-- 系统日志（操作日志、审计日志）
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 用户管理（创建、授权、认证） | ✅ 已实现 | POST /api/users CRUD；PUT /{id}/roles 分配角色；POST /api/auth/login、GET /api/auth/me |
+| 租户管理（多租户数据隔离、租户配置） | ✅ 已实现 | POST /api/tenants CRUD；sys_user.tenant_id 关联租户 |
+| 字典管理（统一维护系统基础配置） | ✅ 已实现 | POST /api/dicts CRUD；GET /api/dicts/type/{dictType} 按类型获取 |
+| 角色权限管理（RBAC权限模型） | ✅ 已实现 | 角色 CRUD、权限 CRUD、角色权限关联、用户角色分配 |
+| 系统日志（操作日志、审计日志） | ✅ 已实现 | POST /api/operation-logs 记录；GET 分页查询；POST /api/audit-logs 记录；GET 分页查询 |
 
 **设计原则**：
 - mom-admin 仅依赖基础支撑层
@@ -102,10 +136,16 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 #### ✅ mom-gateway（网关模块）
 **核心职责**：系统统一入口，处理跨域、认证、路由、限流
-- 接口路由（转发请求到对应业务域）
-- 统一认证授权（JWT/OAuth2）
-- 接口限流、熔断、降级（Sentinel）
-- 跨域处理、请求日志、接口文档聚合
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 接口路由 | ✅ 已实现 | 按 Path 转发到 mom-admin/iot/mes/wms/qms；lb 负载均衡 |
+| 统一认证授权（JWT） | ✅ 已实现 | JwtAuthGlobalFilter 校验 Bearer Token；app.jwt.gateway-auth-enabled=true 开启 |
+| 接口限流 | ✅ 已实现 | RateLimitGlobalFilter 按 IP 内存限流；app.rate-limit.enabled=true 开启 |
+| 熔断、降级（Sentinel） | ✅ 已实现 | 引入 spring-cloud-starter-alibaba-sentinel；配置 Sentinel Dashboard 后生效 |
+| 跨域处理 | ✅ 已实现 | globalcors 配置 + GatewayCorsConfig |
+| 请求日志 | ✅ 已实现 | RequestLoggingGlobalFilter 记录 method、path、IP、耗时、status |
+| 接口文档聚合 | ✅ 已实现 | GET /v3/api-docs/all 聚合各服务 OpenAPI |
 
 **创建依据**：微服务部署时，前端 / 外部系统只需对接网关，无需感知后端多模块，降低对接成本。
 

@@ -15,6 +15,8 @@ public class InventoryTransactionEntity {
     private Long id;
     @TableField("material_id")
     private Long materialId;
+    @TableField("batch_no")
+    private String batchNo;
     @TableField("transaction_type")
     private Integer transactionType;
     @TableField("quantity")
@@ -23,6 +25,10 @@ public class InventoryTransactionEntity {
     private String warehouse;
     @TableField("location")
     private String location;
+    @TableField("order_id")
+    private Long orderId;
+    @TableField("req_id")
+    private Long reqId;
     @TableField("transaction_time")
     private LocalDateTime transactionTime;
     @TableField("operator")

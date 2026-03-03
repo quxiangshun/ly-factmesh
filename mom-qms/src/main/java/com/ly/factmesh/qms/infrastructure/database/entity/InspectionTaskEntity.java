@@ -17,6 +17,10 @@ public class InspectionTaskEntity {
     private String taskCode;
     @TableField("order_id")
     private Long orderId;
+    @TableField("order_code")
+    private String orderCode;
+    @TableField("product_code")
+    private String productCode;
     @TableField("material_id")
     private Long materialId;
     @TableField("device_id")

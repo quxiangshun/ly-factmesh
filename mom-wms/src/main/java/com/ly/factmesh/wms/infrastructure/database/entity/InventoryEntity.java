@@ -15,6 +15,8 @@ public class InventoryEntity {
     private Long id;
     @TableField("material_id")
     private Long materialId;
+    @TableField("batch_no")
+    private String batchNo;
     @TableField("warehouse")
     private String warehouse;
     @TableField("location")

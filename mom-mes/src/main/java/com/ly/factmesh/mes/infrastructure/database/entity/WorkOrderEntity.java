@@ -30,6 +30,8 @@ public class WorkOrderEntity {
     private Integer actualQuantity;
     @TableField("status")
     private Integer status;
+    @TableField("line_id")
+    private Long lineId;
     @TableField("start_time")
     private LocalDateTime startTime;
     @TableField("end_time")

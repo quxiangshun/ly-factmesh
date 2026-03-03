@@ -46,6 +46,11 @@ public class User {
      * 状态：0-禁用，1-启用
      */
     private Integer status;
+
+    /**
+     * 租户ID（多租户数据隔离）
+     */
+    private Long tenantId;
     
     /**
      * 创建时间
@@ -106,5 +111,13 @@ public class User {
     public void setStatus(Integer status) {
         this.status = status;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
     }
 }

@@ -81,6 +81,7 @@ public class ProductionLineRepositoryImpl implements ProductionLineRepository {
         e.setLineName(domain.getLineName());
         e.setDescription(domain.getDescription());
         e.setSequence(domain.getSequence());
+        e.setStatus(domain.getStatus() != null ? domain.getStatus() : ProductionLine.STATUS_IDLE);
         e.setCreateTime(domain.getCreateTime());
         e.setUpdateTime(domain.getUpdateTime());
         return e;
@@ -93,6 +94,7 @@ public class ProductionLineRepositoryImpl implements ProductionLineRepository {
         d.setLineName(e.getLineName());
         d.setDescription(e.getDescription());
         d.setSequence(e.getSequence());
+        d.setStatus(e.getStatus() != null ? e.getStatus() : ProductionLine.STATUS_IDLE);
         d.setCreateTime(e.getCreateTime());
         d.setUpdateTime(e.getUpdateTime());
         return d;

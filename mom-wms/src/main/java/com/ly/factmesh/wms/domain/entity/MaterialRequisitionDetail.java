@@ -10,6 +10,7 @@ public class MaterialRequisitionDetail {
     private Long id;
     private Long reqId;
     private Long materialId;
+    private String batchNo;
     private Integer quantity;
     private Integer actualQuantity;
 
@@ -19,6 +20,8 @@ public class MaterialRequisitionDetail {
     public void setReqId(Long reqId) { this.reqId = reqId; }
     public Long getMaterialId() { return materialId; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public Integer getActualQuantity() { return actualQuantity; }

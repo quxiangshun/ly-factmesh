@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.mes.application.dto.WorkOrderCreateRequest;
 import com.ly.factmesh.mes.application.dto.WorkOrderDTO;
 import com.ly.factmesh.mes.application.dto.WorkOrderStatsDTO;
+import com.ly.factmesh.mes.application.dto.WorkOrderSummaryDTO;
 import com.ly.factmesh.mes.application.service.WorkOrderApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -46,6 +47,14 @@ public class WorkOrderController {
         return ResponseEntity.ok(workOrderApplicationService.getStats());
     }
 
+    @GetMapping("/summary")
+    @Operation(summary = "生产汇总", description = "按日统计完成工单数、产量及进行中/暂停数量")
+    public ResponseEntity<WorkOrderSummaryDTO> getSummary(
+            @RequestParam(required = false) @Parameter(description = "统计日期，默认当天") java.time.LocalDate date
+    ) {
+        return ResponseEntity.ok(workOrderApplicationService.getSummary(date));
+    }
+
     @GetMapping
     @Operation(summary = "分页查询工单")
     public ResponseEntity<Page<WorkOrderDTO>> page(
@@ -65,6 +74,18 @@ public class WorkOrderController {
     @Operation(summary = "开始工单")
     public ResponseEntity<WorkOrderDTO> start(@PathVariable Long id) {
         return ResponseEntity.ok(workOrderApplicationService.start(id));
+    }
+
+    @PostMapping("/{id}/pause")
+    @Operation(summary = "暂停工单")
+    public ResponseEntity<WorkOrderDTO> pause(@PathVariable Long id) {
+        return ResponseEntity.ok(workOrderApplicationService.pause(id));
+    }
+
+    @PostMapping("/{id}/resume")
+    @Operation(summary = "恢复工单")
+    public ResponseEntity<WorkOrderDTO> resume(@PathVariable Long id) {
+        return ResponseEntity.ok(workOrderApplicationService.resume(id));
     }
 
     @PostMapping("/{id}/complete")

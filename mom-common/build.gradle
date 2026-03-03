@@ -7,6 +7,10 @@ dependencies {
     api "org.springframework.cloud:spring-cloud-starter-openfeign"
     // Springdoc OpenAPI 3（生成 /v3/api-docs，需 Spring Boot 4）
     api "org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1"
+    // Jackson JSON、校验（工具类、异常处理）
+    api "com.fasterxml.jackson.core:jackson-databind"
+    api "jakarta.validation:jakarta.validation-api"
+    api "org.springframework:spring-web"
 }
 
 jar {

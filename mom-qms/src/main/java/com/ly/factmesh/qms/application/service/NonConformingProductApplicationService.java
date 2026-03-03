@@ -5,6 +5,7 @@ import com.ly.factmesh.qms.application.dto.NonConformingProductCreateRequest;
 import com.ly.factmesh.qms.application.dto.NonConformingProductDTO;
 import com.ly.factmesh.qms.application.dto.NcrDisposeRequest;
 import com.ly.factmesh.qms.domain.entity.NonConformingProduct;
+import com.ly.factmesh.qms.domain.repository.InspectionTaskRepository;
 import com.ly.factmesh.qms.domain.repository.NonConformingProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 public class NonConformingProductApplicationService {
 
     private final NonConformingProductRepository nonConformingProductRepository;
+    private final InspectionTaskRepository inspectionTaskRepository;
+    private final QualityTraceabilityService qualityTraceabilityService;
 
     @Transactional(rollbackFor = Exception.class)
     public NonConformingProductDTO create(NonConformingProductCreateRequest request) {
@@ -34,6 +37,10 @@ public class NonConformingProductApplicationService {
         p.setTaskId(request.getTaskId());
         p.setRemark(request.getRemark());
         NonConformingProduct saved = nonConformingProductRepository.save(p);
+        String productionOrder = saved.getTaskId() != null
+                ? inspectionTaskRepository.findById(saved.getTaskId()).map(t -> t.getOrderCode()).orElse(null)
+                : null;
+        qualityTraceabilityService.createTraceFromNcr(saved.getId(), saved.getProductCode(), saved.getBatchNo(), productionOrder);
         return toDTO(saved);
     }
 

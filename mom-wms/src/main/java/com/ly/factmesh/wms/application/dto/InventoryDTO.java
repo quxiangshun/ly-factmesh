@@ -22,6 +22,8 @@ public class InventoryDTO {
     private String materialCode;
     @Schema(description = "物料名称")
     private String materialName;
+    @Schema(description = "批次号")
+    private String batchNo;
     @Schema(description = "仓库")
     private String warehouse;
     @Schema(description = "库位")

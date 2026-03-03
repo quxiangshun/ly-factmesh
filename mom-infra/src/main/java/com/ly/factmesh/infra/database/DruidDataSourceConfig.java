@@ -1,6 +1,7 @@
 package com.ly.factmesh.infra.database;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -8,12 +9,14 @@ import org.springframework.context.annotation.Import;
 import javax.sql.DataSource;
 
 /**
- * Druid数据源配置
- * 
+ * Druid 单数据源配置
+ * 当读写分离未启用时生效
+ *
  * @author 屈想顺
  */
 @Configuration
 @Import(PostgresConfig.class)
+@ConditionalOnProperty(prefix = "infra.datasource.read-write-split", name = "enabled", havingValue = "false", matchIfMissing = true)
 public class DruidDataSourceConfig {
     
     @Bean

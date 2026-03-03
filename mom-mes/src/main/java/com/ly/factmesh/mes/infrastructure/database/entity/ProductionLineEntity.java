@@ -26,6 +26,8 @@ public class ProductionLineEntity {
     private String description;
     @TableField("sequence")
     private Integer sequence;
+    @TableField("status")
+    private Integer status;
     @TableField("create_time")
     private LocalDateTime createTime;
     @TableField("update_time")

@@ -15,6 +15,8 @@ public class MaterialRequisitionDetailEntity {
     private Long reqId;
     @TableField("material_id")
     private Long materialId;
+    @TableField("batch_no")
+    private String batchNo;
     @TableField("quantity")
     private Integer quantity;
     @TableField("actual_quantity")

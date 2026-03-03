@@ -15,6 +15,12 @@ public class InspectionTaskCreateRequest {
     @Schema(description = "工单ID")
     private Long orderId;
 
+    @Schema(description = "工单编码（用于质量追溯）")
+    private String orderCode;
+
+    @Schema(description = "产品编码（用于质量追溯）")
+    private String productCode;
+
     @Schema(description = "物料ID")
     private Long materialId;
 

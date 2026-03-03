@@ -29,6 +29,8 @@ public class InspectionTaskApplicationService {
         InspectionTask t = new InspectionTask();
         t.setTaskCode(request.getTaskCode());
         t.setOrderId(request.getOrderId());
+        t.setOrderCode(request.getOrderCode());
+        t.setProductCode(request.getProductCode());
         t.setMaterialId(request.getMaterialId());
         t.setDeviceId(request.getDeviceId());
         t.setInspectionType(request.getInspectionType() != null ? request.getInspectionType() : 0);
@@ -119,6 +121,8 @@ public class InspectionTaskApplicationService {
         dto.setId(t.getId());
         dto.setTaskCode(t.getTaskCode());
         dto.setOrderId(t.getOrderId());
+        dto.setOrderCode(t.getOrderCode());
+        dto.setProductCode(t.getProductCode());
         dto.setMaterialId(t.getMaterialId());
         dto.setDeviceId(t.getDeviceId());
         dto.setInspectionType(t.getInspectionType());

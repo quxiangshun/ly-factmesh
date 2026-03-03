@@ -41,3 +41,19 @@ mybatis-plus:
   type-aliases-package: com.ly.factmesh.qms.infrastructure.database.entity
   configuration:
     map-underscore-to-camel-case: true
+
+# 读写分离（可选）
+# infra:
+#   datasource:
+#     read-write-split:
+#       enabled: true
+#       master-url: jdbc:postgresql://localhost:5432/ly_factmesh_qms
+#       slave-url: jdbc:postgresql://slave-host:5432/ly_factmesh_qms
+#       username: postgres
+#       password: postgres
+
+# Seata 分布式事务（可选）
+# seata:
+#   enabled: true
+#   application-id: mom-qms
+#   tx-service-group: ly_mom_tx_group

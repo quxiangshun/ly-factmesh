@@ -55,6 +55,12 @@ public class UserEntity {
      */
     @TableField(value = "status")
     private Integer status;
+
+    /**
+     * 租户ID（多租户数据隔离）
+     */
+    @TableField(value = "tenant_id")
+    private Long tenantId;
     
     /**
      * 创建时间

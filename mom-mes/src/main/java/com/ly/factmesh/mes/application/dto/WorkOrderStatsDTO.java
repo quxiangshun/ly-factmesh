@@ -14,5 +14,6 @@ public class WorkOrderStatsDTO {
     private long draftCount;
     private long releasedCount;
     private long inProgressCount;
+    private long pausedCount;
     private long completedCount;
 }

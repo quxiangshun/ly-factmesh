@@ -16,6 +16,19 @@ dependencies {
     // Mybatis-Plus 3.x适配SB4，正确依赖名
     implementation "com.baomidou:mybatis-plus-spring-boot3-starter:${mybatisPlusVersion}"
     implementation "com.baomidou:mybatis-plus-extension:${mybatisPlusVersion}"
+
+    // Redis 缓存（可选，配置 spring.data.redis.host 后生效）
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // Actuator + Prometheus 监控埋点（可选）
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // AOP（读写分离 @ReadOnly 切面，SB4 使用 spring-boot-starter-aspectj）
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+
+    // Seata 分布式事务（可选，seata.enabled=true 时生效）
+    implementation 'org.apache.seata:seata-spring-boot-starter:2.2.0'
 }
 
 jar {

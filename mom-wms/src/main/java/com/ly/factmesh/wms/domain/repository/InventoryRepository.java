@@ -18,11 +18,13 @@ public interface InventoryRepository {
 
     Optional<Inventory> findByMaterialAndLocation(Long materialId, String warehouse, String location);
 
+    Optional<Inventory> findByMaterialAndLocation(Long materialId, String warehouse, String location, String batchNo);
+
     List<Inventory> findByMaterialId(Long materialId);
 
-    List<Inventory> findAll(long offset, long limit, Long materialId, String warehouse);
+    List<Inventory> findAll(long offset, long limit, Long materialId, String warehouse, String batchNo);
 
-    long count(Long materialId, String warehouse);
+    long count(Long materialId, String warehouse, String batchNo);
 
     List<Inventory> findAllBelowSafeStock(long offset, long limit);
 

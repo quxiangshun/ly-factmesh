@@ -59,7 +59,8 @@ public class UserApplicationService {
         if (request.getStatus() != null) {
             user.setStatus(request.getStatus());
         }
-        
+        user.setTenantId(request.getTenantId());
+
         // 保存用户
         User savedUser = userRepository.save(user);
         
@@ -209,6 +210,7 @@ public class UserApplicationService {
         UserDTO dto = new UserDTO();
         BeanUtils.copyProperties(user, dto);
         dto.setRealName(user.getNickname());
+        dto.setTenantId(user.getTenantId());
         return dto;
     }
 }

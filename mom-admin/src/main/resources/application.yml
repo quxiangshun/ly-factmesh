@@ -35,6 +35,22 @@ spring:
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
 
+# 读写分离（可选）
+# infra:
+#   datasource:
+#     read-write-split:
+#       enabled: true
+#       master-url: jdbc:postgresql://localhost:5432/ly_factmesh_admin
+#       slave-url: jdbc:postgresql://slave-host:5432/ly_factmesh_admin
+#       username: postgres
+#       password: postgres
+
+# Seata 分布式事务（可选）
+# seata:
+#   enabled: true
+#   application-id: mom-admin
+#   tx-service-group: ly_mom_tx_group
+
 app:
   jwt:
     secret: ${JWT_SECRET:ly-factmesh-admin-jwt-secret-change-in-production}

@@ -35,6 +35,7 @@ flowchart TB
         I1[reportTelemetry]
         I2[写入InfluxDB]
         I3[规则引擎评估]
+        I3a[规则缓存60s/大小写不敏感]
         I4{匹配规则?}
         I5[冷却期检查]
         I6[创建告警]
@@ -58,14 +59,26 @@ flowchart TB
         Q2[创建质检任务]
     end
 
+    subgraph INFRA["基础设施 mom-infra"]
+        INF1[DB/Druid连接池]
+        INF2[CacheService/Redis]
+        INF3[MQTT/工业协议]
+        INF4[Prometheus监控]
+    end
+
     U1 --> U2 --> G1 --> G2 --> A1 --> A2 --> A3 --> U3
-    D1 --> G1 --> G2 --> I1 --> I2 --> I3 --> I4
+    D1 --> G1 --> G2 --> I1 --> I2 --> I3 --> I3a --> I4
     I4 -->|是| I5 --> I6 --> I7
     I4 -->|否| I3
     U3 --> U4 --> G1 --> G2 --> M1 --> M2
     M2 -.->|Feign| W1 --> W2
     M2 --> M3 --> M4
     M4 -.->|Feign| Q1 --> Q2
+    A3 -.->|依赖| INF1
+    I2 -.->|依赖| INF1
+    M1 -.->|依赖| INF1
+    W1 -.->|依赖| INF1
+    Q1 -.->|依赖| INF1
 `;
 
 onMounted(async () => {

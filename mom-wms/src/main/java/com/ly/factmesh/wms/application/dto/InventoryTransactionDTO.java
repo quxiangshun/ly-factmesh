@@ -22,6 +22,8 @@ public class InventoryTransactionDTO {
     private String materialCode;
     @Schema(description = "物料名称")
     private String materialName;
+    @Schema(description = "批次号")
+    private String batchNo;
     @Schema(description = "类型：1-入库 2-出库 3-调整")
     private Integer transactionType;
     @Schema(description = "数量")
@@ -30,6 +32,10 @@ public class InventoryTransactionDTO {
     private String warehouse;
     @Schema(description = "库位")
     private String location;
+    @Schema(description = "关联工单ID")
+    private Long orderId;
+    @Schema(description = "关联领料单ID")
+    private Long reqId;
     @Schema(description = "交易时间")
     private LocalDateTime transactionTime;
     @Schema(description = "操作人")

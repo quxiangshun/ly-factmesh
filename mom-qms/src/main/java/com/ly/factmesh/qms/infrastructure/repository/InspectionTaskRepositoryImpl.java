@@ -93,6 +93,8 @@ public class InspectionTaskRepositoryImpl implements InspectionTaskRepository {
         e.setId(domain.getId());
         e.setTaskCode(domain.getTaskCode());
         e.setOrderId(domain.getOrderId());
+        e.setOrderCode(domain.getOrderCode());
+        e.setProductCode(domain.getProductCode());
         e.setMaterialId(domain.getMaterialId());
         e.setDeviceId(domain.getDeviceId());
         e.setInspectionType(domain.getInspectionType());
@@ -109,6 +111,8 @@ public class InspectionTaskRepositoryImpl implements InspectionTaskRepository {
         d.setId(e.getId());
         d.setTaskCode(e.getTaskCode());
         d.setOrderId(e.getOrderId());
+        d.setOrderCode(e.getOrderCode());
+        d.setProductCode(e.getProductCode());
         d.setMaterialId(e.getMaterialId());
         d.setDeviceId(e.getDeviceId());
         d.setInspectionType(e.getInspectionType());

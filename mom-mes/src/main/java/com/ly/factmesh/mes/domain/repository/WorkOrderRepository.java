@@ -24,5 +24,13 @@ public interface WorkOrderRepository {
 
     long countByStatus(Integer status);
 
+    long countCompletedOnDate(java.time.LocalDate date);
+
+    int sumActualQuantityCompletedOnDate(java.time.LocalDate date);
+
+    long countCompletedByLineIdOnDate(Long lineId, java.time.LocalDate date);
+
+    int sumActualQuantityByLineIdCompletedOnDate(Long lineId, java.time.LocalDate date);
+
     void deleteById(Long id);
 }

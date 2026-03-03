@@ -12,6 +12,8 @@ public class QmsInspectionTaskRequest {
 
     private String taskCode;
     private Long orderId;
+    private String orderCode;
+    private String productCode;
     private Long materialId;
     private Long deviceId;
     private Integer inspectionType;

@@ -192,10 +192,12 @@ public class MaterialRequisitionApplicationService {
             int actualQty = d.getActualQuantity() != null ? d.getActualQuantity() : 0;
             if (actualQty <= 0) continue;
             String refNo = req.getReqNo();
+            Long reqId = req.getId();
+            Long orderId = req.getOrderId();
             if (req.getReqType() == MaterialRequisition.REQ_TYPE_REQUISITION) {
-                inventoryApplicationService.deductForRequisition(d.getMaterialId(), actualQty, refNo);
+                inventoryApplicationService.deductForRequisition(d.getMaterialId(), actualQty, refNo, reqId, orderId);
             } else if (req.getReqType() == MaterialRequisition.REQ_TYPE_RETURN) {
-                inventoryApplicationService.addForReturn(d.getMaterialId(), actualQty, refNo);
+                inventoryApplicationService.addForReturn(d.getMaterialId(), actualQty, refNo, reqId, orderId);
             }
         }
         req.setStatus(MaterialRequisition.STATUS_DONE);
@@ -222,6 +224,7 @@ public class MaterialRequisitionApplicationService {
         dto.setId(d.getId());
         dto.setReqId(d.getReqId());
         dto.setMaterialId(d.getMaterialId());
+        dto.setBatchNo(d.getBatchNo());
         dto.setQuantity(d.getQuantity());
         dto.setActualQuantity(d.getActualQuantity() != null ? d.getActualQuantity() : 0);
         materialRepository.findById(d.getMaterialId()).ifPresent(m -> {

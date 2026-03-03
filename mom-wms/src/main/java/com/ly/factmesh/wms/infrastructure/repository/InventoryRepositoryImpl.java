@@ -44,10 +44,16 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 
     @Override
     public Optional<Inventory> findByMaterialAndLocation(Long materialId, String warehouse, String location) {
+        return findByMaterialAndLocation(materialId, warehouse, location, null);
+    }
+
+    @Override
+    public Optional<Inventory> findByMaterialAndLocation(Long materialId, String warehouse, String location, String batchNo) {
         LambdaQueryWrapper<InventoryEntity> q = new LambdaQueryWrapper<>();
         q.eq(InventoryEntity::getMaterialId, materialId);
         String wh = (warehouse == null || warehouse.isBlank()) ? "" : warehouse;
         String loc = (location == null || location.isBlank()) ? "" : location;
+        String batch = (batchNo == null || batchNo.isBlank()) ? null : batchNo;
         if (wh.isEmpty()) {
             q.and(w -> w.isNull(InventoryEntity::getWarehouse).or().eq(InventoryEntity::getWarehouse, ""));
         } else {
@@ -57,6 +63,11 @@ public class InventoryRepositoryImpl implements InventoryRepository {
             q.and(w -> w.isNull(InventoryEntity::getLocation).or().eq(InventoryEntity::getLocation, ""));
         } else {
             q.eq(InventoryEntity::getLocation, loc);
+        }
+        if (batch == null) {
+            q.and(w -> w.isNull(InventoryEntity::getBatchNo).or().eq(InventoryEntity::getBatchNo, ""));
+        } else {
+            q.eq(InventoryEntity::getBatchNo, batch);
         }
         InventoryEntity e = inventoryMapper.selectOne(q);
         return Optional.ofNullable(e).map(this::toDomain);
@@ -71,21 +82,23 @@ public class InventoryRepositoryImpl implements InventoryRepository {
     }
 
     @Override
-    public List<Inventory> findAll(long offset, long limit, Long materialId, String warehouse) {
+    public List<Inventory> findAll(long offset, long limit, Long materialId, String warehouse, String batchNo) {
         long pageNum = limit <= 0 ? 1 : offset / limit + 1;
         Page<InventoryEntity> page = new Page<>(pageNum, limit);
         LambdaQueryWrapper<InventoryEntity> q = new LambdaQueryWrapper<>();
         if (materialId != null) q.eq(InventoryEntity::getMaterialId, materialId);
         if (warehouse != null && !warehouse.isBlank()) q.eq(InventoryEntity::getWarehouse, warehouse);
+        if (batchNo != null && !batchNo.isBlank()) q.eq(InventoryEntity::getBatchNo, batchNo);
         q.orderByDesc(InventoryEntity::getLastUpdateTime);
         return inventoryMapper.selectPage(page, q).getRecords().stream().map(this::toDomain).collect(Collectors.toList());
     }
 
     @Override
-    public long count(Long materialId, String warehouse) {
+    public long count(Long materialId, String warehouse, String batchNo) {
         LambdaQueryWrapper<InventoryEntity> q = new LambdaQueryWrapper<>();
         if (materialId != null) q.eq(InventoryEntity::getMaterialId, materialId);
         if (warehouse != null && !warehouse.isBlank()) q.eq(InventoryEntity::getWarehouse, warehouse);
+        if (batchNo != null && !batchNo.isBlank()) q.eq(InventoryEntity::getBatchNo, batchNo);
         return inventoryMapper.selectCount(q);
     }
 
@@ -110,6 +123,7 @@ public class InventoryRepositoryImpl implements InventoryRepository {
         InventoryEntity e = new InventoryEntity();
         e.setId(d.getId());
         e.setMaterialId(d.getMaterialId());
+        e.setBatchNo(d.getBatchNo());
         e.setWarehouse(d.getWarehouse());
         e.setLocation(d.getLocation());
         e.setQuantity(d.getQuantity() != null ? d.getQuantity() : 0);
@@ -122,6 +136,7 @@ public class InventoryRepositoryImpl implements InventoryRepository {
         Inventory d = new Inventory();
         d.setId(e.getId());
         d.setMaterialId(e.getMaterialId());
+        d.setBatchNo(e.getBatchNo());
         d.setWarehouse(e.getWarehouse());
         d.setLocation(e.getLocation());
         d.setQuantity(e.getQuantity());

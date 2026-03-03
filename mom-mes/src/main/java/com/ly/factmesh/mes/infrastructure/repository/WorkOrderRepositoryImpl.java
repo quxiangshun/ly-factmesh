@@ -75,6 +75,60 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
     }
 
     @Override
+    public long countCompletedOnDate(java.time.LocalDate date) {
+        if (date == null) return 0;
+        java.time.LocalDateTime start = date.atStartOfDay();
+        java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
+        LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
+        q.eq(WorkOrderEntity::getStatus, com.ly.factmesh.mes.domain.entity.WorkOrder.STATUS_COMPLETED);
+        q.ge(WorkOrderEntity::getEndTime, start);
+        q.lt(WorkOrderEntity::getEndTime, end);
+        return workOrderMapper.selectCount(q);
+    }
+
+    @Override
+    public int sumActualQuantityCompletedOnDate(java.time.LocalDate date) {
+        if (date == null) return 0;
+        java.time.LocalDateTime start = date.atStartOfDay();
+        java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
+        LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
+        q.eq(WorkOrderEntity::getStatus, com.ly.factmesh.mes.domain.entity.WorkOrder.STATUS_COMPLETED);
+        q.ge(WorkOrderEntity::getEndTime, start);
+        q.lt(WorkOrderEntity::getEndTime, end);
+        return workOrderMapper.selectList(q).stream()
+                .mapToInt(e -> e.getActualQuantity() != null ? e.getActualQuantity() : 0)
+                .sum();
+    }
+
+    @Override
+    public long countCompletedByLineIdOnDate(Long lineId, java.time.LocalDate date) {
+        if (date == null || lineId == null) return 0;
+        java.time.LocalDateTime start = date.atStartOfDay();
+        java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
+        LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
+        q.eq(WorkOrderEntity::getStatus, WorkOrder.STATUS_COMPLETED);
+        q.eq(WorkOrderEntity::getLineId, lineId);
+        q.ge(WorkOrderEntity::getEndTime, start);
+        q.lt(WorkOrderEntity::getEndTime, end);
+        return workOrderMapper.selectCount(q);
+    }
+
+    @Override
+    public int sumActualQuantityByLineIdCompletedOnDate(Long lineId, java.time.LocalDate date) {
+        if (date == null || lineId == null) return 0;
+        java.time.LocalDateTime start = date.atStartOfDay();
+        java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
+        LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
+        q.eq(WorkOrderEntity::getStatus, WorkOrder.STATUS_COMPLETED);
+        q.eq(WorkOrderEntity::getLineId, lineId);
+        q.ge(WorkOrderEntity::getEndTime, start);
+        q.lt(WorkOrderEntity::getEndTime, end);
+        return workOrderMapper.selectList(q).stream()
+                .mapToInt(e -> e.getActualQuantity() != null ? e.getActualQuantity() : 0)
+                .sum();
+    }
+
+    @Override
     public void deleteById(Long id) {
         workOrderMapper.deleteById(id);
     }
@@ -88,6 +142,7 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
         e.setPlanQuantity(domain.getPlanQuantity());
         e.setActualQuantity(domain.getActualQuantity());
         e.setStatus(domain.getStatus());
+        e.setLineId(domain.getLineId());
         e.setStartTime(domain.getStartTime());
         e.setEndTime(domain.getEndTime());
         e.setCreateTime(domain.getCreateTime());
@@ -104,6 +159,7 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
         d.setPlanQuantity(e.getPlanQuantity());
         d.setActualQuantity(e.getActualQuantity());
         d.setStatus(e.getStatus());
+        d.setLineId(e.getLineId());
         d.setStartTime(e.getStartTime());
         d.setEndTime(e.getEndTime());
         d.setCreateTime(e.getCreateTime());

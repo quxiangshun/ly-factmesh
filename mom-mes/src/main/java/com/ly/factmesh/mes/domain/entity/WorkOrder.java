@@ -16,6 +16,7 @@ public class WorkOrder {
     private Integer planQuantity;
     private Integer actualQuantity;
     private Integer status;
+    private Long lineId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private LocalDateTime createTime;
@@ -26,6 +27,7 @@ public class WorkOrder {
     public static final int STATUS_IN_PROGRESS = 2;
     public static final int STATUS_COMPLETED = 3;
     public static final int STATUS_CLOSED = 4;
+    public static final int STATUS_PAUSED = 5;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -41,6 +43,8 @@ public class WorkOrder {
     public void setActualQuantity(Integer actualQuantity) { this.actualQuantity = actualQuantity; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
+    public Long getLineId() { return lineId; }
+    public void setLineId(Long lineId) { this.lineId = lineId; }
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
     public LocalDateTime getEndTime() { return endTime; }

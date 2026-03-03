@@ -18,10 +18,11 @@ public class InspectionResultApplicationService {
 
     private final InspectionResultRepository inspectionResultRepository;
     private final InspectionTaskRepository inspectionTaskRepository;
+    private final QualityTraceabilityService qualityTraceabilityService;
 
     @Transactional(rollbackFor = Exception.class)
     public InspectionResultDTO create(InspectionResultCreateRequest request) {
-        inspectionTaskRepository.findById(request.getTaskId())
+        var task = inspectionTaskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new IllegalArgumentException("质检任务不存在: " + request.getTaskId()));
         InspectionResult r = new InspectionResult();
         r.setTaskId(request.getTaskId());
@@ -31,6 +32,15 @@ public class InspectionResultApplicationService {
         r.setJudgment(request.getJudgment() != null ? request.getJudgment() : InspectionResult.JUDGMENT_PASS);
         r.setInspector(request.getInspector());
         InspectionResult saved = inspectionResultRepository.save(r);
+        if (InspectionResult.JUDGMENT_FAIL == saved.getJudgment()) {
+            String productCode = task.getProductCode();
+            if (productCode == null && task.getMaterialId() != null) {
+                productCode = "M" + task.getMaterialId();
+            }
+            if (productCode != null) {
+                qualityTraceabilityService.createTraceFromInspection(saved.getId(), productCode, null, task.getOrderCode());
+            }
+        }
         return toDTO(saved);
     }
 

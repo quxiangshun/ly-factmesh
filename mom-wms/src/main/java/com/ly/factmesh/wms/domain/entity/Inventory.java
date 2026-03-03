@@ -11,6 +11,7 @@ public class Inventory {
 
     private Long id;
     private Long materialId;
+    private String batchNo;
     private String warehouse;
     private String location;
     private Integer quantity;
@@ -21,6 +22,8 @@ public class Inventory {
     public void setId(Long id) { this.id = id; }
     public Long getMaterialId() { return materialId; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public String getWarehouse() { return warehouse; }
     public void setWarehouse(String warehouse) { this.warehouse = warehouse; }
     public String getLocation() { return location; }

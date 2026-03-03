@@ -31,4 +31,7 @@ public class WorkOrderCreateRequest {
     @Positive(message = "计划数量必须大于0")
     @Schema(description = "计划数量", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer planQuantity;
+
+    @Schema(description = "产线ID（可选，用于产线产能统计）")
+    private Long lineId;
 }

@@ -26,8 +26,10 @@ public class WorkOrderDTO {
     private Integer planQuantity;
     @Schema(description = "实际数量")
     private Integer actualQuantity;
-    @Schema(description = "状态：0草稿 1已下发 2进行中 3已完成 4已关闭")
+    @Schema(description = "状态：0草稿 1已下发 2进行中 3已完成 4已关闭 5暂停")
     private Integer status;
+    @Schema(description = "产线ID")
+    private Long lineId;
     @Schema(description = "开始时间")
     private LocalDateTime startTime;
     @Schema(description = "结束时间")

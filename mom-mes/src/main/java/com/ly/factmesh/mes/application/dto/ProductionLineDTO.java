@@ -17,6 +17,7 @@ public class ProductionLineDTO {
     private String lineName;
     private String description;
     private Integer sequence;
+    private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }
