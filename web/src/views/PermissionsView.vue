@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">权限管理</h1>
     <p class="page-desc">Admin 权限列表与树形结构，支持创建、编辑、删除</p>
     <div class="tabs">
       <button :class="['tab', { active: tab === 'list' }]" @click="tab = 'list'">列表</button>

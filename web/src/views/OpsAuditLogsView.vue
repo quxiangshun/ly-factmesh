@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">运维审计</h1>
     <p class="page-desc">跨服务审计记录，谁在何时执行了哪些操作</p>
     <div class="toolbar">
       <input v-model="filterService" placeholder="服务名筛选" class="filter-input" />

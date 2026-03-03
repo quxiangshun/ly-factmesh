@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">操作日志</h1>
     <p class="page-desc">用户操作记录，谁在何时执行了哪些操作</p>
     <div class="toolbar">
       <input v-model="filterModule" placeholder="模块筛选" class="filter-input" />

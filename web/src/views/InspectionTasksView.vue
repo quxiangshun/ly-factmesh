@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">质检任务</h1>
     <p class="page-desc">QMS 质检任务列表，支持新建、开始、完成、删除</p>
     <div class="stats-bar" v-if="stats">
       <span>总数 {{ stats.total }}</span>

@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">产线管理</h1>
     <p class="page-desc">MES 产线定义，用于生产排程与工位关联</p>
     <div class="toolbar">
       <button type="button" class="btn primary" @click="showCreate = true">新建产线</button>

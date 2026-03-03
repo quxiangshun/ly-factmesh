@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">租户管理</h1>
     <p class="page-desc">多租户数据隔离与租户配置</p>
     <div class="toolbar">
       <button type="button" class="btn primary" @click="showCreate = true">新建租户</button>

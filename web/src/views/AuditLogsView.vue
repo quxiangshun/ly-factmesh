@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">审计日志</h1>
     <p class="page-desc">数据变更记录</p>
     <div class="toolbar">
       <input v-model="filterTable" placeholder="表名筛选" class="filter-input" />

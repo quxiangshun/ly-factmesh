@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">系统事件</h1>
     <p class="page-desc">系统级事件，支持按类型与处理状态筛选</p>
     <div class="toolbar">
       <input v-model="filterEventType" placeholder="事件类型" class="filter-input" />

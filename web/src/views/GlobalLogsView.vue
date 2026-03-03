@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">全局日志</h1>
     <p class="page-desc">系统级日志，跨服务汇总</p>
     <div class="toolbar">
       <input v-model="filterService" placeholder="服务名筛选" class="filter-input" />

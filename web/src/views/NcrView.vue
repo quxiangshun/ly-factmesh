@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">不合格品（NCR）</h1>
     <p class="page-desc">QMS 不合格品登记与处置管理</p>
     <div class="toolbar">
       <select v-model="filterDisposal" class="filter-select">

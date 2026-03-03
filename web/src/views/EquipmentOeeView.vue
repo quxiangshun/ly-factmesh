@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">设备 OEE</h1>
     <p class="page-desc">设备综合效率（OEE）= 可用率 × 性能率 × 良品率。当前展示产线产能统计，完整 OEE 需聚合 IoT 设备运行时长与 MES 产量。</p>
     <div class="toolbar">
       <input v-model="filterDate" type="date" class="filter-input" />

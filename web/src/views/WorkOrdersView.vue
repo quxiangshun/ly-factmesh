@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">工单管理</h1>
     <p class="page-desc">MES 工单列表，支持下发、开始、完成</p>
     <div class="stats-bar" v-if="stats">
       <span>总数 {{ stats.total }}</span>

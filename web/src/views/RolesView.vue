@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">角色管理</h1>
     <p class="page-desc">Admin 角色列表，支持创建、编辑、分配权限、删除</p>
     <div class="toolbar">
       <button type="button" class="btn primary" @click="showCreate = true">新建角色</button>

@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">工序管理</h1>
     <p class="page-desc">MES 工序定义，用于报工与工艺路线</p>
     <div class="toolbar">
       <button type="button" class="btn primary" @click="showCreate = true">新建工序</button>

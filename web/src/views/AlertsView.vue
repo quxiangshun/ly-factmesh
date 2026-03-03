@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">设备告警</h1>
     <p class="page-desc">告警记录、待处理告警、阈值规则自动告警</p>
     <div class="stats-bar" v-if="pendingCount !== null && tab !== 'rules'">
       <span class="pending">待处理 {{ pendingCount }} 条</span>

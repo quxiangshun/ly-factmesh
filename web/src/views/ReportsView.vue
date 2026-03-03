@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">报工管理</h1>
     <p class="page-desc">MES 报工录入，关联工单、工序、设备</p>
     <div class="toolbar">
       <select v-model="filterOrderId" class="filter-select">

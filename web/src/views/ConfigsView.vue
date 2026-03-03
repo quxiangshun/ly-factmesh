@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">系统配置</h1>
     <p class="page-desc">Admin 系统参数配置，支持创建、编辑、删除</p>
     <div class="toolbar">
       <input v-model="filterKey" placeholder="配置键筛选" class="filter-input" />

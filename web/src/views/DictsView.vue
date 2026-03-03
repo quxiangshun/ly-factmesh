@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">字典管理</h1>
     <p class="page-desc">Admin 数据字典，支持按类型筛选、创建、编辑、删除</p>
     <div class="toolbar">
       <input v-model="filterType" placeholder="字典类型筛选" class="filter-input" />

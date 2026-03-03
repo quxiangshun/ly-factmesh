@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">物料追溯</h1>
     <p class="page-desc">按物料/批次/工单/领料单追溯出入库记录</p>
     <div class="toolbar">
       <select v-model="filterMaterialId" class="filter-select">

@@ -1,6 +1,5 @@
 <template>
   <section class="placeholder">
-    <h1 class="page-title">{{ title }}</h1>
     <p class="page-desc">{{ desc }}</p>
     <div class="coming-soon">功能开发中，敬请期待</div>
   </section>

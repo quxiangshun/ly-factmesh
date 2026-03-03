@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">领料单</h1>
     <p class="page-desc">生产领料/退料，MES 工单联动</p>
     <div class="toolbar">
       <select v-model="filterOrderId" class="filter-select">

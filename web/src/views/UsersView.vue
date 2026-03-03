@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">用户管理</h1>
     <p class="page-desc">Admin 用户列表，支持创建、编辑、禁用</p>
     <div class="toolbar">
       <button type="button" class="btn primary" @click="showCreate = true">新建用户</button>

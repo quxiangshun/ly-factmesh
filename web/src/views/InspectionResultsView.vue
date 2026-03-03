@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">质检结果</h1>
     <p class="page-desc">检验项录入与质量判定</p>
     <div class="toolbar">
       <select v-model="selectedTaskId" class="filter-select" @change="loadResults">

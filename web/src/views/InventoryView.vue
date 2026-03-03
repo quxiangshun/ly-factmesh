@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">库存管理</h1>
     <p class="page-desc">库存查询、预警、盘点</p>
     <div class="toolbar">
       <select v-model="filterMaterialId" class="filter-select">

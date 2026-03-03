@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">质量追溯</h1>
     <p class="page-desc">按产品编码、批次号、工单查询质量追溯记录</p>
     <div class="toolbar">
       <input v-model="filterProductCode" placeholder="产品编码" class="filter-input" />

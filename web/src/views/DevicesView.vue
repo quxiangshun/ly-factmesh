@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">设备管理</h1>
     <p class="page-desc">IoT 设备列表，支持上下线、启停、故障、遥测、告警</p>
     <div class="stats-bar" v-if="stats">
       <span>总数 {{ stats.total }}</span>

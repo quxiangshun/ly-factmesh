@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">生产日报</h1>
     <p class="page-desc">按日统计完成工单数、产量及进行中/暂停数量</p>
     <div class="toolbar">
       <input v-model="filterDate" type="date" class="filter-input" />

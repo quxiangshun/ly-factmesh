@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">物料管理</h1>
     <p class="page-desc">WMS 物料列表，支持新建与删除</p>
     <div class="toolbar">
       <button type="button" class="btn primary" @click="showCreate = true">新建物料</button>

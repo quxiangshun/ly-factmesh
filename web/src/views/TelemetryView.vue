@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-    <h1 class="page-title">设备遥测</h1>
     <p class="page-desc">查询设备采集数据、历史曲线</p>
     <div class="toolbar">
       <div class="filter-row">
