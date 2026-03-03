@@ -53,15 +53,34 @@ public class MaterialRepositoryImpl implements MaterialRepository {
 
     @Override
     public List<Material> findAll(long offset, long limit) {
+        return findAll(offset, limit, null, null, null);
+    }
+
+    @Override
+    public List<Material> findAll(long offset, long limit, String materialCode, String materialName, String materialType) {
         long pageNum = limit <= 0 ? 1 : offset / limit + 1;
         Page<MaterialEntity> page = new Page<>(pageNum, limit);
-        Page<MaterialEntity> result = materialMapper.selectPage(page, null);
+        LambdaQueryWrapper<MaterialEntity> q = new LambdaQueryWrapper<>();
+        if (materialCode != null && !materialCode.isBlank()) q.like(MaterialEntity::getMaterialCode, materialCode);
+        if (materialName != null && !materialName.isBlank()) q.like(MaterialEntity::getMaterialName, materialName);
+        if (materialType != null && !materialType.isBlank()) q.eq(MaterialEntity::getMaterialType, materialType);
+        q.orderByDesc(MaterialEntity::getCreateTime);
+        Page<MaterialEntity> result = materialMapper.selectPage(page, q);
         return result.getRecords().stream().map(this::toDomain).collect(Collectors.toList());
     }
 
     @Override
     public long count() {
-        return materialMapper.selectCount(null);
+        return count(null, null, null);
+    }
+
+    @Override
+    public long count(String materialCode, String materialName, String materialType) {
+        LambdaQueryWrapper<MaterialEntity> q = new LambdaQueryWrapper<>();
+        if (materialCode != null && !materialCode.isBlank()) q.like(MaterialEntity::getMaterialCode, materialCode);
+        if (materialName != null && !materialName.isBlank()) q.like(MaterialEntity::getMaterialName, materialName);
+        if (materialType != null && !materialType.isBlank()) q.eq(MaterialEntity::getMaterialType, materialType);
+        return materialMapper.selectCount(q);
     }
 
     @Override

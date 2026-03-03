@@ -2,6 +2,13 @@
   <section class="page">
     <h1 class="page-title">工单管理</h1>
     <p class="page-desc">MES 工单列表，支持下发、开始、完成</p>
+    <div class="stats-bar" v-if="stats">
+      <span>总数 {{ stats.total }}</span>
+      <span>草稿 {{ stats.draftCount }}</span>
+      <span>已下发 {{ stats.releasedCount }}</span>
+      <span class="progress">进行中 {{ stats.inProgressCount }}</span>
+      <span class="done">已完成 {{ stats.completedCount }}</span>
+    </div>
     <div class="toolbar">
       <button type="button" class="btn primary" @click="showCreate = true">新建工单</button>
     </div>
@@ -34,7 +41,7 @@
                   <button type="button" class="btn small" @click="doStart(row.id)">开始</button>
                 </template>
                 <template v-else-if="row.status === 2">
-                  <button type="button" class="btn small" @click="doComplete(row.id)">完成</button>
+                  <button type="button" class="btn small" @click="openComplete(row)">完成</button>
                 </template>
               </td>
             </tr>
@@ -47,6 +54,23 @@
         <button type="button" class="btn small" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
       </div>
     </template>
+    <div v-if="showComplete" class="modal-mask" @click.self="showComplete = false">
+      <div class="modal">
+        <h3>完成工单</h3>
+        <p v-if="completeRow" class="modal-desc">{{ completeRow.orderCode }} - {{ completeRow.productName }}</p>
+        <form @submit.prevent="submitComplete">
+          <div class="form-group">
+            <label>实际数量</label>
+            <input v-model.number="completeActualQty" type="number" min="0" :placeholder="'计划: ' + (completeRow?.planQuantity ?? 0)" />
+          </div>
+          <p v-if="completeError" class="error-msg">{{ completeError }}</p>
+          <div class="modal-actions">
+            <button type="button" class="btn" @click="showComplete = false">取消</button>
+            <button type="submit" class="btn primary" :disabled="completing">确定</button>
+          </div>
+        </form>
+      </div>
+    </div>
     <div v-if="showCreate" class="modal-mask" @click.self="showCreate = false">
       <div class="modal">
         <h3>新建工单</h3>
@@ -82,6 +106,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import {
   getWorkOrderPage,
+  getWorkOrderStats,
   createWorkOrder,
   releaseWorkOrder,
   startWorkOrder,
@@ -92,6 +117,7 @@ import {
 } from '@/api/workOrders';
 
 const pageData = ref<Awaited<ReturnType<typeof getWorkOrderPage>> | null>(null);
+const stats = ref<Awaited<ReturnType<typeof getWorkOrderStats>> | null>(null);
 const loading = ref(true);
 const error = ref('');
 const currentPage = ref(1);
@@ -111,7 +137,12 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    pageData.value = await getWorkOrderPage(currentPage.value, pageSize);
+    const [pageRes, statsRes] = await Promise.all([
+      getWorkOrderPage(currentPage.value, pageSize),
+      getWorkOrderStats()
+    ]);
+    pageData.value = pageRes;
+    stats.value = statsRes;
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载失败';
   } finally {
@@ -165,12 +196,34 @@ async function doStart(id: number) {
   }
 }
 
-async function doComplete(id: number) {
+const showComplete = ref(false);
+const completeRow = ref<WorkOrderDTO | null>(null);
+const completeActualQty = ref<number | ''>('');
+const completeError = ref('');
+const completing = ref(false);
+
+function openComplete(row: WorkOrderDTO) {
+  completeRow.value = row;
+  completeActualQty.value = row.actualQuantity ?? row.planQuantity ?? '';
+  completeError.value = '';
+  showComplete.value = true;
+}
+
+async function submitComplete() {
+  if (!completeRow.value) return;
+  completeError.value = '';
+  completing.value = true;
   try {
-    await completeWorkOrder(id);
+    const qty = completeActualQty.value === '' ? undefined : Number(completeActualQty.value);
+    await completeWorkOrder(completeRow.value.id, qty);
+    showComplete.value = false;
+    completeRow.value = null;
+    completeActualQty.value = '';
     await load();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '完成失败';
+    completeError.value = e instanceof Error ? e.message : '完成失败';
+  } finally {
+    completing.value = false;
   }
 }
 
@@ -188,7 +241,11 @@ async function doDelete(id: number) {
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
+.modal .modal-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
 .page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
+.stats-bar { display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: #94a3b8; }
+.stats-bar .progress { color: #38bdf8; }
+.stats-bar .done { color: #4ade80; }
 .toolbar { margin-bottom: 1rem; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }

@@ -25,6 +25,9 @@ public class DeviceAlert {
     @TableField("device_code")
     private String deviceCode;
 
+    @TableField("rule_id")
+    private Long ruleId;
+
     @TableField("alert_type")
     private String alertType;
 

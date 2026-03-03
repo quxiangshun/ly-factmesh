@@ -17,7 +17,17 @@ public interface MaterialRequisitionRepository {
 
     void saveDetail(MaterialRequisitionDetail detail);
 
+    void updateDetail(MaterialRequisitionDetail detail);
+
     Optional<MaterialRequisition> findById(Long id);
 
     Optional<MaterialRequisition> findByReqNo(String reqNo);
+
+    List<MaterialRequisition> findAll(long offset, long limit, Long orderId, Integer status);
+
+    long count(Long orderId, Integer status);
+
+    List<MaterialRequisitionDetail> findDetailsByReqId(Long reqId);
+
+    boolean existsDetailByMaterialId(Long materialId);
 }

@@ -45,6 +45,9 @@
       <header class="header">
         <span class="header-title">{{ currentTitle }}</span>
         <div class="header-actions">
+          <RouterLink to="/help" class="header-link header-icon" title="帮助文档">
+            <Icon icon="mdi:help-circle-outline" />
+          </RouterLink>
           <a href="/doc.html" target="_blank" rel="noreferrer" class="header-link">接口文档</a>
           <button class="btn-logout" @click="handleLogout">退出</button>
         </div>
@@ -225,6 +228,17 @@ function handleLogout() {
 
 .header-link:hover {
   color: #e5e7eb;
+}
+
+.header-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1.25rem;
+  padding: 0.25rem;
+}
+
+.header-icon .iconify {
+  font-size: 1.25rem;
 }
 
 .btn-logout {

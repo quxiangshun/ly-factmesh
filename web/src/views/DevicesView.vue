@@ -44,6 +44,7 @@
                   <button v-else type="button" class="btn small" @click="doStop(row.id)">停止</button>
                   <button type="button" class="btn small danger" @click="doFault(row.id)">故障</button>
                 </template>
+                <button type="button" class="btn small" @click="openEdit(row)">编辑</button>
                 <button type="button" class="btn small" @click="openTelemetry(row)">遥测</button>
                 <button type="button" class="btn small" @click="openAlerts(row)">告警</button>
                 <button type="button" class="btn small danger" @click="doDelete(row.id)">删除</button>
@@ -53,6 +54,42 @@
         </table>
       </div>
     </template>
+    <div v-if="showEdit" class="modal-mask" @click.self="showEdit = false">
+      <div class="modal">
+        <h3>编辑设备</h3>
+        <form v-if="editForm" @submit.prevent="submitEdit">
+          <div class="form-group">
+            <label>设备编码</label>
+            <input :value="editForm.deviceCode" disabled class="readonly" />
+          </div>
+          <div class="form-group">
+            <label>设备名称 *</label>
+            <input v-model="editForm.deviceName" required />
+          </div>
+          <div class="form-group">
+            <label>设备类型</label>
+            <input v-model="editForm.deviceType" placeholder="可选" />
+          </div>
+          <div class="form-group">
+            <label>型号</label>
+            <input v-model="editForm.model" placeholder="可选" />
+          </div>
+          <div class="form-group">
+            <label>制造商</label>
+            <input v-model="editForm.manufacturer" placeholder="可选" />
+          </div>
+          <div class="form-group">
+            <label>安装位置</label>
+            <input v-model="editForm.installLocation" placeholder="可选" />
+          </div>
+          <p v-if="editError" class="error-msg">{{ editError }}</p>
+          <div class="modal-actions">
+            <button type="button" class="btn" @click="showEdit = false">取消</button>
+            <button type="submit" class="btn primary" :disabled="editing">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
     <div v-if="showCreate" class="modal-mask" @click.self="showCreate = false">
       <div class="modal">
         <h3>注册设备</h3>
@@ -163,6 +200,7 @@ import {
   getDeviceList,
   getDeviceStats,
   registerDevice,
+  updateDevice,
   deviceOnline,
   deviceOffline,
   deviceStart,
@@ -174,6 +212,7 @@ import {
   createDeviceAlert,
   resolveDeviceAlert,
   type DeviceRegisterRequest,
+  type DeviceUpdateRequest,
   type DeviceDTO,
   type DeviceStatsDTO,
   type DeviceTelemetryPoint,
@@ -195,6 +234,10 @@ const createForm = ref<DeviceRegisterRequest>({
 });
 const createError = ref('');
 const creating = ref(false);
+const showEdit = ref(false);
+const editForm = ref<(DeviceDTO & { deviceCode: string }) | null>(null);
+const editError = ref('');
+const editing = ref(false);
 const showTelemetry = ref(false);
 const showAlerts = ref(false);
 const showCreateAlert = ref(false);
@@ -320,13 +363,42 @@ async function resolveAlert(id: number) {
 
 onMounted(load);
 
+function openEdit(row: DeviceDTO) {
+  editForm.value = { ...row, deviceCode: row.deviceCode };
+  editError.value = '';
+  showEdit.value = true;
+}
+
+async function submitEdit() {
+  if (!editForm.value) return;
+  editError.value = '';
+  editing.value = true;
+  try {
+    const body: DeviceUpdateRequest = {
+      deviceName: editForm.value.deviceName,
+      deviceType: editForm.value.deviceType,
+      model: editForm.value.model,
+      manufacturer: editForm.value.manufacturer,
+      installLocation: editForm.value.installLocation
+    };
+    await updateDevice(editForm.value.id, body);
+    showEdit.value = false;
+    editForm.value = null;
+    await load();
+  } catch (e) {
+    editError.value = e instanceof Error ? e.message : '保存失败';
+  } finally {
+    editing.value = false;
+  }
+}
+
 async function submitCreate() {
   createError.value = '';
   creating.value = true;
   try {
     await registerDevice(createForm.value);
     showCreate.value = false;
-    createForm.value = { deviceCode: '', deviceName: '', deviceType: '', model: '', installLocation: '' };
+    createForm.value = { deviceCode: '', deviceName: '', deviceType: '', model: '', manufacturer: '', installLocation: '' };
     await load();
   } catch (e) {
     createError.value = e instanceof Error ? e.message : '注册失败';
@@ -412,6 +484,7 @@ async function doDelete(id: number) {
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
 .form-group input { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
+.form-group input.readonly { opacity: 0.7; cursor: not-allowed; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 .stats-bar { display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: #94a3b8; }
 .stats-bar .online { color: #22c55e; }

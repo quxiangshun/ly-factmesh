@@ -43,15 +43,37 @@ public class InspectionTaskController {
     @Operation(summary = "分页查询质检任务")
     public ResponseEntity<Page<InspectionTaskDTO>> page(
             @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "10") @Parameter(description = "每页大小") Integer size
+            @RequestParam(defaultValue = "10") @Parameter(description = "每页大小") Integer size,
+            @RequestParam(required = false) @Parameter(description = "状态筛选：0待检 1检验中 2已完成 3已关闭") Integer status
     ) {
-        return ResponseEntity.ok(inspectionTaskApplicationService.page(page, size));
+        return ResponseEntity.ok(inspectionTaskApplicationService.page(page, size, status));
+    }
+
+    @PostMapping("/{id}/start")
+    @Operation(summary = "开始质检任务")
+    public ResponseEntity<InspectionTaskDTO> start(@PathVariable Long id) {
+        return ResponseEntity.ok(inspectionTaskApplicationService.start(id));
     }
 
     @PostMapping("/{id}/complete")
     @Operation(summary = "完成质检任务")
-    public ResponseEntity<InspectionTaskDTO> complete(@PathVariable Long id) {
-        return ResponseEntity.ok(inspectionTaskApplicationService.complete(id));
+    public ResponseEntity<InspectionTaskDTO> complete(
+            @PathVariable Long id,
+            @RequestBody(required = false) com.ly.factmesh.qms.application.dto.InspectionTaskCompleteRequest request
+    ) {
+        return ResponseEntity.ok(inspectionTaskApplicationService.complete(id, request));
+    }
+
+    @GetMapping("/stats")
+    @Operation(summary = "质检任务统计")
+    public ResponseEntity<com.ly.factmesh.qms.application.dto.InspectionTaskStatsDTO> getStats() {
+        return ResponseEntity.ok(inspectionTaskApplicationService.getStats());
+    }
+
+    @GetMapping("/{id}/ncr-context")
+    @Operation(summary = "获取任务关联的NCR创建上下文")
+    public ResponseEntity<com.ly.factmesh.qms.application.dto.InspectionTaskNcrContextDTO> getNcrContext(@PathVariable Long id) {
+        return ResponseEntity.ok(inspectionTaskApplicationService.getNcrContext(id));
     }
 
     @DeleteMapping("/{id}")

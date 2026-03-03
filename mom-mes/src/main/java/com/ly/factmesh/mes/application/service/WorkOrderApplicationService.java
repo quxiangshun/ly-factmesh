@@ -7,6 +7,7 @@ import com.ly.factmesh.common.feign.QmsFeignClient;
 import com.ly.factmesh.common.feign.WmsFeignClient;
 import com.ly.factmesh.mes.application.dto.WorkOrderCreateRequest;
 import com.ly.factmesh.mes.application.dto.WorkOrderDTO;
+import com.ly.factmesh.mes.application.dto.WorkOrderStatsDTO;
 import com.ly.factmesh.mes.domain.entity.WorkOrder;
 import com.ly.factmesh.mes.domain.repository.WorkOrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -122,6 +123,16 @@ public class WorkOrderApplicationService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteById(Long id) {
         workOrderRepository.deleteById(id);
+    }
+
+    public WorkOrderStatsDTO getStats() {
+        WorkOrderStatsDTO stats = new WorkOrderStatsDTO();
+        stats.setTotal(workOrderRepository.count());
+        stats.setDraftCount(workOrderRepository.countByStatus(WorkOrder.STATUS_DRAFT));
+        stats.setReleasedCount(workOrderRepository.countByStatus(WorkOrder.STATUS_RELEASED));
+        stats.setInProgressCount(workOrderRepository.countByStatus(WorkOrder.STATUS_IN_PROGRESS));
+        stats.setCompletedCount(workOrderRepository.countByStatus(WorkOrder.STATUS_COMPLETED));
+        return stats;
     }
 
     private WorkOrderDTO toDTO(WorkOrder wo) {

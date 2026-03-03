@@ -3,7 +3,10 @@ package com.ly.factmesh.wms.application.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.wms.application.dto.MaterialCreateRequest;
 import com.ly.factmesh.wms.application.dto.MaterialDTO;
+import com.ly.factmesh.wms.application.dto.MaterialUpdateRequest;
 import com.ly.factmesh.wms.domain.entity.Material;
+import com.ly.factmesh.wms.domain.repository.InventoryRepository;
+import com.ly.factmesh.wms.domain.repository.MaterialRequisitionRepository;
 import com.ly.factmesh.wms.domain.repository.MaterialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 public class MaterialApplicationService {
 
     private final MaterialRepository materialRepository;
+    private final InventoryRepository inventoryRepository;
+    private final MaterialRequisitionRepository requisitionRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public MaterialDTO create(MaterialCreateRequest request) {
@@ -42,10 +47,23 @@ public class MaterialApplicationService {
                 .orElseThrow(() -> new IllegalArgumentException("物料不存在: " + id));
     }
 
-    public Page<MaterialDTO> page(int pageNum, int pageSize) {
-        long total = materialRepository.count();
+    @Transactional(rollbackFor = Exception.class)
+    public MaterialDTO update(Long id, MaterialUpdateRequest request) {
+        Material m = materialRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("物料不存在: " + id));
+        m.setMaterialName(request.getMaterialName());
+        m.setMaterialType(request.getMaterialType());
+        m.setSpecification(request.getSpecification());
+        m.setUnit(request.getUnit());
+        m.setUpdateTime(LocalDateTime.now());
+        Material saved = materialRepository.save(m);
+        return toDTO(saved);
+    }
+
+    public Page<MaterialDTO> page(int pageNum, int pageSize, String materialCode, String materialName, String materialType) {
+        long total = materialRepository.count(materialCode, materialName, materialType);
         long offset = (long) (pageNum - 1) * pageSize;
-        List<Material> list = materialRepository.findAll(offset, pageSize);
+        List<Material> list = materialRepository.findAll(offset, pageSize, materialCode, materialName, materialType);
         List<MaterialDTO> records = list.stream().map(this::toDTO).collect(Collectors.toList());
         Page<MaterialDTO> page = new Page<>(pageNum, pageSize, total);
         page.setRecords(records);
@@ -54,6 +72,14 @@ public class MaterialApplicationService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteById(Long id) {
+        Material m = materialRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("物料不存在: " + id));
+        if (!inventoryRepository.findByMaterialId(id).isEmpty()) {
+            throw new IllegalArgumentException("物料已存在库存记录，无法删除");
+        }
+        if (requisitionRepository.existsDetailByMaterialId(id)) {
+            throw new IllegalArgumentException("物料已被领料单引用，无法删除");
+        }
         materialRepository.deleteById(id);
     }
 

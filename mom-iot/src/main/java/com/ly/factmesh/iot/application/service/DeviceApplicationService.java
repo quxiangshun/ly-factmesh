@@ -1,6 +1,8 @@
 package com.ly.factmesh.iot.application.service;
 
 import com.ly.factmesh.iot.application.dto.DeviceDTO;
+import com.ly.factmesh.iot.application.dto.DeviceStatsDTO;
+import com.ly.factmesh.iot.application.dto.DeviceUpdateRequest;
 import com.ly.factmesh.iot.domain.aggregate.DeviceAggregate;
 import com.ly.factmesh.iot.domain.service.DeviceDomainService;
 import org.springframework.stereotype.Service;
@@ -197,5 +199,33 @@ public class DeviceApplicationService {
      */
     public long getDeviceCount() {
         return deviceDomainService.getDeviceCount();
+    }
+
+    /**
+     * 获取设备统计（总数、在线、故障）
+     */
+    public DeviceStatsDTO getDeviceStats() {
+        return DeviceStatsDTO.builder()
+                .total(deviceDomainService.getDeviceCount())
+                .online(deviceDomainService.getOnlineCount())
+                .fault(deviceDomainService.getFaultCount())
+                .build();
+    }
+
+    /**
+     * 更新设备信息
+     */
+    public DeviceDTO updateDevice(Long deviceId, DeviceUpdateRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("更新请求不能为空");
+        }
+        return updateDeviceInfo(
+                deviceId,
+                request.getDeviceName(),
+                request.getDeviceType(),
+                request.getModel(),
+                request.getManufacturer(),
+                request.getInstallLocation()
+        );
     }
 }

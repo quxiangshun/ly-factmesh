@@ -45,6 +45,41 @@ public class DeviceAlertService {
         return toDTO(alert);
     }
 
+    /**
+     * 根据规则创建设备告警（自动告警）
+     */
+    public DeviceAlertDTO createAlertFromRule(Long deviceId, String deviceCode, Long ruleId,
+            String alertType, Integer alertLevel, String alertContent) {
+        deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new IllegalArgumentException("设备不存在: " + deviceId));
+
+        DeviceAlert alert = new DeviceAlert();
+        alert.setId(SnowflakeIdGenerator.getInstance().nextId());
+        alert.setDeviceId(deviceId);
+        alert.setDeviceCode(deviceCode);
+        alert.setRuleId(ruleId);
+        alert.setAlertType(alertType);
+        alert.setAlertLevel(alertLevel);
+        alert.setAlertContent(alertContent);
+        alert.setAlertStatus(0);
+        alert.setCreateTime(LocalDateTime.now());
+        deviceAlertMapper.insert(alert);
+        return toDTO(alert);
+    }
+
+    /**
+     * 检查是否存在近期未处理的同规则同设备告警（用于冷却）
+     */
+    public boolean hasRecentUnresolvedAlert(Long ruleId, Long deviceId, LocalDateTime since) {
+        return deviceAlertMapper.selectCount(
+                new LambdaQueryWrapper<DeviceAlert>()
+                        .eq(DeviceAlert::getRuleId, ruleId)
+                        .eq(DeviceAlert::getDeviceId, deviceId)
+                        .eq(DeviceAlert::getAlertStatus, 0)
+                        .ge(DeviceAlert::getCreateTime, since)
+        ) > 0;
+    }
+
     public DeviceAlertDTO resolveAlert(Long alertId, String resolvedBy, String remark) {
         DeviceAlert alert = deviceAlertMapper.selectById(alertId);
         if (alert == null) {
@@ -74,6 +109,13 @@ public class DeviceAlertService {
         return deviceAlertMapper.selectPage(p, q).getRecords().stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    public List<DeviceAlertDTO> listAll(int page, int size) {
+        Page<DeviceAlert> p = new Page<>(page, size);
+        LambdaQueryWrapper<DeviceAlert> q = new LambdaQueryWrapper<DeviceAlert>()
+                .orderByDesc(DeviceAlert::getCreateTime);
+        return deviceAlertMapper.selectPage(p, q).getRecords().stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
     public long countPending() {
         return deviceAlertMapper.selectCount(new LambdaQueryWrapper<DeviceAlert>().eq(DeviceAlert::getAlertStatus, 0));
     }
@@ -83,6 +125,7 @@ public class DeviceAlertService {
                 .id(alert.getId())
                 .deviceId(alert.getDeviceId())
                 .deviceCode(alert.getDeviceCode())
+                .ruleId(alert.getRuleId())
                 .alertType(alert.getAlertType())
                 .alertLevel(alert.getAlertLevel())
                 .alertContent(alert.getAlertContent())

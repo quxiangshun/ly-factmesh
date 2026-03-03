@@ -33,6 +33,14 @@ export interface DeviceRegisterRequest {
   installLocation?: string;
 }
 
+export interface DeviceUpdateRequest {
+  deviceName?: string;
+  deviceType?: string;
+  model?: string;
+  manufacturer?: string;
+  installLocation?: string;
+}
+
 export async function getDeviceList(): Promise<DeviceDTO[]> {
   return requestJson(BASE);
 }
@@ -78,6 +86,15 @@ export async function deviceStop(id: number): Promise<DeviceDTO> {
 
 export async function deviceFault(id: number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}/fault`, { method: 'POST' });
+}
+
+export async function updateDevice(id: number, body: DeviceUpdateRequest): Promise<DeviceDTO> {
+  const res = await request(`${BASE}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
 }
 
 export async function deleteDevice(id: number): Promise<void> {
@@ -126,6 +143,7 @@ export interface DeviceAlertDTO {
   id: number;
   deviceId: number;
   deviceCode?: string;
+  ruleId?: number;
   alertType: string;
   alertLevel: number;
   alertContent: string;
@@ -166,10 +184,86 @@ export async function getDeviceAlerts(deviceId: number, page = 1, size = 20): Pr
   return requestJson(`${BASE}/alerts/device/${deviceId}?page=${page}&size=${size}`);
 }
 
+export async function getAlertsAll(page = 1, size = 20): Promise<DeviceAlertDTO[]> {
+  return requestJson(`${BASE}/alerts?page=${page}&size=${size}`);
+}
+
 export async function getPendingAlerts(page = 1, size = 20): Promise<DeviceAlertDTO[]> {
   return requestJson(`${BASE}/alerts/pending?page=${page}&size=${size}`);
 }
 
 export async function getPendingAlertCount(): Promise<{ count: number }> {
   return requestJson(`${BASE}/alerts/pending/count`);
+}
+
+// 告警规则
+export interface DeviceAlertRuleDTO {
+  id: number;
+  ruleName?: string;
+  deviceId?: number;
+  deviceType?: string;
+  fieldName: string;
+  operator: string;
+  thresholdValue: number;
+  alertType: string;
+  alertLevel: number;
+  alertContentTemplate?: string;
+  enabled: number;
+  cooldownSeconds: number;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface DeviceAlertRuleCreateRequest {
+  ruleName?: string;
+  deviceId?: number;
+  deviceType?: string;
+  fieldName: string;
+  operator: string;
+  thresholdValue: number;
+  alertType: string;
+  alertLevel: number;
+  alertContentTemplate?: string;
+  enabled?: number;
+  cooldownSeconds?: number;
+}
+
+export interface DeviceAlertRuleUpdateRequest {
+  ruleName?: string;
+  deviceId?: number;
+  deviceType?: string;
+  fieldName?: string;
+  operator?: string;
+  thresholdValue?: number;
+  alertType?: string;
+  alertLevel?: number;
+  alertContentTemplate?: string;
+  enabled?: number;
+  cooldownSeconds?: number;
+}
+
+export async function getAlertRules(page = 1, size = 20): Promise<DeviceAlertRuleDTO[]> {
+  return requestJson(`${BASE}/alert-rules?page=${page}&size=${size}`);
+}
+
+export async function createAlertRule(body: DeviceAlertRuleCreateRequest): Promise<DeviceAlertRuleDTO> {
+  const res = await request(`${BASE}/alert-rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+export async function updateAlertRule(id: number, body: DeviceAlertRuleUpdateRequest): Promise<DeviceAlertRuleDTO> {
+  const res = await request(`${BASE}/alert-rules/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+export async function deleteAlertRule(id: number): Promise<void> {
+  await request(`${BASE}/alert-rules/${id}`, { method: 'DELETE' });
 }

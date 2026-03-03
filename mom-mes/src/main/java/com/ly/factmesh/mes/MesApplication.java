@@ -10,7 +10,9 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  *
  * @author 屈想顺
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+    com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration.class
+})
 @MapperScan("com.ly.factmesh.mes.infrastructure.database.mapper")
 @EnableFeignClients(basePackages = "com.ly.factmesh.common.feign")
 public class MesApplication {

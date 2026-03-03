@@ -53,15 +53,34 @@ public class InspectionTaskRepositoryImpl implements InspectionTaskRepository {
 
     @Override
     public List<InspectionTask> findAll(long offset, long limit) {
+        return findAll(offset, limit, null);
+    }
+
+    @Override
+    public List<InspectionTask> findAll(long offset, long limit, Integer status) {
         long pageNum = limit <= 0 ? 1 : offset / limit + 1;
         Page<InspectionTaskEntity> page = new Page<>(pageNum, limit);
-        Page<InspectionTaskEntity> result = inspectionTaskMapper.selectPage(page, null);
+        LambdaQueryWrapper<InspectionTaskEntity> q = new LambdaQueryWrapper<>();
+        if (status != null) {
+            q.eq(InspectionTaskEntity::getStatus, status);
+        }
+        q.orderByDesc(InspectionTaskEntity::getCreateTime);
+        Page<InspectionTaskEntity> result = inspectionTaskMapper.selectPage(page, q);
         return result.getRecords().stream().map(this::toDomain).collect(Collectors.toList());
     }
 
     @Override
     public long count() {
-        return inspectionTaskMapper.selectCount(null);
+        return countByStatus(null);
+    }
+
+    @Override
+    public long countByStatus(Integer status) {
+        LambdaQueryWrapper<InspectionTaskEntity> q = new LambdaQueryWrapper<>();
+        if (status != null) {
+            q.eq(InspectionTaskEntity::getStatus, status);
+        }
+        return inspectionTaskMapper.selectCount(q);
     }
 
     @Override

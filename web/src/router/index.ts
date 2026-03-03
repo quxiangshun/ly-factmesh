@@ -26,19 +26,21 @@ const routes: RouteRecordRaw[] = [
       { path: 'admin/configs', name: 'AdminConfigs', component: () => import('../views/ConfigsView.vue'), meta: { title: '系统配置' } },
       { path: 'admin/logs', name: 'AdminLogs', component: Placeholder, meta: { title: '操作日志', desc: '操作审计日志' } },
       { path: 'iot/devices', name: 'IotDevices', component: () => import('../views/DevicesView.vue'), meta: { title: '设备管理' } },
-      { path: 'iot/telemetry', name: 'IotTelemetry', component: Placeholder, meta: { title: '设备遥测', desc: '采集数据、历史曲线' } },
-      { path: 'iot/alerts', name: 'IotAlerts', component: Placeholder, meta: { title: '设备告警', desc: '告警规则、告警记录' } },
+      { path: 'iot/telemetry', name: 'IotTelemetry', component: () => import('../views/TelemetryView.vue'), meta: { title: '设备遥测' } },
+      { path: 'iot/alerts', name: 'IotAlerts', component: () => import('../views/AlertsView.vue'), meta: { title: '设备告警' } },
       { path: 'mes/work-orders', name: 'MesWorkOrders', component: () => import('../views/WorkOrdersView.vue'), meta: { title: '工单管理' } },
-      { path: 'mes/processes', name: 'MesProcesses', component: Placeholder, meta: { title: '工序管理', desc: '工序定义' } },
-      { path: 'mes/lines', name: 'MesLines', component: Placeholder, meta: { title: '产线管理', desc: '产线、工位' } },
-      { path: 'mes/reports', name: 'MesReports', component: Placeholder, meta: { title: '报工管理', desc: '报工录入' } },
+      { path: 'mes/processes', name: 'MesProcesses', component: () => import('../views/ProcessesView.vue'), meta: { title: '工序管理' } },
+      { path: 'mes/lines', name: 'MesLines', component: () => import('../views/LinesView.vue'), meta: { title: '产线管理' } },
+      { path: 'mes/reports', name: 'MesReports', component: () => import('../views/ReportsView.vue'), meta: { title: '报工管理' } },
       { path: 'wms/materials', name: 'WmsMaterials', component: () => import('../views/MaterialsView.vue'), meta: { title: '物料管理' } },
       { path: 'wms/requisitions', name: 'WmsRequisitions', component: Placeholder, meta: { title: '领料单', desc: '领料单（MES 联动）' } },
       { path: 'wms/inventory', name: 'WmsInventory', component: Placeholder, meta: { title: '库存管理', desc: '库存查询、预警' } },
       { path: 'qms/inspection-tasks', name: 'QmsInspectionTasks', component: () => import('../views/InspectionTasksView.vue'), meta: { title: '质检任务' } },
+      { path: 'qms/ncr', name: 'QmsNcr', component: () => import('../views/NcrView.vue'), meta: { title: '不合格品' } },
       { path: 'reports/production-daily', name: 'ReportsProduction', component: Placeholder, meta: { title: '生产日报', desc: '生产统计' } },
       { path: 'reports/equipment-oee', name: 'ReportsOee', component: Placeholder, meta: { title: '设备 OEE', desc: '设备综合效率' } },
-      { path: 'monitor/services', name: 'MonitorServices', component: () => import('../views/ServicesView.vue'), meta: { title: '服务状态' } }
+      { path: 'monitor/services', name: 'MonitorServices', component: () => import('../views/ServicesView.vue'), meta: { title: '服务状态' } },
+      { path: 'help', name: 'Help', component: () => import('../views/HelpView.vue'), meta: { title: '帮助文档' } }
     ]
   }
 ];

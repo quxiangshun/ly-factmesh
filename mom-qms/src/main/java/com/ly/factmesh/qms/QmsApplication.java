@@ -9,7 +9,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * @author 屈想顺
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+    com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration.class
+})
 @MapperScan("com.ly.factmesh.qms.infrastructure.database.mapper")
 public class QmsApplication {
     

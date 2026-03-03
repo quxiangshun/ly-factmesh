@@ -68,6 +68,13 @@ public class WorkOrderRepositoryImpl implements WorkOrderRepository {
     }
 
     @Override
+    public long countByStatus(Integer status) {
+        LambdaQueryWrapper<WorkOrderEntity> q = new LambdaQueryWrapper<>();
+        q.eq(WorkOrderEntity::getStatus, status);
+        return workOrderMapper.selectCount(q);
+    }
+
+    @Override
     public void deleteById(Long id) {
         workOrderMapper.deleteById(id);
     }

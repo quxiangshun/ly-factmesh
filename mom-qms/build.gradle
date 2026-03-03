@@ -13,8 +13,13 @@ dependencies {
 
     // SpringBoot业务依赖，自动兜底版本
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Flyway 数据库迁移（ly_factmesh_qms 独立库）
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Mybatis-Plus依赖
     implementation "com.baomidou:mybatis-plus-spring-boot3-starter:${mybatisPlusVersion}"

@@ -3,6 +3,7 @@ package com.ly.factmesh.wms.presentation.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.wms.application.dto.MaterialCreateRequest;
 import com.ly.factmesh.wms.application.dto.MaterialDTO;
+import com.ly.factmesh.wms.application.dto.MaterialUpdateRequest;
 import com.ly.factmesh.wms.application.service.MaterialApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,13 +40,25 @@ public class MaterialController {
         return ResponseEntity.ok(materialApplicationService.getById(id));
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "更新物料")
+    public ResponseEntity<MaterialDTO> update(
+            @PathVariable @Parameter(description = "物料ID") Long id,
+            @Valid @RequestBody MaterialUpdateRequest request
+    ) {
+        return ResponseEntity.ok(materialApplicationService.update(id, request));
+    }
+
     @GetMapping
     @Operation(summary = "分页查询物料")
     public ResponseEntity<Page<MaterialDTO>> page(
             @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "10") @Parameter(description = "每页大小") Integer size
+            @RequestParam(defaultValue = "10") @Parameter(description = "每页大小") Integer size,
+            @RequestParam(required = false) @Parameter(description = "物料编码（模糊）") String materialCode,
+            @RequestParam(required = false) @Parameter(description = "物料名称（模糊）") String materialName,
+            @RequestParam(required = false) @Parameter(description = "物料类型") String materialType
     ) {
-        return ResponseEntity.ok(materialApplicationService.page(page, size));
+        return ResponseEntity.ok(materialApplicationService.page(page, size, materialCode, materialName, materialType));
     }
 
     @DeleteMapping("/{id}")

@@ -2,6 +2,8 @@ package com.ly.factmesh.iot.presentation.controller;
 
 import com.ly.factmesh.iot.application.dto.DeviceDTO;
 import com.ly.factmesh.iot.application.dto.DeviceRegisterRequest;
+import com.ly.factmesh.iot.application.dto.DeviceStatsDTO;
+import com.ly.factmesh.iot.application.dto.DeviceUpdateRequest;
 import com.ly.factmesh.iot.application.service.DeviceApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,6 +44,12 @@ public class DeviceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
+    @GetMapping("/stats")
+    @Operation(summary = "设备统计", description = "获取设备总数、在线数、故障数")
+    public ResponseEntity<DeviceStatsDTO> stats() {
+        return ResponseEntity.ok(deviceApplicationService.getDeviceStats());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "根据ID查询设备")
     public ResponseEntity<DeviceDTO> getById(@PathVariable @Parameter(description = "设备ID") Long id) {
@@ -54,6 +62,18 @@ public class DeviceController {
     @Operation(summary = "设备列表", description = "查询全部设备")
     public ResponseEntity<List<DeviceDTO>> list() {
         return ResponseEntity.ok(deviceApplicationService.getAllDevices());
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "更新设备信息")
+    public ResponseEntity<DeviceDTO> update(
+            @PathVariable Long id,
+            @RequestBody(required = false) DeviceUpdateRequest request
+    ) {
+        if (request == null) {
+            request = new DeviceUpdateRequest();
+        }
+        return ResponseEntity.ok(deviceApplicationService.updateDevice(id, request));
     }
 
     @GetMapping("/type/{deviceType}")

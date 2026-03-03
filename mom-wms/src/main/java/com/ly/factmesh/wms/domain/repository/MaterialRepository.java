@@ -20,7 +20,11 @@ public interface MaterialRepository {
 
     List<Material> findAll(long offset, long limit);
 
+    List<Material> findAll(long offset, long limit, String materialCode, String materialName, String materialType);
+
     long count();
+
+    long count(String materialCode, String materialName, String materialType);
 
     void deleteById(Long id);
 }

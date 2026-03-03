@@ -29,6 +29,9 @@ public class DeviceAlertDTO {
     @Schema(description = "设备编码")
     private String deviceCode;
 
+    @Schema(description = "规则ID（自动告警时有值）")
+    private Long ruleId;
+
     @Schema(description = "告警类型")
     private String alertType;
 

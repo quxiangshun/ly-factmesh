@@ -75,7 +75,8 @@ export const menuConfig: MenuItem[] = [
     path: '/qms',
     icon: 'mdi:quality-high',
     children: [
-      { id: 'qms-inspection-tasks', name: '质检任务', path: '/qms/inspection-tasks' }
+      { id: 'qms-inspection-tasks', name: '质检任务', path: '/qms/inspection-tasks' },
+      { id: 'qms-ncr', name: '不合格品', path: '/qms/ncr' }
     ]
   },
   {

@@ -3,6 +3,7 @@ package com.ly.factmesh.mes.presentation.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ly.factmesh.mes.application.dto.WorkOrderCreateRequest;
 import com.ly.factmesh.mes.application.dto.WorkOrderDTO;
+import com.ly.factmesh.mes.application.dto.WorkOrderStatsDTO;
 import com.ly.factmesh.mes.application.service.WorkOrderApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,6 +38,12 @@ public class WorkOrderController {
     @Operation(summary = "根据ID查询工单")
     public ResponseEntity<WorkOrderDTO> getById(@PathVariable @Parameter(description = "工单ID") Long id) {
         return ResponseEntity.ok(workOrderApplicationService.getById(id));
+    }
+
+    @GetMapping("/stats")
+    @Operation(summary = "工单统计")
+    public ResponseEntity<WorkOrderStatsDTO> getStats() {
+        return ResponseEntity.ok(workOrderApplicationService.getStats());
     }
 
     @GetMapping

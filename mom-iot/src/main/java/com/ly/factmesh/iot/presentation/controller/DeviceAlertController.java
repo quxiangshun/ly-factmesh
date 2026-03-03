@@ -53,6 +53,15 @@ public class DeviceAlertController {
         return ResponseEntity.ok(deviceAlertService.listByDevice(deviceId, page, size));
     }
 
+    @GetMapping
+    @Operation(summary = "全部告警列表")
+    public ResponseEntity<List<DeviceAlertDTO>> listAll(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(deviceAlertService.listAll(page, size));
+    }
+
     @GetMapping("/pending")
     @Operation(summary = "待处理告警列表")
     public ResponseEntity<List<DeviceAlertDTO>> listPending(

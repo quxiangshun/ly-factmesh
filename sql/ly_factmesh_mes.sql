@@ -43,6 +43,17 @@ CREATE TABLE work_report (
     FOREIGN KEY (process_id) REFERENCES process(id)
 );
 
+-- 创建产线表
+CREATE TABLE production_line (
+    id BIGINT PRIMARY KEY,
+    line_code VARCHAR(50) NOT NULL UNIQUE,
+    line_name VARCHAR(100) NOT NULL,
+    description VARCHAR(500),
+    sequence INT DEFAULT 0,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 创建设备告警记录表
 CREATE TABLE device_alert (
     id BIGINT PRIMARY KEY,

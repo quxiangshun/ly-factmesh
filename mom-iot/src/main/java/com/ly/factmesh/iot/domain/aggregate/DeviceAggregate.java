@@ -45,14 +45,14 @@ public class DeviceAggregate {
     }
     
     /**
-     * 更新设备信息
+     * 更新设备信息（仅更新非空字段）
      */
     public void updateDeviceInfo(String deviceName, String deviceType, String model, String manufacturer, String installLocation) {
-        device.setDeviceName(deviceName);
-        device.setDeviceType(deviceType);
-        device.setModel(model);
-        device.setManufacturer(manufacturer);
-        device.setInstallLocation(installLocation);
+        if (deviceName != null) device.setDeviceName(deviceName);
+        if (deviceType != null) device.setDeviceType(deviceType);
+        if (model != null) device.setModel(model);
+        if (manufacturer != null) device.setManufacturer(manufacturer);
+        if (installLocation != null) device.setInstallLocation(installLocation);
     }
     
     /**

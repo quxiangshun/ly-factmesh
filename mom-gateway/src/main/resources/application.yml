@@ -47,15 +47,15 @@ spring:
             - id: api-mes
               uri: lb://mom-mes
               predicates:
-                - Path=/api/work-orders/**
+                - Path=/api/work-orders/**,/api/processes/**,/api/lines/**,/api/work-reports/**
             - id: api-wms
               uri: lb://mom-wms
               predicates:
-                - Path=/api/materials/**,/api/requisitions/**
+                - Path=/api/materials/**,/api/requisitions/**,/api/inventory/**
             - id: api-qms
               uri: lb://mom-qms
               predicates:
-                - Path=/api/inspection-tasks/**
+                - Path=/api/inspection-tasks/**,/api/inspection-results/**,/api/ncr/**
 
 server:
   port: 8080

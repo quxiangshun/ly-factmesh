@@ -22,6 +22,7 @@ public class MaterialRequisition {
     public static final int STATUS_DRAFT = 0;
     public static final int STATUS_SUBMITTED = 1;
     public static final int STATUS_DONE = 2;
+    public static final int STATUS_CANCELLED = 3;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

@@ -33,6 +33,7 @@ public class DeviceTelemetryService {
 
     private final InfluxDBClient influxDBClient;
     private final DeviceRepository deviceRepository;
+    private final AlertRuleEngineService alertRuleEngineService;
 
     @Value("${influxdb.bucket:iot-telemetry}")
     private String bucket;
@@ -64,6 +65,13 @@ public class DeviceTelemetryService {
             writeApi.writePoint(bucket, influxOrg, point);
         }
         log.debug("设备 {} 遥测数据已写入 InfluxDB", request.getDeviceId());
+
+        // 根据规则引擎评估并触发自动告警
+        try {
+            alertRuleEngineService.evaluate(request.getDeviceId(), deviceCode, request.getData());
+        } catch (Exception e) {
+            log.warn("告警规则评估异常: {}", e.getMessage());
+        }
     }
 
     /**

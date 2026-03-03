@@ -1,4 +1,7 @@
 # 应用名称
+server:
+  port: 8085  # 网关 8080，mom-qms 独立端口
+
 spring:
   application:
     name: mom-qms
@@ -6,6 +9,16 @@ spring:
     active: dev  # 默认使用开发环境
   config:
     import: optional:nacos:qms.yaml
+  # 本地数据源（Nacos qms.yaml 为空时回退）
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ly_factmesh_qms?useSSL=false&serverTimezone=UTC
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
   cloud:
     compatibility-verifier:
       enabled: false

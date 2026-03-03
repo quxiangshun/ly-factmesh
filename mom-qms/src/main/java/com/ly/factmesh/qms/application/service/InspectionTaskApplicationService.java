@@ -1,9 +1,10 @@
 package com.ly.factmesh.qms.application.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.ly.factmesh.qms.application.dto.InspectionTaskCreateRequest;
-import com.ly.factmesh.qms.application.dto.InspectionTaskDTO;
+import com.ly.factmesh.qms.application.dto.*;
+import com.ly.factmesh.qms.domain.entity.InspectionResult;
 import com.ly.factmesh.qms.domain.entity.InspectionTask;
+import com.ly.factmesh.qms.domain.repository.InspectionResultRepository;
 import com.ly.factmesh.qms.domain.repository.InspectionTaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 public class InspectionTaskApplicationService {
 
     private final InspectionTaskRepository inspectionTaskRepository;
+    private final InspectionResultRepository inspectionResultRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public InspectionTaskDTO create(InspectionTaskCreateRequest request) {
@@ -43,10 +45,10 @@ public class InspectionTaskApplicationService {
                 .orElseThrow(() -> new IllegalArgumentException("质检任务不存在: " + id));
     }
 
-    public Page<InspectionTaskDTO> page(int pageNum, int pageSize) {
-        long total = inspectionTaskRepository.count();
+    public Page<InspectionTaskDTO> page(int pageNum, int pageSize, Integer status) {
+        long total = inspectionTaskRepository.countByStatus(status);
         long offset = (long) (pageNum - 1) * pageSize;
-        List<InspectionTask> list = inspectionTaskRepository.findAll(offset, pageSize);
+        List<InspectionTask> list = inspectionTaskRepository.findAll(offset, pageSize, status);
         List<InspectionTaskDTO> records = list.stream().map(this::toDTO).collect(Collectors.toList());
         Page<InspectionTaskDTO> page = new Page<>(pageNum, pageSize, total);
         page.setRecords(records);
@@ -54,13 +56,57 @@ public class InspectionTaskApplicationService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public InspectionTaskDTO complete(Long id) {
+    public InspectionTaskDTO start(Long id) {
         InspectionTask t = inspectionTaskRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("质检任务不存在: " + id));
+        if (t.getStatus() != InspectionTask.STATUS_DRAFT) {
+            throw new IllegalArgumentException("只有待检状态的任务可以开始");
+        }
+        t.setStatus(InspectionTask.STATUS_IN_PROGRESS);
+        t.setUpdateTime(LocalDateTime.now());
+        return toDTO(inspectionTaskRepository.save(t));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public InspectionTaskDTO complete(Long id, InspectionTaskCompleteRequest request) {
+        InspectionTask t = inspectionTaskRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("质检任务不存在: " + id));
+        if (t.getStatus() != InspectionTask.STATUS_IN_PROGRESS) {
+            throw new IllegalArgumentException("只有检验中状态的任务可以完成");
+        }
+        List<InspectionResult> results = inspectionResultRepository.findByTaskId(id);
+        long failCount = results.stream().filter(r -> InspectionResult.JUDGMENT_FAIL == r.getJudgment()).count();
+        if (failCount > 0 && (request == null || !Boolean.TRUE.equals(request.getForceComplete()))) {
+            throw new IllegalArgumentException("存在 " + failCount + " 项不合格，请先创建不合格品或选择强制完成");
+        }
+        if (request != null && request.getOperator() != null && !request.getOperator().isBlank()) {
+            t.setOperator(request.getOperator());
+        }
         t.setStatus(InspectionTask.STATUS_COMPLETED);
         t.setInspectionTime(LocalDateTime.now());
         t.setUpdateTime(LocalDateTime.now());
         return toDTO(inspectionTaskRepository.save(t));
+    }
+
+    public InspectionTaskStatsDTO getStats() {
+        InspectionTaskStatsDTO stats = new InspectionTaskStatsDTO();
+        stats.setTotal(inspectionTaskRepository.countByStatus(null));
+        stats.setDraftCount(inspectionTaskRepository.countByStatus(InspectionTask.STATUS_DRAFT));
+        stats.setInProgressCount(inspectionTaskRepository.countByStatus(InspectionTask.STATUS_IN_PROGRESS));
+        stats.setCompletedCount(inspectionTaskRepository.countByStatus(InspectionTask.STATUS_COMPLETED));
+        return stats;
+    }
+
+    public InspectionTaskNcrContextDTO getNcrContext(Long taskId) {
+        InspectionTask t = inspectionTaskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("质检任务不存在: " + taskId));
+        InspectionTaskNcrContextDTO ctx = new InspectionTaskNcrContextDTO();
+        ctx.setTaskId(t.getId());
+        ctx.setTaskCode(t.getTaskCode());
+        ctx.setOrderId(t.getOrderId());
+        ctx.setMaterialId(t.getMaterialId());
+        ctx.setSuggestedProductCode(t.getMaterialId() != null ? "M" + t.getMaterialId() : null);
+        return ctx;
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -20,7 +20,11 @@ public interface InspectionTaskRepository {
 
     List<InspectionTask> findAll(long offset, long limit);
 
+    List<InspectionTask> findAll(long offset, long limit, Integer status);
+
     long count();
+
+    long countByStatus(Integer status);
 
     void deleteById(Long id);
 }
