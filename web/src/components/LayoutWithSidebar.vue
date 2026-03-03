@@ -99,7 +99,9 @@
         </div>
       </header>
       <main class="main">
-        <RouterView />
+        <div class="main-inner">
+          <RouterView />
+        </div>
       </main>
     </div>
   </div>
@@ -246,7 +248,8 @@ function handleLogout() {
 <style scoped>
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #0f172a;
   color: #e5e7eb;
 }
@@ -416,6 +419,7 @@ function handleLogout() {
 
 .main-wrap {
   flex: 1;
+  min-height: 0;
   transition: margin-left 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -423,10 +427,11 @@ function handleLogout() {
 }
 
 .header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1.25rem;
   border-bottom: 1px solid #1f2937;
   background: rgba(15, 23, 42, 0.95);
 }
@@ -472,7 +477,22 @@ function handleLogout() {
 
 .main {
   flex: 1;
-  padding: 1.5rem;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.main-inner {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem 1.5rem;
   overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.main-inner::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 </style>
