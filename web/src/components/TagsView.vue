@@ -220,7 +220,7 @@ function doCloseAll() {
 .tags-scroll {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
   flex: 1;
   min-width: 0;
   overflow-x: auto;
@@ -228,9 +228,11 @@ function doCloseAll() {
 .tag-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.8rem;
+  gap: 0.2rem;
+  height: 26px;
+  padding: 0 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1;
   color: #94a3b8;
   background: #1e293b;
   border: 1px solid #334155;
@@ -238,6 +240,7 @@ function doCloseAll() {
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 .tag-item:hover {
   color: #e5e7eb;
@@ -248,8 +251,15 @@ function doCloseAll() {
   background: rgba(56, 189, 248, 0.15);
   border-color: #38bdf8;
 }
+.tag-item :deep(.el-button) {
+  min-height: auto;
+  height: 18px;
+  width: 18px;
+  padding: 0;
+  font-size: 0.75rem;
+}
 .tag-title {
-  max-width: 120px;
+  max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

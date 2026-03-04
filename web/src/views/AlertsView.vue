@@ -8,7 +8,7 @@
         <div v-if="pendingCount !== null && tab !== 'rules'" class="stats-bar">
           <span class="pending">待处理 {{ pendingCount }} 条</span>
         </div>
-        <el-tabs v-model="tab" class="tabs-compact">
+        <el-tabs v-model="tab" size="small" class="tabs-compact">
           <el-tab-pane label="待处理" name="pending" />
           <el-tab-pane label="全部" name="all" />
           <el-tab-pane label="告警规则" name="rules" />
@@ -339,7 +339,9 @@ onMounted(async () => {
 .toolbar { margin-bottom: 1rem; }
 .tabs-compact :deep(.el-tabs__header) { margin: 0; }
 .tabs-compact :deep(.el-tabs__content) { display: none; }
-.tabs-compact :deep(.el-tabs__item) { padding: 0 0.5rem; }
+.tabs-compact :deep(.el-tabs__item) { padding: 0 0.35rem; font-size: 0.8rem; }
+.tabs-compact :deep(.el-tabs__nav-wrap) { margin: 0; }
+.tabs-compact :deep(.el-tabs__item.is-active) { font-size: 0.8rem; }
 .page-info { margin: 0 0.75rem; font-size: 0.9rem; color: #94a3b8; }
 .error-alert { margin-bottom: 1rem; }
 .table-wrap { margin-bottom: 1rem; }

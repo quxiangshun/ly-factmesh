@@ -267,8 +267,8 @@ async function doDelete(id: number) {
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.tabs { display: flex; gap: 0.5rem; }
-.tab { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
+.tabs { display: flex; gap: 0.35rem; }
+.tab { padding: 0.2rem 0.45rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .tab.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
