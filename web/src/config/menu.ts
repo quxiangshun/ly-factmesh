@@ -18,6 +18,7 @@ export const menuConfig: MenuItem[] = [
     icon: 'mdi:view-dashboard',
     children: [
       { id: 'dashboard-home', name: '首页概览', path: '/dashboard' },
+      { id: 'dashboard-bigscreen', name: '可视化大屏', path: '/dashboard/bigscreen' },
       { id: 'dashboard-todos', name: '待办任务', path: '/dashboard/todos' }
     ]
   },

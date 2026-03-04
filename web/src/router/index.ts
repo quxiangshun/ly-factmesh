@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: '/dashboard' },
       { path: 'dashboard', name: 'Dashboard', component: () => import('../views/HomeView.vue'), meta: { title: '首页概览' } },
+      { path: 'dashboard/bigscreen', name: 'DashboardBigScreen', component: () => import('../views/BigScreenView.vue'), meta: { title: '可视化大屏', desc: '系统数据大屏展示' } },
       { path: 'dashboard/todos', name: 'DashboardTodos', component: Placeholder, meta: { title: '待办任务', desc: '工单待办、质检待办、告警待办' } },
       { path: 'admin/users', name: 'AdminUsers', component: () => import('../views/UsersView.vue'), meta: { title: '用户管理' } },
       { path: 'admin/roles', name: 'AdminRoles', component: () => import('../views/RolesView.vue'), meta: { title: '角色管理' } },
