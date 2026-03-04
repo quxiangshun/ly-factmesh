@@ -235,6 +235,8 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 ### 本项目所有端口一览
 
+#### 应用服务（本地启动）
+
 | 端口 | 服务 | 说明 |
 |------|------|------|
 | 9090 | mom-gateway | API 网关，系统统一入口 |
@@ -245,14 +247,32 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 | 9095 | mom-qms | 质量管理域 |
 | 9096 | mom-ops | 运维模块（全局日志、审计、系统事件） |
 | 5173 | web | 前端开发服务器（Vite） |
-| 5432 | PostgreSQL | 业务数据库 |
+
+#### 基础环境（tools/docker-compose-base.yml 或独立编排）
+
+| 端口 | 服务 | 说明 |
+|------|------|------|
+| 5432 | PostgreSQL | 业务数据库（主库） |
+| 5433 | PostgreSQL | 从库（读写分离时，tools/pgsql） |
 | 3306 | MySQL | Nacos 配置持久化 |
 | 8848 | Nacos | 服务注册与配置中心（HTTP） |
 | 9848 | Nacos | 服务注册与配置中心（gRPC） |
+| 9849 | Nacos | 服务注册与配置中心（gRPC raft） |
 | 8086 | InfluxDB | IoT 遥测时序数据 |
 | 1883 | EMQX | MQTT Broker |
-| 18083 | EMQX | MQTT 控制台 |
+| 8883 | EMQX | MQTT over TLS |
+| 8083/8087 | EMQX | WebSocket（独立 mqtt 编排 8083，base 编排 8087 避让 InfluxDB） |
+| 18083 | EMQX | 控制台（默认账号 admin/public） |
 | 8091 | Seata | 分布式事务 TC |
+
+#### 可选组件
+
+| 端口 | 服务 | 说明 |
+|------|------|------|
+| 6379 | Redis | 缓存（spring.data.redis.host 配置后生效） |
+| 8858 | Sentinel | 限流/熔断控制台（按需配置） |
+| 4840 | OPC UA | 工业设备 OPC UA 端点（示例，实际以 iot.industrial.opcua.endpoint-url 为准） |
+| 502 | Modbus TCP | 工业设备 Modbus 端口（示例，实际以 iot.industrial.modbus.port 为准） |
 
 ### Docker部署
 
@@ -419,13 +439,13 @@ mom-gateway → mom-admin, mom-common
 
 ## 许可证
 
-本项目采用 MIT 许可证，详情请查看 [LICENSE](LICENSE) 文件。
+本项目采用 Apache License 2.0 许可证，详情请查看 [LICENSE](LICENSE) 文件。
 
 ## 联系方式
 
-- **项目地址**: https://github.com/your-username/ly-factmesh
-- **问题反馈**: https://github.com/your-username/ly-factmesh/issues
-- **邮件联系**: your-email@example.com
+- **项目地址**: https://github.com/quxiangshun/ly-factmesh
+- **问题反馈**: https://github.com/quxiangshun/ly-factmesh/issues
+- **邮件联系**: 735591110@qq.com | quxiangshun@gmail.com
 
 ## 发展规划
 

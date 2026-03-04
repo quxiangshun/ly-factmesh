@@ -228,7 +228,7 @@
   mom-admin ──┬──► DB/Druid ──┬──► PostgreSQL
   mom-iot   ──┤              ├──► CacheService(Redis)
   mom-mes   ──┤              ├──► MqttClientWrapper(EMQX)
-  mom-wms   ──┤              ├──► OpcUaClient / ModbusTcpClient
+  mom-wms   ──┤              ├──► IndustrialClient (OPC UA / Modbus TCP)
   mom-qms   ──┘              ├──► Prometheus/Micrometer
                              ├──► 读写分离(DynamicDataSource + @ReadOnly)
                              └──► Seata(分布式事务)</pre>
@@ -242,7 +242,7 @@
             <tr><td>读写分离</td><td>DynamicDataSource 主从路由；@ReadOnly 注解标注读方法路由到从库</td><td>infra.datasource.read-write-split.enabled=true，master-url、slave-url</td></tr>
             <tr><td>缓存</td><td>Redis 客户端封装，CacheService 接口（set/get/delete/expire）</td><td>spring.data.redis.host</td></tr>
             <tr><td>消息队列</td><td>MQTT 客户端接口 MqttClientWrapper（publish/subscribe）、MqttProperties</td><td>infra.mqtt.broker-url</td></tr>
-            <tr><td>工业协议</td><td>OPC UA、Modbus TCP 客户端接口（业务域实现）</td><td>OpcUaClient、ModbusTcpClient</td></tr>
+            <tr><td>工业协议</td><td>OPC UA、Modbus TCP 统一接入，连接池管理（mom-iot 实现）</td><td>IndustrialClient、IndustrialClientConnectionPool</td></tr>
             <tr><td>监控告警</td><td>Actuator + Micrometer Prometheus 埋点</td><td>management.endpoints.*</td></tr>
             <tr><td>分布式事务</td><td>Seata 2.2.0，seata-spring-boot-starter 自动装配</td><td>seata.enabled=true，application-id，tx-service-group</td></tr>
           </tbody>
@@ -265,8 +265,18 @@
         <p><strong>接口</strong>：publish(topic, payload)、subscribe(topic, callback)、unsubscribe(topic)、isConnected()、disconnect()。</p>
 
         <h3 id="infra-protocol">工业协议</h3>
-        <p><strong>OPC UA</strong>：OpcUaClient 接口，connect、readValue、writeValue、readValues；业务域（如 mom-iot）引入 OPC UA 库后实现。</p>
-        <p><strong>Modbus TCP</strong>：ModbusTcpClient 接口，connect、readHoldingRegisters、readInputRegisters、writeSingleRegister、writeMultipleRegisters。</p>
+        <p>mom-iot 采用「抽象工厂 + 适配器」模式统一接入 OPC UA 和 Modbus TCP，通过 IndustrialClient 接口屏蔽协议差异，支持连接池管理。</p>
+        <table class="help-table">
+          <thead>
+            <tr><th>能力</th><th>说明</th><th>实现</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OPC UA</td><td>connect、readSingleValue、readBatchValues、writeSingleValue、writeBatchValues</td><td>Eclipse Milo sdk-client</td></tr>
+            <tr><td>Modbus TCP</td><td>同上，点位格式 slaveId_registerType_registerAddr（3=保持寄存器，4=输入寄存器）</td><td>Modbus4j</td></tr>
+            <tr><td>连接池</td><td>Apache Commons Pool2，支持池化配置、借还、校验</td><td>IndustrialClientConnectionPool</td></tr>
+          </tbody>
+        </table>
+        <p>详细配置与示例见下方「<a href="#iot-industrial-protocol" class="toc-link">工业协议接入（OPC UA / Modbus TCP）</a>」。</p>
       </section>
 
       <section id="gateway" class="help-section">
@@ -418,6 +428,79 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
           </tbody>
         </table>
         <p><strong>其他特性</strong>：① 测点名称大小写不敏感（Temperature 与 temperature 等价）；② 规则列表缓存 60 秒，规则增删改后自动失效；③ 告警内容模板支持 {value}、{threshold} 占位符；④ between/outside 创建时需填写 thresholdValueHigh，否则校验失败。</p>
+
+        <h3 id="iot-industrial-protocol">工业协议接入（OPC UA / Modbus TCP）</h3>
+        <p><strong>业务逻辑</strong>：mom-iot 通过抽象工厂 + 适配器模式统一接入 OPC UA 和 Modbus TCP，使用 IndustrialClient 接口屏蔽协议差异；连接池复用连接，支持高并发采集。</p>
+        <p><strong>架构分层</strong>：</p>
+        <div class="flow-diagram">
+          <pre class="flow-mermaid">api/IndustrialClient (统一接口)
+    │
+factory/IndustrialClientFactory ──► adapter/OpcUaClientAdapter (Eclipse Milo)
+    │                              adapter/ModbusTcpClientAdapter (Modbus4j)
+    │
+pool/IndustrialClientConnectionPool ──► config/IndustrialClientConfig</pre>
+        </div>
+        <p><strong>配置</strong>：在 application.yml 或 Nacos 中启用并配置：</p>
+        <div class="flow-diagram">
+          <pre class="flow-mermaid">iot:
+  industrial:
+    enabled: true
+    opcua:
+      endpoint-url: opc.tcp://192.168.1.100:4840
+      username: ""           # 匿名连接可留空
+      password: ""
+      connect-timeout-ms: 5000
+      pool-max-total: 10
+      pool-max-idle: 5
+      pool-min-idle: 2
+    modbus:
+      host: 192.168.1.101
+      port: 502
+      connect-timeout-ms: 3000
+      retry-count: 3
+      pool-max-total: 10
+      pool-max-idle: 5
+      pool-min-idle: 2</pre>
+        </div>
+        <p><strong>点位格式</strong>：</p>
+        <table class="help-table">
+          <thead>
+            <tr><th>协议</th><th>点位格式</th><th>示例</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OPC UA</td><td>NodeId 字符串</td><td>ns=2;s=Temperature、ns=1;i=42</td></tr>
+            <tr><td>Modbus TCP</td><td>slaveId_registerType_registerAddr</td><td>1_3_100（从站1，保持寄存器，地址100）</td></tr>
+          </tbody>
+        </table>
+        <p>registerType：3=保持寄存器（可读写），4=输入寄存器（只读）。</p>
+        <p><strong>业务层使用示例</strong>：注入 IndustrialProtocolService：</p>
+        <div class="flow-diagram">
+          <pre class="flow-mermaid">// 读取 OPC UA 节点
+Object temp = industrialProtocolService.readOpcUaValue("ns=2;s=Temperature");
+
+// 读取 Modbus 寄存器
+Object value = industrialProtocolService.readModbusValue("1_3_100");
+
+// 批量写入 Modbus
+industrialProtocolService.writeModbusBatch(
+    Map.of("1_3_100", 123, "1_3_101", 456));</pre>
+        </div>
+        <p><strong>直接使用工厂与连接池示例</strong>：</p>
+        <div class="flow-diagram">
+          <pre class="flow-mermaid">// 注入连接池
+@Autowired @Qualifier("opcUaConnectionPool")
+IndustrialClientConnectionPool opcUaPool;
+
+IndustrialClient client = null;
+try {
+  client = opcUaPool.borrowClient();
+  Object val = client.readSingleValue("ns=2;s=Device1.Pressure");
+  Map&lt;String,Object&gt; batch = client.readBatchValues(new String[]{"ns=2;s=A","ns=2;s=B"});
+} finally {
+  if (client != null) opcUaPool.returnClient(client);
+}</pre>
+        </div>
+        <p><strong>技术点</strong>：Eclipse Milo 0.6.16（OPC UA）、Modbus4j 3.1.0（Modbus TCP）、Apache Commons Pool2；ConditionalOnProperty iot.industrial.enabled=true 按需启用。</p>
       </section>
 
       <section id="mes" class="help-section">
@@ -635,7 +718,7 @@ POST /count (inventoryId, actualQuantity) ──► 计算 diff=实盘-账面
           <li><strong>网关路由</strong>：/api/auth/**、/api/users/** 等按路径前缀转发至对应服务。</li>
           <li><strong>跨域</strong>：前端 Vite 代理 /api 到网关；网关到各服务通过 lb:// 负载均衡。</li>
           <li><strong>Flyway</strong>：各模块 db/migration 下 SQL 自动执行，版本号递增。</li>
-          <li><strong>基础设施</strong>：mom-infra 提供 CacheService、MqttClientWrapper、OpcUaClient、ModbusTcpClient 等接口；配置对应属性后按需启用。</li>
+          <li><strong>基础设施</strong>：mom-infra 提供 CacheService、MqttClientWrapper 等接口；mom-iot 实现 IndustrialClient（OPC UA / Modbus TCP）统一接入，配置 iot.industrial.enabled=true 后按需启用。</li>
         </ul>
       </section>
       </article>
@@ -684,7 +767,8 @@ const toc = [
       base.children = [
         { id: 'iot-overview', name: 'IoT 业务流转概览' },
         ...(base.children || []),
-        { id: 'iot-rule-engine', name: '规则引擎' }
+        { id: 'iot-rule-engine', name: '规则引擎' },
+        { id: 'iot-industrial-protocol', name: '工业协议接入' }
       ];
     }
     if (g.id === 'wms') {
