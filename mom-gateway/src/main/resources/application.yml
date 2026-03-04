@@ -59,6 +59,10 @@ spring:
               uri: lb://mom-admin
               predicates:
                 - Path=/api/redis/**
+            - id: api-influxdb
+              uri: lb://mom-admin
+              predicates:
+                - Path=/api/influxdb/**
             - id: api-admin
               uri: lb://mom-admin
               predicates:

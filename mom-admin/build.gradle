@@ -34,6 +34,9 @@ dependencies {
 
     // Redis 客户端（运维 Redis 管理，动态连接）
     implementation 'redis.clients:jedis:5.2.0'
+
+    // InfluxDB 客户端（运维 InfluxDB 管理）
+    implementation 'com.influxdb:influxdb-client-java:7.3.0'
 }
 
 jar {

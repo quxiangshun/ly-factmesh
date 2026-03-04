@@ -102,6 +102,7 @@ export const menuConfig: MenuItem[] = [
     children: [
       { id: 'ops-mqtt', name: 'MQTT 客户端', path: '/ops/mqtt' },
       { id: 'ops-redis', name: 'Redis 客户端', path: '/ops/redis' },
+      { id: 'ops-influxdb', name: 'InfluxDB 管理', path: '/ops/influxdb' },
       { id: 'ops-pg', name: 'PG 管理', path: '/ops/pg' },
       { id: 'ops-global-logs', name: '全局日志', path: '/ops/global-logs' },
       { id: 'ops-audit-logs', name: '运维审计', path: '/ops/audit-logs' },
