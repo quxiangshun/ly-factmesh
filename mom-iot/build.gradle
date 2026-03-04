@@ -48,3 +48,8 @@ jar {
 springBoot {
     mainClass = 'com.ly.factmesh.iot.IotApplication'
 }
+
+// 控制台输出 UTF-8，避免中文乱码
+bootRun {
+    jvmArgs = ['-Dfile.encoding=UTF-8']
+}

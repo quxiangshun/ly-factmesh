@@ -82,8 +82,11 @@
 
         <h4>设备管理员</h4>
         <ul>
-          <li>在「设备管理」中注册设备，维护设备信息。</li>
-          <li>「设备遥测」查看历史数据；配置告警规则后，超标会自动生成「设备告警」，需人工处理。</li>
+          <li>在「设备管理」中手动注册或 Excel 批量导入设备，维护设备信息。</li>
+          <li>设备列表每行支持：<strong>上线</strong> / <strong>离线</strong>、<strong>启动</strong> / <strong>停止</strong>、<strong>故障</strong>（故障后显示<strong>恢复</strong>按钮）、编辑、删除。</li>
+          <li>点击「遥测」打开弹窗：可查询历史遥测（按测点、时间范围），支持<strong>模拟上报</strong>测点数据用于测试；若上报 temperature/humidity/voltage/current，会同步更新设备列表中的显示值。</li>
+          <li>点击「告警」查看该设备告警列表，可新建告警、处理待处理告警。</li>
+          <li>「设备告警」页可查看全部/待处理告警、配置告警规则；遥测超标后规则引擎自动创建告警，需人工处理。</li>
         </ul>
 
         <h4>运维人员</h4>
@@ -390,18 +393,36 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         </div>
 
         <h3 id="iot-devices">设备管理</h3>
-        <p><strong>业务逻辑</strong>：设备注册、上下线、启停、故障、编辑、删除；展示温度/湿度等实时状态。</p>
-        <p><strong>解决方案</strong>：DeviceAggregate 聚合根统一管理设备生命周期；状态机控制 onlineStatus、runningStatus 流转；遥测上报时更新 statusLastUpdateTime 与测点值；GET /stats 聚合统计。</p>
-        <p><strong>技术点</strong>：DeviceAggregate 聚合根；DeviceRepository；状态机（在线/离线/运行/故障）；GET /stats 统计总数/在线/故障。</p>
+        <p><strong>业务逻辑</strong>：设备注册（手动/Excel 批量导入）、上下线、启停、故障/恢复、遥测查询与模拟上报、告警；展示温度/湿度等实时状态。</p>
+        <p><strong>操作与 API</strong>：</p>
+        <table class="help-table">
+          <thead>
+            <tr><th>操作</th><th>API</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>上线</td><td>POST /api/devices/{id}/online</td><td>设备在线</td></tr>
+            <tr><td>离线</td><td>POST /api/devices/{id}/offline</td><td>设备离线</td></tr>
+            <tr><td>启动</td><td>POST /api/devices/{id}/start</td><td>开始运行；故障状态下为「恢复」</td></tr>
+            <tr><td>停止</td><td>POST /api/devices/{id}/stop</td><td>停止运行</td></tr>
+            <tr><td>故障</td><td>POST /api/devices/{id}/fault</td><td>设置运行状态为故障</td></tr>
+            <tr><td>更新状态</td><td>PATCH /api/devices/{id}/status</td><td>更新温度、湿度、电压、电流</td></tr>
+            <tr><td>遥测上报</td><td>POST /api/devices/telemetry/report</td><td>上报测点数据，写入 InfluxDB 并触发规则引擎</td></tr>
+            <tr><td>遥测查询</td><td>GET /api/devices/telemetry/{deviceId}</td><td>按测点、时间范围查询历史</td></tr>
+          </tbody>
+        </table>
+        <p><strong>解决方案</strong>：DeviceAggregate 聚合根统一管理设备生命周期；状态机控制 onlineStatus、runningStatus 流转；遥测弹窗支持模拟上报与时间范围查询；GET /stats 聚合统计总数/在线/故障。</p>
+        <p><strong>技术点</strong>：DeviceAggregate 聚合根；DeviceRepository；状态机（在线/离线/运行/故障）；批量导入预览确认流程；PATCH status 同步设备采集值。</p>
 
         <h3 id="iot-telemetry">设备遥测（实时上报）</h3>
         <p><strong>业务逻辑</strong>：设备/采集端实时上报遥测数据，系统经数据清洗后写入 InfluxDB 时序库，并触发告警规则引擎；支持按设备、测点、时间范围查询历史数据。</p>
+        <p><strong>设备列表「遥测」弹窗</strong>：① <strong>查询历史</strong>：输入测点（如 temperature）、开始/结束时间，点击查询；② <strong>模拟上报</strong>：输入测点名与数值，点击「上报」，调用 reportTelemetry 写入 InfluxDB；若测点为 temperature/humidity/voltage/current，同时调用 PATCH /status 更新设备表，列表中的温度/湿度等即时刷新。</p>
         <p><strong>上报流程</strong>：① POST /api/devices/telemetry/report，请求体 { deviceId, deviceCode?, timestamp?, data }；② DeviceTelemetryService 校验设备存在；③ TelemetryDataCleaner 清洗（过滤 NaN/Inf、范围校验，iot.telemetry.cleaner.enabled 可关闭）；④ 逐测点写入 InfluxDB，measurement 为 device_telemetry，tags 含 device_id、device_code、field，field 为 value；⑤ 写入完成后调用 AlertRuleEngineService.evaluate() 触发规则评估。</p>
         <p><strong>查询接口</strong>：GET /api/devices/telemetry/{deviceId}?field=&start=&end=&limit=，Flux 查询 InfluxDB，支持按测点、ISO-8601 时间范围、limit（默认 1000，最大 10000）分页。</p>
-        <p><strong>技术点</strong>：InfluxDB 时序库；TelemetryDataCleaner 数据清洗；reportTelemetry 批量测点写入；queryTelemetry Flux 查询；measurement device_telemetry。</p>
+        <p><strong>技术点</strong>：InfluxDB 时序库；TelemetryDataCleaner 数据清洗；reportTelemetry 批量测点写入；queryTelemetry Flux 查询；measurement device_telemetry；模拟上报 + updateDeviceStatus 联动。</p>
 
         <h3 id="iot-alerts">设备告警</h3>
         <p><strong>业务逻辑</strong>：告警记录（待处理/全部）、告警规则（阈值自动告警）、处理告警。</p>
+        <p><strong>设备列表「告警」弹窗</strong>：每台设备可单独查看告警列表，支持新建告警、处理待处理告警；「设备告警」菜单页为全局告警视图，含待处理/全部/告警规则三个 tab。</p>
         <p><strong>解决方案</strong>：告警规则配置 field/operator/threshold，遥测上报时 AlertRuleEngineService 评估，满足条件自动创建告警；cooldown_seconds 防重复告警；resolve 更新告警状态并记录处理人。</p>
         <p><strong>技术点</strong>：</p>
         <ul>

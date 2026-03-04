@@ -1,5 +1,7 @@
 package com.ly.factmesh.iot.application.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.LocalDateTime;
 
 /**
@@ -9,8 +11,9 @@ import java.time.LocalDateTime;
  * @author 屈想顺
  */
 public class DeviceDTO {
-    
-    /** 设备ID */
+
+    /** 设备ID（雪花ID，序列化为 String 避免前端 JS 大数精度丢失） */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
     
     /** 设备编码 */

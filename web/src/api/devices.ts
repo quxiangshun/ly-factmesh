@@ -6,7 +6,7 @@ import { request, requestJson } from './client';
 const BASE = '/api/devices';
 
 export interface DeviceDTO {
-  id: number;
+  id: string;
   deviceCode: string;
   deviceName: string;
   deviceType?: string;
@@ -45,7 +45,7 @@ export async function getDeviceList(): Promise<DeviceDTO[]> {
   return requestJson(BASE);
 }
 
-export async function getDeviceById(id: number): Promise<DeviceDTO> {
+export async function getDeviceById(id: string | number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}`);
 }
 
@@ -120,27 +120,27 @@ export async function downloadDeviceImportTemplate(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-export async function deviceOnline(id: number): Promise<DeviceDTO> {
+export async function deviceOnline(id: string | number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}/online`, { method: 'POST' });
 }
 
-export async function deviceOffline(id: number): Promise<DeviceDTO> {
+export async function deviceOffline(id: string | number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}/offline`, { method: 'POST' });
 }
 
-export async function deviceStart(id: number): Promise<DeviceDTO> {
+export async function deviceStart(id: string | number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}/start`, { method: 'POST' });
 }
 
-export async function deviceStop(id: number): Promise<DeviceDTO> {
+export async function deviceStop(id: string | number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}/stop`, { method: 'POST' });
 }
 
-export async function deviceFault(id: number): Promise<DeviceDTO> {
+export async function deviceFault(id: string | number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}/fault`, { method: 'POST' });
 }
 
-export async function updateDevice(id: number, body: DeviceUpdateRequest): Promise<DeviceDTO> {
+export async function updateDevice(id: string | number, body: DeviceUpdateRequest): Promise<DeviceDTO> {
   const res = await request(`${BASE}/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -149,13 +149,26 @@ export async function updateDevice(id: number, body: DeviceUpdateRequest): Promi
   return res.json();
 }
 
-export async function deleteDevice(id: number): Promise<void> {
+export async function deleteDevice(id: string | number): Promise<void> {
   await request(`${BASE}/${id}`, { method: 'DELETE' });
+}
+
+export async function updateDeviceStatus(
+  id: string | number,
+  params?: { temperature?: number; humidity?: number; voltage?: number; current?: number }
+): Promise<DeviceDTO> {
+  const sp = new URLSearchParams();
+  if (params?.temperature != null) sp.set('temperature', String(params.temperature));
+  if (params?.humidity != null) sp.set('humidity', String(params.humidity));
+  if (params?.voltage != null) sp.set('voltage', String(params.voltage));
+  if (params?.current != null) sp.set('current', String(params.current));
+  const qs = sp.toString();
+  return requestJson(`${BASE}/${id}/status${qs ? '?' + qs : ''}`, { method: 'PATCH' });
 }
 
 // 遥测数据
 export interface DeviceTelemetryRequest {
-  deviceId: number;
+  deviceId: string | number;
   deviceCode?: string;
   timestamp?: number;
   data: Record<string, number>;
@@ -178,7 +191,7 @@ export async function reportTelemetry(body: DeviceTelemetryRequest): Promise<voi
 }
 
 export async function queryTelemetry(
-  deviceId: number,
+  deviceId: string | number,
   params?: { field?: string; start?: string; end?: string; limit?: number }
 ): Promise<DeviceTelemetryPoint[]> {
   const sp = new URLSearchParams();
@@ -232,7 +245,7 @@ export async function resolveDeviceAlert(id: number, resolvedBy?: string, remark
   return requestJson(`${BASE}/alerts/${id}/resolve${qs ? '?' + qs : ''}`, { method: 'POST' });
 }
 
-export async function getDeviceAlerts(deviceId: number, page = 1, size = 20): Promise<DeviceAlertDTO[]> {
+export async function getDeviceAlerts(deviceId: string | number, page = 1, size = 20): Promise<DeviceAlertDTO[]> {
   return requestJson(`${BASE}/alerts/device/${deviceId}?page=${page}&size=${size}`);
 }
 

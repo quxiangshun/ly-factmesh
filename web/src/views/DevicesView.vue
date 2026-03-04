@@ -103,7 +103,8 @@
                 <button v-if="row.onlineStatus !== 1" type="button" class="btn small" @click="doOnline(row.id)">上线</button>
                 <template v-else>
                   <button type="button" class="btn small" @click="doOffline(row.id)">离线</button>
-                  <button v-if="row.runningStatus !== 1" type="button" class="btn small" @click="doStart(row.id)">启动</button>
+                  <button v-if="row.runningStatus === 2" type="button" class="btn small" @click="doStart(row.id)">恢复</button>
+                  <button v-else-if="row.runningStatus !== 1" type="button" class="btn small" @click="doStart(row.id)">启动</button>
                   <button v-else type="button" class="btn small" @click="doStop(row.id)">停止</button>
                   <button type="button" class="btn small danger" @click="doFault(row.id)">故障</button>
                 </template>
@@ -192,12 +193,37 @@
     <div v-if="showTelemetry" class="modal-mask" @click.self="showTelemetry = false">
       <div class="modal modal-lg">
         <h3>遥测数据 - {{ selectedDevice?.deviceName }}</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label>测点</label>
-            <input v-model="telemetryField" placeholder="如 temperature" />
+        <div class="telemetry-section">
+          <h4>查询历史</h4>
+          <div class="form-row form-row-wrap">
+            <div class="form-group">
+              <label>测点</label>
+              <input v-model="telemetryField" placeholder="如 temperature、voltage" />
+            </div>
+            <div class="form-group">
+              <label>开始时间</label>
+              <input v-model="telemetryStart" type="datetime-local" />
+            </div>
+            <div class="form-group">
+              <label>结束时间</label>
+              <input v-model="telemetryEnd" type="datetime-local" />
+            </div>
+            <button type="button" class="btn primary" @click="loadTelemetry">查询</button>
           </div>
-          <button type="button" class="btn primary" @click="loadTelemetry">查询</button>
+        </div>
+        <div class="telemetry-section">
+          <h4>模拟上报</h4>
+          <div class="form-row form-row-wrap">
+            <div class="form-group">
+              <label>测点</label>
+              <input v-model="reportField" placeholder="如 temperature" />
+            </div>
+            <div class="form-group">
+              <label>数值</label>
+              <input v-model.number="reportValue" type="number" step="any" placeholder="如 25.5" />
+            </div>
+            <button type="button" class="btn" @click="doReportTelemetry" :disabled="reporting || !reportField || reportValue === ''">上报</button>
+          </div>
         </div>
         <div v-if="telemetryLoading" class="loading">加载中…</div>
         <div v-else class="telemetry-list">
@@ -268,6 +294,7 @@ import {
   batchImportDevices,
   downloadDeviceImportTemplate,
   updateDevice,
+  updateDeviceStatus,
   deviceOnline,
   deviceOffline,
   deviceStart,
@@ -275,6 +302,7 @@ import {
   deviceFault,
   deleteDevice,
   queryTelemetry,
+  reportTelemetry,
   getDeviceAlerts,
   createDeviceAlert,
   resolveDeviceAlert,
@@ -313,6 +341,11 @@ const showCreateAlert = ref(false);
 const selectedDevice = ref<DeviceDTO | null>(null);
 const telemetryData = ref<DeviceTelemetryPoint[]>([]);
 const telemetryField = ref('');
+const telemetryStart = ref('');
+const telemetryEnd = ref('');
+const reportField = ref('');
+const reportValue = ref<number | ''>('');
+const reporting = ref(false);
 const telemetryLoading = ref(false);
 const deviceAlerts = ref<DeviceAlertDTO[]>([]);
 const alertsLoading = ref(false);
@@ -365,6 +398,10 @@ function openTelemetry(row: DeviceDTO) {
   showTelemetry.value = true;
   telemetryData.value = [];
   telemetryField.value = '';
+  telemetryStart.value = '';
+  telemetryEnd.value = '';
+  reportField.value = '';
+  reportValue.value = '';
   loadTelemetry();
 }
 
@@ -372,14 +409,44 @@ async function loadTelemetry() {
   if (!selectedDevice.value) return;
   telemetryLoading.value = true;
   try {
+    const start = telemetryStart.value ? (telemetryStart.value.length <= 16 ? telemetryStart.value + ':00' : telemetryStart.value) : undefined;
+    const end = telemetryEnd.value ? (telemetryEnd.value.length <= 16 ? telemetryEnd.value + ':00' : telemetryEnd.value) : undefined;
     telemetryData.value = await queryTelemetry(selectedDevice.value.id, {
       field: telemetryField.value || undefined,
-      limit: 100
+      start,
+      end,
+      limit: 200
     });
   } catch {
     telemetryData.value = [];
   } finally {
     telemetryLoading.value = false;
+  }
+}
+
+async function doReportTelemetry() {
+  if (!selectedDevice.value || !reportField.value || reportValue.value === '') return;
+  reporting.value = true;
+  try {
+    const numVal = Number(reportValue.value);
+    if (isNaN(numVal)) throw new Error('请输入有效数值');
+    await reportTelemetry({
+      deviceId: selectedDevice.value.id,
+      deviceCode: selectedDevice.value.deviceCode,
+      data: { [reportField.value]: numVal }
+    });
+    const field = reportField.value.toLowerCase();
+    if (['temperature', 'humidity', 'voltage', 'current'].includes(field)) {
+      const params: Record<string, number> = {};
+      params[field as keyof typeof params] = numVal;
+      await updateDeviceStatus(selectedDevice.value.id, params);
+    }
+    await loadTelemetry();
+    await load();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '上报失败';
+  } finally {
+    reporting.value = false;
   }
 }
 
@@ -548,56 +615,80 @@ async function submitCreate() {
   }
 }
 
-async function doOnline(id: number) {
+function updateRowFromResponse(dto: DeviceDTO) {
+  const idx = list.value.findIndex((d) => String(d.id) === String(dto.id));
+  if (idx >= 0) {
+    list.value[idx] = { ...dto };
+  }
+  if (stats.value) {
+    stats.value = {
+      total: list.value.length,
+      online: list.value.filter((d) => d.onlineStatus === 1).length,
+      fault: list.value.filter((d) => d.runningStatus === 2).length
+    };
+  }
+}
+
+async function doOnline(id: string | number) {
   try {
-    await deviceOnline(id);
-    await load();
+    const dto = await deviceOnline(id);
+    updateRowFromResponse(dto);
   } catch (e) {
     error.value = e instanceof Error ? e.message : '操作失败';
   }
 }
 
-async function doOffline(id: number) {
+async function doOffline(id: string | number) {
   try {
-    await deviceOffline(id);
-    await load();
+    const dto = await deviceOffline(id);
+    updateRowFromResponse(dto);
   } catch (e) {
     error.value = e instanceof Error ? e.message : '操作失败';
   }
 }
 
-async function doStart(id: number) {
+async function doStart(id: string | number) {
   try {
-    await deviceStart(id);
-    await load();
+    const dto = await deviceStart(id);
+    updateRowFromResponse(dto);
   } catch (e) {
     error.value = e instanceof Error ? e.message : '操作失败';
   }
 }
 
-async function doStop(id: number) {
+async function doStop(id: string | number) {
   try {
-    await deviceStop(id);
-    await load();
+    const dto = await deviceStop(id);
+    updateRowFromResponse(dto);
   } catch (e) {
     error.value = e instanceof Error ? e.message : '操作失败';
   }
 }
 
-async function doFault(id: number) {
+async function doFault(id: string | number) {
   try {
-    await deviceFault(id);
-    await load();
+    const dto = await deviceFault(id);
+    updateRowFromResponse(dto);
   } catch (e) {
     error.value = e instanceof Error ? e.message : '操作失败';
   }
 }
 
-async function doDelete(id: number) {
+async function doDelete(id: string | number) {
   if (!confirm('确定删除该设备？')) return;
   try {
     await deleteDevice(id);
-    await load();
+    const idx = list.value.findIndex((d) => String(d.id) === String(id));
+    if (idx >= 0) {
+      list.value.splice(idx, 1);
+    }
+    if (stats.value) {
+      stats.value = {
+        total: list.value.length,
+        online: list.value.filter((d) => d.onlineStatus === 1).length,
+        fault: list.value.filter((d) => d.runningStatus === 2).length
+      };
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '删除失败';
   }
@@ -633,7 +724,10 @@ async function doDelete(id: number) {
 .modal-lg { min-width: 480px; }
 .modal-import-preview { min-width: 720px; max-width: 90vw; }
 .form-row { display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 1rem; }
-.form-row .form-group { margin-bottom: 0; flex: 1; }
+.form-row-wrap { flex-wrap: wrap; }
+.form-row .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+.telemetry-section { margin-bottom: 1rem; }
+.telemetry-section h4 { margin: 0 0 0.5rem; font-size: 0.9rem; color: #94a3b8; }
 .telemetry-list, .alerts-list { max-height: 300px; overflow-y: auto; margin-bottom: 1rem; }
 .telemetry-item, .alert-item { padding: 0.5rem; border-bottom: 1px solid #334155; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; }
 .alert-item.pending { background: rgba(248, 113, 113, 0.1); }
