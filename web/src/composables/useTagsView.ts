@@ -81,5 +81,19 @@ export function useTagsView() {
     saveToStorage(visitedTags.value);
   }
 
-  return { visitedTags, addTag, closeTag, closeOther, closeAll, getTitle };
+  function closeLeft(path: string) {
+    const idx = visitedTags.value.findIndex((t) => t.path === path);
+    if (idx <= 0) return;
+    visitedTags.value = visitedTags.value.filter((t, i) => i >= idx || t.affix);
+    saveToStorage(visitedTags.value);
+  }
+
+  function closeRight(path: string) {
+    const idx = visitedTags.value.findIndex((t) => t.path === path);
+    if (idx < 0) return;
+    visitedTags.value = visitedTags.value.filter((t, i) => i <= idx || t.affix);
+    saveToStorage(visitedTags.value);
+  }
+
+  return { visitedTags, addTag, closeTag, closeOther, closeAll, closeLeft, closeRight, getTitle };
 }
