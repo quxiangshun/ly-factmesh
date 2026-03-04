@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -38,18 +40,20 @@ public class SimulatorController {
     }
 
     /**
-     * 获取运行时配置（更新间隔、设备数量）
+     * 获取运行时配置（更新间隔、设备数量、选中设备 ID）
      */
     @GetMapping("/config")
     public ResponseEntity<Map<String, Object>> getConfig() {
         Map<String, Object> result = new HashMap<>();
         result.put("intervalMs", runtimeConfig.getIntervalMs());
         result.put("deviceCount", runtimeConfig.getDeviceCount());
+        result.put("deviceIds", runtimeConfig.getDeviceIds());
         return ResponseEntity.ok(result);
     }
 
     /**
-     * 更新运行时配置（不传则保持当前值，intervalMs 默认 5000）
+     * 更新运行时配置（不传则保持当前值）
+     * deviceIds：选中的设备 ID 列表，优先于 deviceCount
      */
     @PutMapping("/config")
     public ResponseEntity<Map<String, Object>> updateConfig(@RequestBody Map<String, Object> body) {
@@ -58,10 +62,19 @@ public class SimulatorController {
             int ms = v instanceof Number ? ((Number) v).intValue() : Integer.parseInt(String.valueOf(v));
             runtimeConfig.setIntervalMs(ms);
         }
-        if (body.containsKey("deviceCount")) {
+        if (body.containsKey("deviceIds")) {
+            @SuppressWarnings("unchecked")
+            List<?> raw = (List<?>) body.get("deviceIds");
+            List<String> ids = raw == null ? new ArrayList<>() : raw.stream()
+                    .map(o -> o != null ? String.valueOf(o) : null)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.toList());
+            runtimeConfig.setDeviceIds(ids);
+        } else if (body.containsKey("deviceCount")) {
             Object v = body.get("deviceCount");
             int count = v instanceof Number ? ((Number) v).intValue() : Integer.parseInt(String.valueOf(v));
             runtimeConfig.setDeviceCount(count);
+            runtimeConfig.setDeviceIds(null);
         }
         return getConfig();
     }

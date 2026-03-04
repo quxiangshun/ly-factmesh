@@ -99,7 +99,7 @@
         </div>
       </header>
       <main class="main">
-        <div class="main-inner" :class="{ 'main-inner-fullbleed': route.path === '/dashboard/bigscreen' }">
+        <div class="main-inner" :class="{ 'main-inner-fullbleed': route.path === '/dashboard/bigscreen', 'main-inner-no-scroll': route.path.includes('/simulator/') }">
           <RouterView />
         </div>
       </main>
@@ -492,6 +492,9 @@ function handleLogout() {
 }
 .main-inner-fullbleed {
   padding: 0;
+  overflow: hidden;
+}
+.main-inner-no-scroll {
   overflow: hidden;
 }
 .main-inner::-webkit-scrollbar {

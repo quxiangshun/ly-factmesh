@@ -8,6 +8,7 @@ const BASE = '/api/simulator';
 export interface SimulatorConfig {
   intervalMs: number;
   deviceCount: number;
+  deviceIds: string[];
 }
 
 export interface SimulatorStatus {
