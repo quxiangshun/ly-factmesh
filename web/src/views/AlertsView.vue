@@ -2,176 +2,145 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">告警记录、待处理告警、阈值规则自动告警</div>
-          </div>
-        </div>
-        <div class="stats-bar" v-if="pendingCount !== null && tab !== 'rules'">
+        <el-tooltip content="告警记录、待处理告警、阈值规则自动告警" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <div v-if="pendingCount !== null && tab !== 'rules'" class="stats-bar">
           <span class="pending">待处理 {{ pendingCount }} 条</span>
         </div>
-        <div class="tabs">
-        <button type="button" class="tab" :class="{ active: tab === 'pending' }" @click="tab = 'pending'">待处理</button>
-        <button type="button" class="tab" :class="{ active: tab === 'all' }" @click="tab = 'all'">全部</button>
-        <button type="button" class="tab" :class="{ active: tab === 'rules' }" @click="tab = 'rules'">告警规则</button>
-        </div>
-        <button v-if="tab === 'rules'" type="button" class="btn primary" @click="openCreateRule">新建规则</button>
+        <el-tabs v-model="tab" class="tabs-compact">
+          <el-tab-pane label="待处理" name="pending" />
+          <el-tab-pane label="全部" name="all" />
+          <el-tab-pane label="告警规则" name="rules" />
+        </el-tabs>
+        <el-button v-if="tab === 'rules'" type="primary" @click="openCreateRule">新建规则</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
-    <template v-else-if="tab === 'rules'">
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>规则名称</th>
-              <th>设备/类型</th>
-              <th>测点</th>
-              <th>条件</th>
-              <th>告警类型</th>
-              <th>级别</th>
-              <th>冷却(秒)</th>
-              <th>启用</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in rules" :key="r.id">
-              <td>{{ r.ruleName || '-' }}</td>
-              <td>{{ r.deviceId ? `设备#${r.deviceId}` : (r.deviceType || '全部') }}</td>
-              <td>{{ r.fieldName }}</td>
-              <td>{{ r.operator }} {{ r.thresholdValue }}</td>
-              <td>{{ r.alertType }}</td>
-              <td><span class="level" :class="'level-' + r.alertLevel">L{{ r.alertLevel }}</span></td>
-              <td>{{ r.cooldownSeconds }}</td>
-              <td>{{ r.enabled ? '是' : '否' }}</td>
-              <td>
-                <button type="button" class="btn small" @click="openEditRule(r)">编辑</button>
-                <button type="button" class="btn small danger" @click="doDeleteRule(r.id)">删除</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
+    <template v-else>
+    <template v-if="tab === 'rules'">
+      <el-table :data="rules" class="table-wrap">
+        <el-table-column prop="ruleName" label="规则名称">
+          <template #default="{ row }">{{ row.ruleName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="设备/类型">
+          <template #default="{ row }">{{ row.deviceId ? `设备#${row.deviceId}` : (row.deviceType || '全部') }}</template>
+        </el-table-column>
+        <el-table-column prop="fieldName" label="测点" />
+        <el-table-column label="条件">
+          <template #default="{ row }">{{ row.operator }} {{ row.thresholdValue }}</template>
+        </el-table-column>
+        <el-table-column prop="alertType" label="告警类型" />
+        <el-table-column label="级别">
+          <template #default="{ row }"><span class="level" :class="'level-' + row.alertLevel">L{{ row.alertLevel }}</span></template>
+        </el-table-column>
+        <el-table-column prop="cooldownSeconds" label="冷却(秒)" />
+        <el-table-column label="启用">
+          <template #default="{ row }">{{ row.enabled ? '是' : '否' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="140">
+          <template #default="{ row }">
+            <el-button size="small" @click="openEditRule(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="doDeleteRule(row.id)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
       <div class="pagination">
-        <button type="button" class="btn small" :disabled="rulePage <= 1" @click="rulePage--">上一页</button>
+        <el-button size="small" :disabled="rulePage <= 1" @click="rulePage--">上一页</el-button>
         <span class="page-info">第 {{ rulePage }} 页</span>
-        <button type="button" class="btn small" :disabled="rules.length < pageSize" @click="rulePage++">下一页</button>
+        <el-button size="small" :disabled="rules.length < pageSize" @click="rulePage++">下一页</el-button>
       </div>
-      <p v-if="rules.length === 0 && !loading" class="empty-msg">暂无规则，遥测数据满足阈值时将自动创建告警</p>
+      <el-empty v-if="rules.length === 0" description="暂无规则，遥测数据满足阈值时将自动创建告警" />
     </template>
     <template v-else>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>设备</th>
-              <th>类型</th>
-              <th>级别</th>
-              <th>内容</th>
-              <th>状态</th>
-              <th>创建时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="a in alerts" :key="a.id" :class="{ 'row-pending': a.alertStatus === 0 }">
-              <td>{{ a.deviceCode || a.deviceId }}</td>
-              <td>{{ a.alertType }}</td>
-              <td><span class="level" :class="'level-' + a.alertLevel">L{{ a.alertLevel }}</span></td>
-              <td>{{ a.alertContent }}</td>
-              <td>{{ a.alertStatus === 0 ? '待处理' : '已处理' }}</td>
-              <td>{{ a.createTime }}</td>
-              <td>
-                <button v-if="a.alertStatus === 0" type="button" class="btn small" @click="resolveAlert(a.id)">处理</button>
-                <span v-else class="resolved">{{ a.resolveTime }} {{ a.resolvedBy ? `by ${a.resolvedBy}` : '' }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <el-table :data="alerts" class="table-wrap" :row-class-name="({ row }) => row.alertStatus === 0 ? 'row-pending' : ''">
+        <el-table-column label="设备">
+          <template #default="{ row }">{{ row.deviceCode || row.deviceId }}</template>
+        </el-table-column>
+        <el-table-column prop="alertType" label="类型" />
+        <el-table-column label="级别">
+          <template #default="{ row }"><span class="level" :class="'level-' + row.alertLevel">L{{ row.alertLevel }}</span></template>
+        </el-table-column>
+        <el-table-column prop="alertContent" label="内容" />
+        <el-table-column label="状态">
+          <template #default="{ row }">{{ row.alertStatus === 0 ? '待处理' : '已处理' }}</template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" />
+        <el-table-column label="操作" width="180">
+          <template #default="{ row }">
+            <el-button v-if="row.alertStatus === 0" size="small" @click="resolveAlert(row.id)">处理</el-button>
+            <span v-else class="resolved">{{ row.resolveTime }} {{ row.resolvedBy ? `by ${row.resolvedBy}` : '' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
       <div class="pagination">
-        <button type="button" class="btn small" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
+        <el-button size="small" :disabled="currentPage <= 1" @click="currentPage--">上一页</el-button>
         <span class="page-info">第 {{ currentPage }} 页</span>
-        <button type="button" class="btn small" :disabled="alerts.length < pageSize" @click="currentPage++">下一页</button>
+        <el-button size="small" :disabled="alerts.length < pageSize" @click="currentPage++">下一页</el-button>
       </div>
-      <p v-if="alerts.length === 0 && !loading" class="empty-msg">暂无告警</p>
+      <el-empty v-if="alerts.length === 0" description="暂无告警" />
     </template>
-    <div v-if="showRuleModal" class="modal-mask" @click.self="showRuleModal = false">
-      <div class="modal">
-        <h3>{{ editingRuleId ? '编辑规则' : '新建规则' }}</h3>
-        <form @submit.prevent="submitRule">
-          <div class="form-group">
-            <label>规则名称</label>
-            <input v-model="ruleForm.ruleName" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>设备ID（可选，为空则按类型或全部）</label>
-            <input v-model.number="ruleForm.deviceId" type="number" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>设备类型（可选）</label>
-            <input v-model="ruleForm.deviceType" placeholder="如 SENSOR" />
-          </div>
-          <div class="form-group">
-            <label>测点名称 *</label>
-            <input v-model="ruleForm.fieldName" required placeholder="如 temperature" />
-          </div>
-          <div class="form-group">
-            <label>操作符 *</label>
-            <select v-model="ruleForm.operator" required>
-              <option value="gt">大于 (gt)</option>
-              <option value="gte">大于等于 (gte)</option>
-              <option value="lt">小于 (lt)</option>
-              <option value="lte">小于等于 (lte)</option>
-              <option value="eq">等于 (eq)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>阈值 *</label>
-            <input v-model.number="ruleForm.thresholdValue" type="number" step="any" required />
-          </div>
-          <div class="form-group">
-            <label>告警类型 *</label>
-            <input v-model="ruleForm.alertType" required placeholder="如 TEMPERATURE_HIGH" />
-          </div>
-          <div class="form-group">
-            <label>告警级别 *</label>
-            <input v-model.number="ruleForm.alertLevel" type="number" min="1" max="4" required />
-          </div>
-          <div class="form-group">
-            <label>告警内容模板（支持 {value} {threshold}）</label>
-            <input v-model="ruleForm.alertContentTemplate" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>冷却时间（秒）</label>
-            <input v-model.number="ruleForm.cooldownSeconds" type="number" min="0" />
-          </div>
-          <div class="form-group">
-            <label>启用</label>
-            <select v-model.number="ruleForm.enabled">
-              <option :value="1">是</option>
-              <option :value="0">否</option>
-            </select>
-          </div>
-          <p v-if="ruleError" class="error-msg">{{ ruleError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showRuleModal = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="ruleSaving">保存</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    </template>
+
+    <el-dialog v-model="showRuleModal" :title="editingRuleId ? '编辑规则' : '新建规则'" width="400px" :close-on-click-modal="false">
+      <el-form :model="ruleForm" @submit.prevent="submitRule">
+        <el-form-item label="规则名称">
+          <el-input v-model="ruleForm.ruleName" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="设备ID（可选，为空则按类型或全部）">
+          <el-input v-model.number="ruleForm.deviceId" type="number" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="设备类型（可选）">
+          <el-input v-model="ruleForm.deviceType" placeholder="如 SENSOR" />
+        </el-form-item>
+        <el-form-item label="测点名称" required>
+          <el-input v-model="ruleForm.fieldName" placeholder="如 temperature" />
+        </el-form-item>
+        <el-form-item label="操作符" required>
+          <el-select v-model="ruleForm.operator" placeholder="选择操作符">
+            <el-option value="gt" label="大于 (gt)" />
+            <el-option value="gte" label="大于等于 (gte)" />
+            <el-option value="lt" label="小于 (lt)" />
+            <el-option value="lte" label="小于等于 (lte)" />
+            <el-option value="eq" label="等于 (eq)" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="阈值" required>
+          <el-input-number v-model="ruleForm.thresholdValue" :step="0.1" placeholder="阈值" />
+        </el-form-item>
+        <el-form-item label="告警类型" required>
+          <el-input v-model="ruleForm.alertType" placeholder="如 TEMPERATURE_HIGH" />
+        </el-form-item>
+        <el-form-item label="告警级别" required>
+          <el-input-number v-model="ruleForm.alertLevel" :min="1" :max="4" />
+        </el-form-item>
+        <el-form-item label="告警内容模板（支持 {value} {threshold}）">
+          <el-input v-model="ruleForm.alertContentTemplate" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="冷却时间（秒）">
+          <el-input-number v-model="ruleForm.cooldownSeconds" :min="0" />
+        </el-form-item>
+        <el-form-item label="启用">
+          <el-select v-model="ruleForm.enabled" placeholder="启用">
+            <el-option :value="1" label="是" />
+            <el-option :value="0" label="否" />
+          </el-select>
+        </el-form-item>
+        <el-alert v-if="ruleError" type="error" :title="ruleError" show-icon class="error-alert" />
+        <template #footer>
+          <el-button @click="showRuleModal = false">取消</el-button>
+          <el-button type="primary" :disabled="ruleSaving" @click="submitRule">保存</el-button>
+        </template>
+      </el-form>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { ref, watch, onMounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
+import { ElMessageBox } from 'element-plus';
 import {
   getPendingAlerts,
   getAlertsAll,
@@ -333,12 +302,16 @@ async function submitRule() {
 }
 
 async function doDeleteRule(id: number) {
-  if (!confirm('确定删除该规则？')) return;
   try {
+    await ElMessageBox.confirm('确定删除该规则？', '确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
     await deleteAlertRule(id);
     await loadRules();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败';
+    if (e !== 'cancel') error.value = e instanceof Error ? e.message : '删除失败';
   }
 }
 
@@ -351,56 +324,31 @@ watch(rulePage, () => {
   if (tab.value === 'rules') loadRules();
 });
 
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
 onMounted(async () => {
-  document.addEventListener('click', closeTipOnClickOutside);
   await loadPendingCount();
   if (tab.value === 'rules') await loadRules();
   else await loadAlerts();
 });
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .stats-bar { font-size: 0.9rem; }
 .stats-bar .pending { color: #f87171; }
 .toolbar { margin-bottom: 1rem; }
-.tabs { display: flex; gap: 0.5rem; }
-.tab { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #94a3b8; }
-.tab.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.toolbar { display: flex; justify-content: space-between; align-items: center; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.danger { color: #f87171; border-color: #f87171; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.table-wrap { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.row-pending { background: rgba(248, 113, 113, 0.08); }
+.tabs-compact :deep(.el-tabs__header) { margin: 0; }
+.tabs-compact :deep(.el-tabs__content) { display: none; }
+.tabs-compact :deep(.el-tabs__item) { padding: 0 0.5rem; }
+.page-info { margin: 0 0.75rem; font-size: 0.9rem; color: #94a3b8; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
+.pagination { margin-top: 1rem; }
+:deep(.row-pending) { background: rgba(248, 113, 113, 0.08); }
 .level { font-weight: 600; padding: 0.1rem 0.3rem; border-radius: 4px; }
 .level-1 { color: #f87171; }
 .level-2 { color: #fb923c; }
 .level-3 { color: #facc15; }
 .level-4 { color: #94a3b8; }
 .resolved { font-size: 0.8rem; color: #64748b; }
-.pagination { margin-top: 1rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; color: #94a3b8; }
-.empty-msg { color: #64748b; font-size: 0.9rem; margin-top: 1rem; }
-.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; min-width: 360px; max-height: 90vh; overflow-y: auto; }
-.modal h3 { margin: 0 0 1rem; color: #e5e7eb; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
-.form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 </style>

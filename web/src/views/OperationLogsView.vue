@@ -2,64 +2,58 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">用户操作记录，谁在何时执行了哪些操作</div>
-          </div>
-        </div>
-        <input v-model="filterModule" placeholder="模块筛选" class="filter-input" />
-      <input v-model="filterUsername" placeholder="用户名筛选" class="filter-input" />
-        <button type="button" class="btn" @click="load">查询</button>
+        <el-tooltip content="用户操作记录，谁在何时执行了哪些操作" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-input v-model="filterModule" placeholder="模块筛选" class="filter-input" style="width: 140px" />
+        <el-input v-model="filterUsername" placeholder="用户名筛选" class="filter-input" style="width: 140px" />
+        <el-button @click="load">查询</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>用户名</th>
-              <th>模块</th>
-              <th>操作</th>
-              <th>方法</th>
-              <th>URL</th>
-              <th>状态</th>
-              <th>耗时(ms)</th>
-              <th>时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in pageData?.records" :key="row.id">
-              <td>{{ row.id }}</td>
-              <td>{{ row.username || '-' }}</td>
-              <td>{{ row.module || '-' }}</td>
-              <td>{{ row.operation || '-' }}</td>
-              <td>{{ row.method || '-' }}</td>
-              <td class="url-cell">{{ row.url || '-' }}</td>
-              <td>{{ row.status === 1 ? '成功' : '失败' }}</td>
-              <td>{{ row.duration ?? '-' }}</td>
-              <td>{{ formatTime(row.createTime) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button type="button" class="btn small" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
-        <span class="page-info">第 {{ currentPage }} 页，共 {{ totalPages }} 页，{{ pageData?.total ?? 0 }} 条</span>
-        <button type="button" class="btn small" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
-      </div>
+      <el-table :data="pageData?.records" class="table-wrap">
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="username" label="用户名">
+          <template #default="{ row }">{{ row.username || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="module" label="模块">
+          <template #default="{ row }">{{ row.module || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="operation" label="操作">
+          <template #default="{ row }">{{ row.operation || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="method" label="方法">
+          <template #default="{ row }">{{ row.method || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="url" label="URL" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.url || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="状态">
+          <template #default="{ row }">{{ row.status === 1 ? '成功' : '失败' }}</template>
+        </el-table-column>
+        <el-table-column prop="duration" label="耗时(ms)">
+          <template #default="{ row }">{{ row.duration ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        v-model:current-page="currentPage"
+        :total="pageData?.total ?? 0"
+        :page-size="pageSize"
+        layout="prev, pager, next"
+        class="pagination"
+      />
     </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import { getOperationLogs } from '@/api/operationLogs';
 
 const filterModule = ref('');
@@ -101,30 +95,15 @@ async function load() {
 }
 
 watch(currentPage, load);
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
-onMounted(() => { load(); document.addEventListener('click', closeTipOnClickOutside); });
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
+onMounted(load);
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
-.filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; width: 140px; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.table-wrap { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.url-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pagination { margin-top: 1rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; color: #94a3b8; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
+.pagination { margin-top: 1rem; }
 </style>

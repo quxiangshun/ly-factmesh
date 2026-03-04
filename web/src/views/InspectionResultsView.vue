@@ -2,100 +2,81 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">检验项录入与质量判定</div>
-          </div>
-        </div>
-        <select v-model="selectedTaskId" class="filter-select" @change="loadResults">
-        <option :value="0">选择质检任务</option>
-        <option v-for="t in tasks" :key="t.id" :value="t.id">
-          {{ t.taskCode }} - {{ t.orderCode || '工单' + (t.orderId ?? '-') }} ({{ t.status === 2 ? '已完成' : t.status === 1 ? '进行中' : '草稿' }})
-        </option>
-      </select>
-        <button type="button" class="btn primary" :disabled="!selectedTaskId" @click="showCreate = true">新建结果</button>
+        <el-tooltip content="检验项录入与质量判定" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-select v-model="selectedTaskId" placeholder="选择质检任务" style="width: 320px" @change="loadResults">
+          <el-option :value="0" label="选择质检任务" />
+          <el-option v-for="t in tasks" :key="t.id" :value="t.id" :label="`${t.taskCode} - ${t.orderCode || '工单' + (t.orderId ?? '-')} (${t.status === 2 ? '已完成' : t.status === 1 ? '进行中' : '草稿'})`" />
+        </el-select>
+        <el-button type="primary" :disabled="!selectedTaskId" @click="showCreate = true">新建结果</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="tasksLoading" class="loading">加载任务列表…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="tasksLoading" :rows="3" animated />
     <template v-else-if="selectedTaskId">
-      <div v-if="resultsLoading" class="loading">加载结果…</div>
+      <el-skeleton v-if="resultsLoading" :rows="5" animated />
       <template v-else>
-        <div v-if="!results.length" class="empty-state">该任务暂无质检结果</div>
-        <div v-else class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>检验项</th>
-                <th>标准值</th>
-                <th>实测值</th>
-                <th>判定</th>
-                <th>检验员</th>
-                <th>检验时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in results" :key="row.id">
-                <td>{{ row.inspectionItem }}</td>
-                <td>{{ row.standardValue || '-' }}</td>
-                <td>{{ row.actualValue || '-' }}</td>
-                <td>{{ judgmentLabel(row.judgment) }}</td>
-                <td>{{ row.inspector || '-' }}</td>
-                <td>{{ formatTime(row.inspectionTime || row.createTime) }}</td>
-                <td>
-                  <button type="button" class="btn small danger" @click="doDelete(row.id)">删除</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <el-empty v-if="!results.length" description="该任务暂无质检结果" />
+        <el-table v-else :data="results" class="table-wrap">
+          <el-table-column prop="inspectionItem" label="检验项" />
+          <el-table-column prop="standardValue" label="标准值">
+            <template #default="{ row }">{{ row.standardValue || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="actualValue" label="实测值">
+            <template #default="{ row }">{{ row.actualValue || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="判定">
+            <template #default="{ row }">{{ judgmentLabel(row.judgment) }}</template>
+          </el-table-column>
+          <el-table-column prop="inspector" label="检验员">
+            <template #default="{ row }">{{ row.inspector || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="检验时间">
+            <template #default="{ row }">{{ formatTime(row.inspectionTime || row.createTime) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" fixed="right">
+            <template #default="{ row }">
+              <el-button size="small" type="danger" @click="doDelete(row.id)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </template>
     </template>
-    <div v-else class="empty-state">请选择质检任务</div>
-    <div v-if="showCreate" class="modal-mask" @click.self="showCreate = false">
-      <div class="modal">
-        <h3>新建质检结果</h3>
-        <form @submit.prevent="submitCreate">
-          <div class="form-group">
-            <label>检验项 *</label>
-            <input v-model="createForm.inspectionItem" required placeholder="检验项名称" />
-          </div>
-          <div class="form-group">
-            <label>标准值</label>
-            <input v-model="createForm.standardValue" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>实测值</label>
-            <input v-model="createForm.actualValue" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>判定 *</label>
-            <select v-model="createForm.judgment">
-              <option :value="1">合格</option>
-              <option :value="0">不合格</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>检验员</label>
-            <input v-model="createForm.inspector" placeholder="可选" />
-          </div>
-          <p v-if="createError" class="error-msg">{{ createError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showCreate = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="creating">确定</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <el-empty v-else description="请选择质检任务" />
+    <el-dialog v-model="showCreate" title="新建质检结果" width="400px" :close-on-click-modal="false">
+      <el-form :model="createForm" @submit.prevent="submitCreate">
+        <el-form-item label="检验项" required>
+          <el-input v-model="createForm.inspectionItem" placeholder="检验项名称" />
+        </el-form-item>
+        <el-form-item label="标准值">
+          <el-input v-model="createForm.standardValue" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="实测值">
+          <el-input v-model="createForm.actualValue" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="判定" required>
+          <el-select v-model="createForm.judgment" style="width: 100%">
+            <el-option :value="1" label="合格" />
+            <el-option :value="0" label="不合格" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="检验员">
+          <el-input v-model="createForm.inspector" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="createError" type="error" :title="createError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="showCreate = false">取消</el-button>
+          <el-button type="primary" native-type="submit" :loading="creating">确定</el-button>
+        </div>
+      </el-form>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import {
   getInspectionResultsByTaskId,
   createInspectionResult,
@@ -104,6 +85,7 @@ import {
   type InspectionResultCreateRequest
 } from '@/api/inspectionResults';
 import { getInspectionTaskPage, type InspectionTaskDTO } from '@/api/inspectionTasks';
+import { ElMessageBox } from 'element-plus';
 
 const tasks = ref<InspectionTaskDTO[]>([]);
 const tasksLoading = ref(true);
@@ -173,7 +155,7 @@ function closeTipOnClickOutside(e: MouseEvent) {
 onMounted(() => { loadTasks(); document.addEventListener('click', closeTipOnClickOutside); });
 onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
-const submitCreate = async () => {
+async function submitCreate() {
   createError.value = '';
   if (!selectedTaskId.value) {
     createError.value = '请先选择质检任务';
@@ -197,42 +179,29 @@ const submitCreate = async () => {
   } finally {
     creating.value = false;
   }
-};
+}
 
 async function doDelete(id: number) {
-  if (!confirm('确定删除该质检结果？')) return;
   try {
+    await ElMessageBox.confirm('确定删除该质检结果？', '确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
     await deleteInspectionResult(id);
     await loadResults();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败';
+    if (e !== 'cancel') error.value = e instanceof Error ? e.message : '删除失败';
   }
 }
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; gap: 0.75rem; align-items: center; }
-.filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 280px; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.btn.danger { color: #f87171; border-color: #f87171; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
-.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; min-width: 320px; }
-.modal h3 { margin: 0 0 1rem; color: #e5e7eb; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
-.form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; margin-right: 0.25rem; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 </style>

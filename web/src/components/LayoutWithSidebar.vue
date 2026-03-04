@@ -95,7 +95,7 @@
             <Icon icon="mdi:help-circle-outline" />
           </RouterLink>
           <a href="/doc.html" target="_blank" rel="noreferrer" class="header-link">接口文档</a>
-          <button class="btn-logout" @click="handleLogout">退出</button>
+          <el-button text class="btn-logout" @click="handleLogout">退出</el-button>
         </div>
       </header>
       <main class="main">

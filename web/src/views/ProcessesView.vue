@@ -2,110 +2,86 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">MES 工序定义，用于报工与工艺路线</div>
-          </div>
-        </div>
-        <button type="button" class="btn primary" @click="showCreate = true">新建工序</button>
+        <el-tooltip content="MES 工序定义，用于报工与工艺路线" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-button type="primary" @click="showCreate = true">新建工序</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-      <div v-if="!pageData?.records?.length" class="empty-state">暂无工序数据，请点击「新建工序」添加</div>
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>编码</th>
-              <th>名称</th>
-              <th>排序</th>
-              <th>工作中心</th>
-              <th>创建时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in pageData?.records" :key="row.id">
-              <td>{{ row.processCode }}</td>
-              <td>{{ row.processName }}</td>
-              <td>{{ row.sequence ?? 0 }}</td>
-              <td>{{ row.workCenter || '-' }}</td>
-              <td>{{ formatTime(row.createTime) }}</td>
-              <td>
-                <button type="button" class="btn small" @click="openEdit(row)">编辑</button>
-                <button type="button" class="btn small danger" @click="doDelete(row.id)">删除</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button type="button" class="btn small" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
-        <span class="page-info">第 {{ currentPage }} 页，共 {{ totalPages }} 页，{{ pageData?.total ?? 0 }} 条</span>
-        <button type="button" class="btn small" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
-      </div>
+      <el-empty v-if="!pageData?.records?.length" description="暂无工序数据，请点击「新建工序」添加" />
+      <el-table v-else :data="pageData?.records" class="table-wrap">
+        <el-table-column prop="processCode" label="编码" />
+        <el-table-column prop="processName" label="名称" />
+        <el-table-column prop="sequence" label="排序" width="80">
+          <template #default="{ row }">{{ row.sequence ?? 0 }}</template>
+        </el-table-column>
+        <el-table-column prop="workCenter" label="工作中心">
+          <template #default="{ row }">{{ row.workCenter || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="doDelete(row.id)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        v-if="totalPages > 1"
+        v-model:current-page="currentPage"
+        :total="pageData?.total ?? 0"
+        :page-size="pageSize"
+        layout="prev, pager, next"
+        class="pagination"
+      />
     </template>
-    <div v-if="showCreate" class="modal-mask" @click.self="showCreate = false">
-      <div class="modal">
-        <h3>新建工序</h3>
-        <form @submit.prevent="submitCreate">
-          <div class="form-group">
-            <label>工序编码</label>
-            <input v-model="createForm.processCode" required placeholder="如 P001" />
-          </div>
-          <div class="form-group">
-            <label>工序名称</label>
-            <input v-model="createForm.processName" required placeholder="工序名称" />
-          </div>
-          <div class="form-group">
-            <label>排序号</label>
-            <input v-model.number="createForm.sequence" type="number" min="0" />
-          </div>
-          <div class="form-group">
-            <label>工作中心</label>
-            <input v-model="createForm.workCenter" placeholder="可选" />
-          </div>
-          <p v-if="createError" class="error-msg">{{ createError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showCreate = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="creating">确定</button>
-          </div>
-        </form>
-      </div>
-    </div>
-    <div v-if="showEdit" class="modal-mask" @click.self="showEdit = false">
-      <div class="modal">
-        <h3>编辑工序</h3>
-        <form v-if="editForm" @submit.prevent="submitEdit">
-          <div class="form-group">
-            <label>工序编码</label>
-            <input :value="editForm.processCode" disabled class="readonly" />
-          </div>
-          <div class="form-group">
-            <label>工序名称 *</label>
-            <input v-model="editForm.processName" required />
-          </div>
-          <div class="form-group">
-            <label>排序号</label>
-            <input v-model.number="editForm.sequence" type="number" min="0" />
-          </div>
-          <div class="form-group">
-            <label>工作中心</label>
-            <input v-model="editForm.workCenter" placeholder="可选" />
-          </div>
-          <p v-if="editError" class="error-msg">{{ editError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showEdit = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="editing">保存</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <el-dialog v-model="showCreate" title="新建工序" width="400px" :close-on-click-modal="false">
+      <el-form :model="createForm" @submit.prevent="submitCreate">
+        <el-form-item label="工序编码" required>
+          <el-input v-model="createForm.processCode" placeholder="如 P001" />
+        </el-form-item>
+        <el-form-item label="工序名称" required>
+          <el-input v-model="createForm.processName" placeholder="工序名称" />
+        </el-form-item>
+        <el-form-item label="排序号">
+          <el-input-number v-model="createForm.sequence" :min="0" />
+        </el-form-item>
+        <el-form-item label="工作中心">
+          <el-input v-model="createForm.workCenter" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="createError" type="error" :title="createError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="showCreate = false">取消</el-button>
+          <el-button type="primary" native-type="submit" :loading="creating">确定</el-button>
+        </div>
+      </el-form>
+    </el-dialog>
+    <el-dialog v-model="showEdit" title="编辑工序" width="400px" :close-on-click-modal="false">
+      <el-form v-if="editForm" :model="editForm" @submit.prevent="submitEdit">
+        <el-form-item label="工序编码">
+          <el-input :model-value="editForm.processCode" disabled />
+        </el-form-item>
+        <el-form-item label="工序名称" required>
+          <el-input v-model="editForm.processName" />
+        </el-form-item>
+        <el-form-item label="排序号">
+          <el-input-number v-model="editForm.sequence" :min="0" />
+        </el-form-item>
+        <el-form-item label="工作中心">
+          <el-input v-model="editForm.workCenter" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="editError" type="error" :title="editError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="showEdit = false">取消</el-button>
+          <el-button type="primary" native-type="submit" :loading="editing">保存</el-button>
+        </div>
+      </el-form>
+    </el-dialog>
   </section>
 </template>
 
@@ -121,6 +97,7 @@ import {
   type ProcessDTO,
   type ProcessUpdateRequest
 } from '@/api/processes';
+import { ElMessageBox } from 'element-plus';
 
 const pageData = ref<Awaited<ReturnType<typeof getProcessPage>> | null>(null);
 const loading = ref(true);
@@ -146,7 +123,6 @@ async function load() {
 }
 
 watch(currentPage, load);
-onMounted(load);
 
 const showCreate = ref(false);
 const createForm = ref<ProcessCreateRequest>({
@@ -222,40 +198,29 @@ async function submitEdit() {
 }
 
 async function doDelete(id: number) {
-  if (!confirm('确定删除该工序？')) return;
   try {
+    await ElMessageBox.confirm('确定删除该工序？', '确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
     await deleteProcess(id);
     await load();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败';
+    if (e !== 'cancel') error.value = e instanceof Error ? e.message : '删除失败';
   }
 }
+
+onMounted(load);
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
-.form-group input.readonly { opacity: 0.7; cursor: not-allowed; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.btn.danger { color: #f87171; border-color: #f87171; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.pagination { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: #94a3b8; }
-.pagination .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; min-width: 320px; }
-.modal h3 { margin: 0 0 1rem; color: #e5e7eb; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
-.form-group input { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; margin-right: 0.25rem; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
+.pagination { margin-top: 1rem; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 </style>

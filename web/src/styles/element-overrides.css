@@ -1,0 +1,22 @@
+/* Element Plus 深色主题覆盖 - 保持项目原有风格 */
+html.dark {
+  --el-bg-color: #0f172a;
+  --el-bg-color-page: #020617;
+  --el-bg-color-overlay: #1e293b;
+  --el-text-color-primary: #e5e7eb;
+  --el-text-color-regular: #e5e7eb;
+  --el-text-color-secondary: #94a3b8;
+  --el-text-color-placeholder: #64748b;
+  --el-color-primary: #38bdf8;
+  --el-color-primary-light-3: rgba(56, 189, 248, 0.7);
+  --el-color-primary-light-5: rgba(56, 189, 248, 0.5);
+  --el-color-primary-light-9: rgba(56, 189, 248, 0.1);
+  --el-color-danger: #f87171;
+  --el-color-danger-light-9: rgba(248, 113, 113, 0.1);
+  --el-color-success: #22c55e;
+  --el-border-color: #334155;
+  --el-border-color-light: #475569;
+  --el-fill-color: #1e293b;
+  --el-fill-color-light: #1e293b;
+  --el-fill-color-blank: #0f172a;
+}

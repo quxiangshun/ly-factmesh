@@ -7,25 +7,33 @@
         通过微服务 + 前后端分离架构打造现代化数字工厂。
       </p>
       <div class="hero-actions">
-        <RouterLink to="/services" class="btn primary">查看微服务</RouterLink>
-        <a href="/swagger-ui.html" target="_blank" rel="noreferrer" class="btn ghost">
-          打开接口文档
+        <RouterLink to="/services">
+          <el-button type="primary">查看微服务</el-button>
+        </RouterLink>
+        <a href="/swagger-ui.html" target="_blank" rel="noreferrer">
+          <el-button>打开接口文档</el-button>
         </a>
       </div>
     </div>
     <div class="grid">
-      <div class="card">
-        <h2>领域驱动设计</h2>
+      <el-card shadow="never" class="card">
+        <template #header>
+          <span>领域驱动设计</span>
+        </template>
         <p>严格拆分 admin / iot / mes / qms / wms 领域，代码结构与业务模型一致。</p>
-      </div>
-      <div class="card">
-        <h2>统一接口规范</h2>
+      </el-card>
+      <el-card shadow="never" class="card">
+        <template #header>
+          <span>统一接口规范</span>
+        </template>
         <p>所有微服务基于 OpenAPI3 + Springdoc 输出接口文档，由 Gateway 聚合统一入口。</p>
-      </div>
-      <div class="card">
-        <h2>开源友好</h2>
+      </el-card>
+      <el-card shadow="never" class="card">
+        <template #header>
+          <span>开源友好</span>
+        </template>
         <p>完整文档体系，清晰贡献指南，适合作为企业级 MOM 脚手架或最佳实践参考。</p>
-      </div>
+      </el-card>
     </div>
   </section>
 </template>
@@ -58,21 +66,8 @@
   gap: 1rem;
 }
 
-.btn {
-  padding: 0.55rem 1.2rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
+.hero-actions a {
   text-decoration: none;
-}
-
-.btn.primary {
-  background: linear-gradient(90deg, #38bdf8, #22c55e);
-  color: #0f172a;
-}
-
-.btn.ghost {
-  border: 1px solid #374151;
-  color: #e5e7eb;
 }
 
 .grid {
@@ -82,20 +77,19 @@
 }
 
 .card {
-  padding: 1.25rem;
-  border-radius: 0.75rem;
   background: radial-gradient(circle at top left, #1f2937, #020617);
-  border: 1px solid #111827;
+  border: 1px solid #334155;
 }
 
-.card h2 {
+.card :deep(.el-card__header) {
+  color: #e5e7eb;
   font-size: 1rem;
-  margin-bottom: 0.5rem;
+  border-bottom-color: #334155;
 }
 
 .card p {
   color: #9ca3af;
   font-size: 0.85rem;
+  margin: 0;
 }
 </style>
-

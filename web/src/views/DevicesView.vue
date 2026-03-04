@@ -2,290 +2,272 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">IoT 设备列表，支持上下线、启停、故障、遥测、告警</div>
-          </div>
-        </div>
-        <button type="button" class="btn primary" @click="showCreate = true">手动注册</button>
-        <button type="button" class="btn" @click="triggerFileInput" :disabled="importing">Excel 批量导入</button>
-        <a href="#" class="btn link" @click.prevent="downloadTemplate">下载模板</a>
+        <el-tooltip content="IoT 设备列表，支持上下线、启停、故障、遥测、告警" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-button type="primary" @click="showCreate = true">手动注册</el-button>
+        <el-button :disabled="importing" @click="triggerFileInput">Excel 批量导入</el-button>
+        <el-button type="primary" link @click="downloadTemplate">下载模板</el-button>
       </div>
       <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="onFileSelected" />
-      <!-- 导入预览弹窗 -->
-      <div v-if="showImportPreview" class="modal-mask" @click.self="closeImportPreview">
-        <div class="modal modal-import-preview">
-          <h3>导入预览</h3>
-          <p class="preview-desc">请确认以下数据无误后点击「确认导入」执行导入</p>
-          <div v-if="previewErrors?.length" class="preview-errors">
-            <strong>以下行校验失败，将跳过：</strong>
-            <ul>
-              <li v-for="(e, i) in previewErrors" :key="i">第 {{ e.row }} 行 {{ e.deviceCode || '-' }}：{{ e.message }}</li>
-            </ul>
-          </div>
-          <div v-if="previewRows?.length" class="table-wrap preview-table">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>行号</th>
-                  <th>设备编码</th>
-                  <th>设备名称</th>
-                  <th>设备类型</th>
-                  <th>型号</th>
-                  <th>制造商</th>
-                  <th>安装位置</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in previewRows" :key="r.row">
-                  <td>{{ r.row }}</td>
-                  <td>{{ r.deviceCode }}</td>
-                  <td>{{ r.deviceName }}</td>
-                  <td>{{ r.deviceType || '-' }}</td>
-                  <td>{{ r.model || '-' }}</td>
-                  <td>{{ r.manufacturer || '-' }}</td>
-                  <td>{{ r.installLocation || '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-else-if="!previewLoading" class="no-preview-data">没有可导入的有效数据</p>
-          <div v-if="previewLoading" class="loading">解析中…</div>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="closeImportPreview">取消</button>
-            <button type="button" class="btn primary" :disabled="!previewRows?.length || importing" @click="confirmImport">确认导入</button>
-          </div>
-        </div>
-      </div>
       <div v-if="stats" class="stats-bar">
         <span>总数 {{ stats.total }}</span>
         <span class="online">在线 {{ stats.online }}</span>
         <span class="fault">故障 {{ stats.fault }}</span>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="importResult" class="import-result" :class="{ success: importResult.successCount > 0, warning: importResult.failCount > 0 }">
-      <span>导入完成：成功 {{ importResult.successCount }} 条，失败 {{ importResult.failCount }} 条</span>
-      <ul v-if="importResult.errors?.length" class="import-errors">
-        <li v-for="(e, i) in importResult.errors" :key="i">第 {{ e.row }} 行 {{ e.deviceCode || '-' }}：{{ e.message }}</li>
-      </ul>
-      <button type="button" class="btn small" @click="importResult = null">关闭</button>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <div v-if="importResult" class="import-result-block">
+      <el-alert
+        :type="importResult.successCount > 0 ? 'success' : 'warning'"
+        :title="`导入完成：成功 ${importResult.successCount} 条，失败 ${importResult.failCount} 条`"
+        show-icon
+        class="import-result-alert"
+      >
+        <ul v-if="importResult.errors?.length" class="import-errors">
+          <li v-for="(e, i) in importResult.errors" :key="i">第 {{ e.row }} 行 {{ e.deviceCode || '-' }}：{{ e.message }}</li>
+        </ul>
+      </el-alert>
+      <el-button size="small" @click="importResult = null">关闭</el-button>
     </div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>编码</th>
-              <th>名称</th>
-              <th>类型</th>
-              <th>制造商</th>
-              <th>在线</th>
-              <th>运行</th>
-              <th>温度/湿度</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in list" :key="row.id">
-              <td>{{ row.deviceCode }}</td>
-              <td>{{ row.deviceName }}</td>
-              <td>{{ row.deviceType || '-' }}</td>
-              <td>{{ row.manufacturer || '-' }}</td>
-              <td>{{ onlineText(row.onlineStatus) }}</td>
-              <td>{{ runningText(row.runningStatus) }}</td>
-              <td>{{ row.temperature != null ? row.temperature + '°C' : '-' }} / {{ row.humidity != null ? row.humidity + '%' : '-' }}</td>
-              <td>
-                <button v-if="row.onlineStatus !== 1" type="button" class="btn small" @click="doOnline(row.id)">上线</button>
-                <template v-else>
-                  <button type="button" class="btn small" @click="doOffline(row.id)">离线</button>
-                  <button v-if="row.runningStatus === 2" type="button" class="btn small" @click="doStart(row.id)">恢复</button>
-                  <button v-else-if="row.runningStatus !== 1" type="button" class="btn small" @click="doStart(row.id)">启动</button>
-                  <button v-else type="button" class="btn small" @click="doStop(row.id)">停止</button>
-                  <button type="button" class="btn small danger" @click="doFault(row.id)">故障</button>
-                </template>
-                <button type="button" class="btn small" @click="openEdit(row)">编辑</button>
-                <button type="button" class="btn small" @click="openTelemetry(row)">遥测</button>
-                <button type="button" class="btn small" @click="openAlerts(row)">告警</button>
-                <button type="button" class="btn small danger" @click="doDelete(row.id)">删除</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <el-table :data="list" class="table-wrap">
+        <el-table-column prop="deviceCode" label="编码" min-width="120" />
+        <el-table-column prop="deviceName" label="名称" min-width="140" />
+        <el-table-column label="类型" width="90">
+          <template #default="{ row }">{{ row.deviceType || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="manufacturer" label="制造商" min-width="120">
+          <template #default="{ row }">{{ row.manufacturer || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="在线" width="72">
+          <template #default="{ row }">{{ onlineText(row.onlineStatus) }}</template>
+        </el-table-column>
+        <el-table-column label="运行" width="72">
+          <template #default="{ row }">{{ runningText(row.runningStatus) }}</template>
+        </el-table-column>
+        <el-table-column label="温度/湿度" min-width="120">
+          <template #default="{ row }">{{ row.temperature != null ? row.temperature + '°C' : '-' }} / {{ row.humidity != null ? row.humidity + '%' : '-' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <el-dropdown trigger="click" @command="(cmd) => handleDeviceCommand(cmd, row)">
+              <el-button size="small">更多 <el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <template v-if="row.onlineStatus !== 1">
+                    <el-dropdown-item command="online">上线</el-dropdown-item>
+                  </template>
+                  <template v-else>
+                    <el-dropdown-item command="offline">离线</el-dropdown-item>
+                    <el-dropdown-item command="start">{{ row.runningStatus === 2 ? '恢复' : '启动' }}</el-dropdown-item>
+                    <el-dropdown-item v-if="row.runningStatus === 1" command="stop">停止</el-dropdown-item>
+                    <el-dropdown-item command="fault" divided>故障</el-dropdown-item>
+                  </template>
+                  <el-dropdown-item command="telemetry">遥测</el-dropdown-item>
+                  <el-dropdown-item command="alerts">告警</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+        </el-table-column>
+      </el-table>
     </template>
-    <div v-if="showEdit" class="modal-mask" @click.self="showEdit = false">
-      <div class="modal">
-        <h3>编辑设备</h3>
-        <form v-if="editForm" @submit.prevent="submitEdit">
-          <div class="form-group">
-            <label>设备编码</label>
-            <input :value="editForm.deviceCode" disabled class="readonly" />
+
+    <!-- 导入预览弹窗 -->
+    <el-dialog v-model="showImportPreview" title="导入预览" width="720px" :close-on-click-modal="false">
+      <p class="preview-desc">请确认以下数据无误后点击「确认导入」执行导入</p>
+      <el-alert v-if="previewErrors?.length" type="warning" show-icon class="preview-errors">
+        <template #title>以下行校验失败，将跳过：</template>
+        <ul>
+          <li v-for="(e, i) in previewErrors" :key="i">第 {{ e.row }} 行 {{ e.deviceCode || '-' }}：{{ e.message }}</li>
+        </ul>
+      </el-alert>
+      <el-table v-if="previewRows?.length" :data="previewRows" max-height="320">
+        <el-table-column prop="row" label="行号" width="70" />
+        <el-table-column prop="deviceCode" label="设备编码" />
+        <el-table-column prop="deviceName" label="设备名称" />
+        <el-table-column prop="deviceType" label="设备类型">
+          <template #default="{ row }">{{ row.deviceType || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="model" label="型号">
+          <template #default="{ row }">{{ row.model || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="manufacturer" label="制造商">
+          <template #default="{ row }">{{ row.manufacturer || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="installLocation" label="安装位置">
+          <template #default="{ row }">{{ row.installLocation || '-' }}</template>
+        </el-table-column>
+      </el-table>
+      <p v-else-if="!previewLoading" class="no-preview-data">没有可导入的有效数据</p>
+      <el-skeleton v-if="previewLoading" :rows="3" animated />
+      <template #footer>
+        <el-button @click="closeImportPreview">取消</el-button>
+        <el-button type="primary" :disabled="!previewRows?.length || importing" @click="confirmImport">确认导入</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="showEdit" title="编辑设备" width="420px" :close-on-click-modal="false">
+      <el-form v-if="editForm" :model="editForm" @submit.prevent="submitEdit">
+        <el-form-item label="设备编码">
+          <el-input :model-value="editForm.deviceCode" disabled />
+        </el-form-item>
+        <el-form-item label="设备名称" required>
+          <el-input v-model="editForm.deviceName" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="设备类型">
+          <el-input v-model="editForm.deviceType" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="型号">
+          <el-input v-model="editForm.model" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="制造商">
+          <el-input v-model="editForm.manufacturer" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="安装位置">
+          <el-input v-model="editForm.installLocation" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="editError" type="error" :title="editError" show-icon class="error-alert" />
+        <template #footer>
+          <el-button @click="showEdit = false">取消</el-button>
+          <el-button type="primary" :disabled="editing" @click="submitEdit">保存</el-button>
+        </template>
+      </el-form>
+    </el-dialog>
+
+    <el-dialog v-model="showCreate" title="注册设备" width="420px" :close-on-click-modal="false">
+      <el-form :model="createForm" @submit.prevent="submitCreate">
+        <el-form-item label="设备编码" required>
+          <el-input v-model="createForm.deviceCode" placeholder="如 DEV-001" />
+        </el-form-item>
+        <el-form-item label="设备名称" required>
+          <el-input v-model="createForm.deviceName" placeholder="设备名称" />
+        </el-form-item>
+        <el-form-item label="设备类型">
+          <el-input v-model="createForm.deviceType" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="型号">
+          <el-input v-model="createForm.model" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="制造商">
+          <el-input v-model="createForm.manufacturer" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="安装位置">
+          <el-input v-model="createForm.installLocation" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="createError" type="error" :title="createError" show-icon class="error-alert" />
+        <template #footer>
+          <el-button @click="showCreate = false">取消</el-button>
+          <el-button type="primary" :disabled="creating" @click="submitCreate">确定</el-button>
+        </template>
+      </el-form>
+    </el-dialog>
+
+    <el-dialog v-model="showTelemetry" :title="`遥测数据 - ${selectedDevice?.deviceName}`" width="540px" :close-on-click-modal="false">
+      <div class="telemetry-section">
+        <h4>查询历史</h4>
+        <div class="form-row form-row-wrap">
+          <el-form-item label="测点">
+            <el-input v-model="telemetryField" placeholder="如 temperature、voltage" />
+          </el-form-item>
+          <el-form-item label="开始时间">
+            <el-date-picker
+              v-model="telemetryStart"
+              type="datetime"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+              placeholder="选择开始时间"
+              clearable
+            />
+          </el-form-item>
+          <el-form-item label="结束时间">
+            <el-date-picker
+              v-model="telemetryEnd"
+              type="datetime"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+              placeholder="选择结束时间"
+              clearable
+            />
+          </el-form-item>
+          <div class="telemetry-quick">
+            <el-button size="small" @click="setTelemetryRange(1)">最近1小时</el-button>
+            <el-button size="small" @click="setTelemetryRange(24)">最近24小时</el-button>
+            <el-button size="small" @click="setTelemetryRange(24 * 7)">最近7天</el-button>
           </div>
-          <div class="form-group">
-            <label>设备名称 *</label>
-            <input v-model="editForm.deviceName" required />
-          </div>
-          <div class="form-group">
-            <label>设备类型</label>
-            <input v-model="editForm.deviceType" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>型号</label>
-            <input v-model="editForm.model" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>制造商</label>
-            <input v-model="editForm.manufacturer" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>安装位置</label>
-            <input v-model="editForm.installLocation" placeholder="可选" />
-          </div>
-          <p v-if="editError" class="error-msg">{{ editError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showEdit = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="editing">保存</button>
-          </div>
-        </form>
-      </div>
-    </div>
-    <div v-if="showCreate" class="modal-mask" @click.self="showCreate = false">
-      <div class="modal">
-        <h3>注册设备</h3>
-        <form @submit.prevent="submitCreate">
-          <div class="form-group">
-            <label>设备编码</label>
-            <input v-model="createForm.deviceCode" required placeholder="如 DEV-001" />
-          </div>
-          <div class="form-group">
-            <label>设备名称</label>
-            <input v-model="createForm.deviceName" required placeholder="设备名称" />
-          </div>
-          <div class="form-group">
-            <label>设备类型</label>
-            <input v-model="createForm.deviceType" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>型号</label>
-            <input v-model="createForm.model" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>制造商</label>
-            <input v-model="createForm.manufacturer" placeholder="可选" />
-          </div>
-          <div class="form-group">
-            <label>安装位置</label>
-            <input v-model="createForm.installLocation" placeholder="可选" />
-          </div>
-          <p v-if="createError" class="error-msg">{{ createError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showCreate = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="creating">确定</button>
-          </div>
-        </form>
-      </div>
-    </div>
-    <div v-if="showTelemetry" class="modal-mask" @click.self="showTelemetry = false">
-      <div class="modal modal-lg">
-        <h3>遥测数据 - {{ selectedDevice?.deviceName }}</h3>
-        <div class="telemetry-section">
-          <h4>查询历史</h4>
-          <div class="form-row form-row-wrap">
-            <div class="form-group">
-              <label>测点</label>
-              <input v-model="telemetryField" placeholder="如 temperature、voltage" />
-            </div>
-            <div class="form-group">
-              <label>开始时间</label>
-              <input v-model="telemetryStart" type="datetime-local" />
-            </div>
-            <div class="form-group">
-              <label>结束时间</label>
-              <input v-model="telemetryEnd" type="datetime-local" />
-            </div>
-            <button type="button" class="btn primary" @click="loadTelemetry">查询</button>
-          </div>
-        </div>
-        <div class="telemetry-section">
-          <h4>模拟上报</h4>
-          <div class="form-row form-row-wrap">
-            <div class="form-group">
-              <label>测点</label>
-              <input v-model="reportField" placeholder="如 temperature" />
-            </div>
-            <div class="form-group">
-              <label>数值</label>
-              <input v-model.number="reportValue" type="number" step="any" placeholder="如 25.5" />
-            </div>
-            <button type="button" class="btn" @click="doReportTelemetry" :disabled="reporting || !reportField || reportValue === ''">上报</button>
-          </div>
-        </div>
-        <div v-if="telemetryLoading" class="loading">加载中…</div>
-        <div v-else class="telemetry-list">
-          <div v-for="p in telemetryData" :key="p.time + p.field" class="telemetry-item">
-            {{ p.field }}: {{ p.value }} @ {{ formatTime(p.time) }}
-          </div>
-          <p v-if="telemetryData.length === 0 && !telemetryLoading">暂无数据</p>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn" @click="showTelemetry = false">关闭</button>
-        </div>
-      </div>
-    </div>
-    <div v-if="showAlerts" class="modal-mask" @click.self="showAlerts = false">
-      <div class="modal modal-lg">
-        <h3>告警列表 - {{ selectedDevice?.deviceName }}</h3>
-        <button type="button" class="btn primary" @click="openCreateAlert">新建告警</button>
-        <div v-if="alertsLoading" class="loading">加载中…</div>
-        <div v-else class="alerts-list">
-          <div v-for="a in deviceAlerts" :key="a.id" class="alert-item" :class="{ pending: a.alertStatus === 0 }">
-            <span class="alert-level">L{{ a.alertLevel }}</span>
-            <span>{{ a.alertType }}: {{ a.alertContent }}</span>
-            <span class="alert-time">{{ a.createTime }}</span>
-            <button v-if="a.alertStatus === 0" type="button" class="btn small" @click="resolveAlert(a.id)">处理</button>
-          </div>
-          <p v-if="deviceAlerts.length === 0 && !alertsLoading">暂无告警</p>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn" @click="showAlerts = false">关闭</button>
+          <el-button type="primary" @click="loadTelemetry">查询</el-button>
         </div>
       </div>
-    </div>
-    <div v-if="showCreateAlert" class="modal-mask" @click.self="showCreateAlert = false">
-      <div class="modal">
-        <h3>新建告警</h3>
-        <form v-if="selectedDevice" @submit.prevent="submitCreateAlert">
-          <div class="form-group">
-            <label>告警类型</label>
-            <input v-model="alertForm.alertType" required placeholder="如 TEMPERATURE_HIGH" />
-          </div>
-          <div class="form-group">
-            <label>告警级别 (1-4)</label>
-            <input v-model.number="alertForm.alertLevel" type="number" min="1" max="4" required />
-          </div>
-          <div class="form-group">
-            <label>告警内容</label>
-            <textarea v-model="alertForm.alertContent" required rows="3"></textarea>
-          </div>
-          <p v-if="alertError" class="error-msg">{{ alertError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showCreateAlert = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="alertCreating">确定</button>
-          </div>
-        </form>
+      <div class="telemetry-section">
+        <h4>模拟上报</h4>
+        <div class="form-row form-row-wrap">
+          <el-form-item label="测点">
+            <el-input v-model="reportField" placeholder="如 temperature" />
+          </el-form-item>
+          <el-form-item label="数值">
+            <el-input v-model.number="reportValue" type="number" placeholder="如 25.5" />
+          </el-form-item>
+          <el-button :disabled="reporting || !reportField || reportValue === ''" @click="doReportTelemetry">上报</el-button>
+        </div>
       </div>
-    </div>
+      <el-skeleton v-if="telemetryLoading" :rows="3" animated />
+      <div v-else class="telemetry-list">
+        <div v-for="p in telemetryData" :key="p.time + p.field" class="telemetry-item">
+          {{ p.field }}: {{ p.value }} @ {{ formatTime(p.time) }}
+        </div>
+        <el-empty v-if="telemetryData.length === 0" description="暂无数据" />
+      </div>
+      <template #footer>
+        <el-button @click="showTelemetry = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="showAlerts" :title="`告警列表 - ${selectedDevice?.deviceName}`" width="540px" :close-on-click-modal="false">
+      <el-button type="primary" class="mb-1" @click="openCreateAlert">新建告警</el-button>
+      <el-skeleton v-if="alertsLoading" :rows="3" animated />
+      <div v-else class="alerts-list">
+        <div v-for="a in deviceAlerts" :key="a.id" class="alert-item" :class="{ pending: a.alertStatus === 0 }">
+          <span class="alert-level">L{{ a.alertLevel }}</span>
+          <span>{{ a.alertType }}: {{ a.alertContent }}</span>
+          <span class="alert-time">{{ a.createTime }}</span>
+          <el-button v-if="a.alertStatus === 0" size="small" @click="resolveAlert(a.id)">处理</el-button>
+        </div>
+        <el-empty v-if="deviceAlerts.length === 0" description="暂无告警" />
+      </div>
+      <template #footer>
+        <el-button @click="showAlerts = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="showCreateAlert" title="新建告警" width="420px" :close-on-click-modal="false">
+      <el-form v-if="selectedDevice" :model="alertForm" @submit.prevent="submitCreateAlert">
+        <el-form-item label="告警类型" required>
+          <el-input v-model="alertForm.alertType" placeholder="如 TEMPERATURE_HIGH" />
+        </el-form-item>
+        <el-form-item label="告警级别 (1-4)" required>
+          <el-input-number v-model="alertForm.alertLevel" :min="1" :max="4" />
+        </el-form-item>
+        <el-form-item label="告警内容" required>
+          <el-input v-model="alertForm.alertContent" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-alert v-if="alertError" type="error" :title="alertError" show-icon class="error-alert" />
+        <template #footer>
+          <el-button @click="showCreateAlert = false">取消</el-button>
+          <el-button type="primary" :disabled="alertCreating" @click="submitCreateAlert">确定</el-button>
+        </template>
+      </el-form>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { InfoFilled, ArrowDown } from '@element-plus/icons-vue';
+import { ElMessageBox } from 'element-plus';
 import {
   getDeviceList,
   getDeviceStats,
@@ -341,8 +323,8 @@ const showCreateAlert = ref(false);
 const selectedDevice = ref<DeviceDTO | null>(null);
 const telemetryData = ref<DeviceTelemetryPoint[]>([]);
 const telemetryField = ref('');
-const telemetryStart = ref('');
-const telemetryEnd = ref('');
+const telemetryStart = ref<string | ''>('');
+const telemetryEnd = ref<string | ''>('');
 const reportField = ref('');
 const reportValue = ref<number | ''>('');
 const reporting = ref(false);
@@ -352,7 +334,6 @@ const alertsLoading = ref(false);
 const alertForm = ref({ alertType: '', alertLevel: 2, alertContent: '' });
 const alertError = ref('');
 const alertCreating = ref(false);
-const showTip = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const importResult = ref<DeviceBatchImportResult | null>(null);
 const importing = ref(false);
@@ -405,12 +386,26 @@ function openTelemetry(row: DeviceDTO) {
   loadTelemetry();
 }
 
+function setTelemetryRange(hours: number) {
+  const end = new Date();
+  const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
+  const fmt = (d: Date) =>
+    d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0') + 'T' +
+    String(d.getHours()).padStart(2, '0') + ':' +
+    String(d.getMinutes()).padStart(2, '0') + ':' +
+    String(d.getSeconds()).padStart(2, '0');
+  telemetryStart.value = fmt(start);
+  telemetryEnd.value = fmt(end);
+}
+
 async function loadTelemetry() {
   if (!selectedDevice.value) return;
   telemetryLoading.value = true;
   try {
-    const start = telemetryStart.value ? (telemetryStart.value.length <= 16 ? telemetryStart.value + ':00' : telemetryStart.value) : undefined;
-    const end = telemetryEnd.value ? (telemetryEnd.value.length <= 16 ? telemetryEnd.value + ':00' : telemetryEnd.value) : undefined;
+    const start = telemetryStart.value || undefined;
+    const end = telemetryEnd.value || undefined;
     telemetryData.value = await queryTelemetry(selectedDevice.value.id, {
       field: telemetryField.value || undefined,
       start,
@@ -504,16 +499,6 @@ async function resolveAlert(id: number) {
     error.value = e instanceof Error ? e.message : '处理失败';
   }
 }
-
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
-onMounted(() => {
-  load();
-  document.addEventListener('click', closeTipOnClickOutside);
-});
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 function triggerFileInput() {
   fileInputRef.value?.click();
@@ -629,6 +614,19 @@ function updateRowFromResponse(dto: DeviceDTO) {
   }
 }
 
+function handleDeviceCommand(cmd: string, row: DeviceDTO) {
+  switch (cmd) {
+    case 'online': doOnline(row.id); break;
+    case 'offline': doOffline(row.id); break;
+    case 'start': doStart(row.id); break;
+    case 'stop': doStop(row.id); break;
+    case 'fault': doFault(row.id); break;
+    case 'telemetry': openTelemetry(row); break;
+    case 'alerts': openAlerts(row); break;
+    case 'delete': doDelete(row.id); break;
+  }
+}
+
 async function doOnline(id: string | number) {
   try {
     const dto = await deviceOnline(id);
@@ -675,8 +673,12 @@ async function doFault(id: string | number) {
 }
 
 async function doDelete(id: string | number) {
-  if (!confirm('确定删除该设备？')) return;
   try {
+    await ElMessageBox.confirm('确定删除该设备？', '确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
     await deleteDevice(id);
     const idx = list.value.findIndex((d) => String(d.id) === String(id));
     if (idx >= 0) {
@@ -690,60 +692,40 @@ async function doDelete(id: string | number) {
       };
     }
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败';
+    if (e !== 'cancel') error.value = e instanceof Error ? e.message : '删除失败';
   }
 }
+
+onMounted(() => load());
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
 .stats-bar { display: flex; gap: 1rem; font-size: 0.9rem; color: #94a3b8; margin-left: auto; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.25rem; }
-.btn.danger { color: #f87171; border-color: #f87171; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.table-wrap { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; min-width: 320px; }
-.modal h3 { margin: 0 0 1rem; color: #e5e7eb; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
-.form-group input { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
-.form-group input.readonly { opacity: 0.7; cursor: not-allowed; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 .stats-bar .online { color: #22c55e; }
 .stats-bar .fault { color: #f87171; }
-.modal-lg { min-width: 480px; }
-.modal-import-preview { min-width: 720px; max-width: 90vw; }
-.form-row { display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 1rem; }
-.form-row-wrap { flex-wrap: wrap; }
-.form-row .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; }
+.error-alert { margin-bottom: 1rem; }
+.import-result-block { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 1rem; }
+.import-result-block .import-result-alert { flex: 1; margin-bottom: 0; }
+.import-result-alert { margin-bottom: 1rem; }
+.import-errors { margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.85rem; max-height: 120px; overflow-y: auto; }
+.table-wrap { margin-bottom: 1rem; }
 .telemetry-section { margin-bottom: 1rem; }
 .telemetry-section h4 { margin: 0 0 0.5rem; font-size: 0.9rem; color: #94a3b8; }
+.form-row { display: flex; gap: 0.75rem; align-items: flex-end; margin-bottom: 1rem; }
+.form-row-wrap { flex-wrap: wrap; }
+.telemetry-quick { display: flex; gap: 0.5rem; align-items: center; }
+.telemetry-section .el-form-item { margin-bottom: 0; }
 .telemetry-list, .alerts-list { max-height: 300px; overflow-y: auto; margin-bottom: 1rem; }
 .telemetry-item, .alert-item { padding: 0.5rem; border-bottom: 1px solid #334155; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; }
 .alert-item.pending { background: rgba(248, 113, 113, 0.1); }
 .alert-level { font-weight: 600; color: #f87171; min-width: 2rem; }
 .alert-time { margin-left: auto; font-size: 0.8rem; color: #64748b; }
-.form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; resize: vertical; }
-.btn.link { text-decoration: none; color: #38bdf8; }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.import-result { padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 8px; background: #1e293b; border: 1px solid #334155; }
-.import-result.success { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
-.import-result.warning { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
-.import-errors { margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.85rem; color: #94a3b8; max-height: 120px; overflow-y: auto; }
-.import-errors li { margin-bottom: 0.25rem; }
 .preview-desc { color: #94a3b8; font-size: 0.875rem; margin: 0 0 1rem; }
-.preview-errors { margin-bottom: 1rem; padding: 0.75rem; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; font-size: 0.875rem; }
 .preview-errors ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
-.preview-table { max-height: 320px; overflow-y: auto; margin-bottom: 1rem; }
 .no-preview-data { color: #94a3b8; margin: 1rem 0; }
+.mb-1 { margin-bottom: 0.5rem; }
 </style>

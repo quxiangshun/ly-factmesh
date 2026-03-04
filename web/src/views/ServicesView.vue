@@ -7,30 +7,12 @@
     </p>
 
     <div class="grid">
-      <div class="svc-card">
-        <h2>Gateway</h2>
-        <p>统一入口，路由、鉴权、限流，并聚合所有微服务 OpenAPI3 文档。</p>
-      </div>
-      <div class="svc-card">
-        <h2>Admin</h2>
-        <p>用户、角色、权限、字典等系统级能力，所有域服务的基础。</p>
-      </div>
-      <div class="svc-card">
-        <h2>IoT</h2>
-        <p>设备台账、状态监控、采集与事件，是 MES/QMS/WMS 的数据入口。</p>
-      </div>
-      <div class="svc-card">
-        <h2>MES</h2>
-        <p>工单、工序、报工、产线看板，覆盖生产执行全流程。</p>
-      </div>
-      <div class="svc-card">
-        <h2>WMS</h2>
-        <p>入库、出库、盘点、批次与库存预警，支撑生产物料流转。</p>
-      </div>
-      <div class="svc-card">
-        <h2>QMS</h2>
-        <p>质检任务、不合格处理与质量追溯，保证产品合规与稳定。</p>
-      </div>
+      <el-card v-for="svc in services" :key="svc.name" shadow="never" class="svc-card">
+        <template #header>
+          <span>{{ svc.name }}</span>
+        </template>
+        <p>{{ svc.desc }}</p>
+      </el-card>
     </div>
 
     <div class="hint">
@@ -40,7 +22,16 @@
   </section>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const services = [
+  { name: 'Gateway', desc: '统一入口，路由、鉴权、限流，并聚合所有微服务 OpenAPI3 文档。' },
+  { name: 'Admin', desc: '用户、角色、权限、字典等系统级能力，所有域服务的基础。' },
+  { name: 'IoT', desc: '设备台账、状态监控、采集与事件，是 MES/QMS/WMS 的数据入口。' },
+  { name: 'MES', desc: '工单、工序、报工、产线看板，覆盖生产执行全流程。' },
+  { name: 'WMS', desc: '入库、出库、盘点、批次与库存预警，支撑生产物料流转。' },
+  { name: 'QMS', desc: '质检任务、不合格处理与质量追溯，保证产品合规与稳定。' }
+];
+</script>
 
 <style scoped>
 .services {
@@ -66,20 +57,20 @@ h1 {
 }
 
 .svc-card {
-  padding: 1.1rem;
-  border-radius: 0.75rem;
   background: radial-gradient(circle at top left, #1f2937, #020617);
-  border: 1px solid #111827;
+  border: 1px solid #334155;
 }
 
-.svc-card h2 {
+.svc-card :deep(.el-card__header) {
+  color: #e5e7eb;
   font-size: 1rem;
-  margin-bottom: 0.45rem;
+  border-bottom-color: #334155;
 }
 
 .svc-card p {
   color: #9ca3af;
   font-size: 0.85rem;
+  margin: 0;
 }
 
 .hint {
@@ -96,4 +87,3 @@ code {
   border-radius: 0.25rem;
 }
 </style>
-

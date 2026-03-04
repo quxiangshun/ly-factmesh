@@ -2,14 +2,9 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">MQTT 客户端，默认连接项目 EMQX 容器（ws://localhost:8087），支持订阅、发布与消息接收</div>
-          </div>
-        </div>
+        <el-tooltip content="MQTT 客户端，默认连接项目 EMQX 容器（ws://localhost:8087），支持订阅、发布与消息接收" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
       </div>
     </div>
     <div class="mqtt-grid">
@@ -18,40 +13,34 @@
         <div class="section-header">
           <h3 class="section-title">设置</h3>
           <div class="section-actions">
-            <button type="button" class="btn primary small" :disabled="connected" @click="connect">连接</button>
-            <button v-if="connected" type="button" class="btn danger small" @click="disconnect">断开</button>
+            <el-button type="primary" size="small" :disabled="connected" @click="connect">连接</el-button>
+            <el-button v-if="connected" size="small" type="danger" @click="disconnect">断开</el-button>
           </div>
         </div>
         <div class="form-grid form-grid-settings">
-          <div class="form-row">
-            <label>协议</label>
-            <select v-model="config.protocol" class="form-input">
-              <option value="ws://">ws://</option>
-              <option value="wss://">wss://</option>
-              <option value="mqtt://">mqtt://</option>
-              <option value="mqtts://">mqtts://</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label>主机</label>
-            <input v-model="config.host" type="text" class="form-input" placeholder="localhost" />
-          </div>
-          <div class="form-row">
-            <label>端口</label>
-            <input v-model="config.port" type="text" class="form-input" placeholder="8087" />
-          </div>
-          <div class="form-row">
-            <label>客户端ID</label>
-            <input v-model="config.clientId" type="text" class="form-input" placeholder="自动生成" />
-          </div>
-          <div class="form-row">
-            <label>用户名</label>
-            <input v-model="config.username" type="text" class="form-input" placeholder="可选" />
-          </div>
-          <div class="form-row">
-            <label>密码</label>
-            <input v-model="config.password" type="password" class="form-input" placeholder="可选" />
-          </div>
+          <el-form-item label="协议">
+            <el-select v-model="config.protocol">
+              <el-option value="ws://" label="ws://" />
+              <el-option value="wss://" label="wss://" />
+              <el-option value="mqtt://" label="mqtt://" />
+              <el-option value="mqtts://" label="mqtts://" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="主机">
+            <el-input v-model="config.host" placeholder="localhost" />
+          </el-form-item>
+          <el-form-item label="端口">
+            <el-input v-model="config.port" placeholder="8087" />
+          </el-form-item>
+          <el-form-item label="客户端ID">
+            <el-input v-model="config.clientId" placeholder="自动生成" />
+          </el-form-item>
+          <el-form-item label="用户名">
+            <el-input v-model="config.username" placeholder="可选" />
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="config.password" type="password" placeholder="可选" show-password />
+          </el-form-item>
         </div>
       </div>
 
@@ -59,21 +48,19 @@
       <div class="mqtt-section">
         <div class="section-header">
           <h3 class="section-title">订阅</h3>
-          <button type="button" class="btn primary small" :disabled="!connected" @click="subscribe">订阅</button>
+          <el-button type="primary" size="small" :disabled="!connected" @click="subscribe">订阅</el-button>
         </div>
         <div class="form-grid form-grid-sub">
-          <div class="form-row form-row-topic">
-            <label>主题</label>
-            <input v-model="subTopic" type="text" class="form-input" placeholder="ly/factmesh/test" />
-          </div>
-          <div class="form-row">
-            <label>服务质量</label>
-            <select v-model.number="subQos" class="form-input">
-              <option :value="0">0</option>
-              <option :value="1">1</option>
-              <option :value="2">2</option>
-            </select>
-          </div>
+          <el-form-item label="主题">
+            <el-input v-model="subTopic" placeholder="ly/factmesh/test" />
+          </el-form-item>
+          <el-form-item label="服务质量">
+            <el-select v-model="subQos">
+              <el-option :value="0" label="0" />
+              <el-option :value="1" label="1" />
+              <el-option :value="2" label="2" />
+            </el-select>
+          </el-form-item>
         </div>
         <p class="hint">订阅 '#' 可全局订阅，接收所有 MQTT 消息</p>
       </div>
@@ -82,25 +69,22 @@
       <div class="mqtt-section">
         <div class="section-header">
           <h3 class="section-title">发布</h3>
-          <button type="button" class="btn primary small" :disabled="!connected" @click="publish">发布</button>
+          <el-button type="primary" size="small" :disabled="!connected" @click="publish">发布</el-button>
         </div>
         <div class="form-grid form-grid-pub">
-          <div class="form-row form-row-topic">
-            <label>主题</label>
-            <input v-model="pubTopic" type="text" class="form-input" placeholder="ly/factmesh/test" />
-          </div>
-          <div class="form-row">
-            <label>服务质量</label>
-            <select v-model.number="pubQos" class="form-input">
-              <option :value="0">0</option>
-              <option :value="1">1</option>
-              <option :value="2">2</option>
-            </select>
-          </div>
-          <div class="form-row full">
-            <label>有效载荷</label>
-            <textarea v-model="pubPayload" class="form-textarea" rows="4" placeholder='{"msg": "Hello"}'></textarea>
-          </div>
+          <el-form-item label="主题">
+            <el-input v-model="pubTopic" placeholder="ly/factmesh/test" />
+          </el-form-item>
+          <el-form-item label="服务质量">
+            <el-select v-model="pubQos">
+              <el-option :value="0" label="0" />
+              <el-option :value="1" label="1" />
+              <el-option :value="2" label="2" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="有效载荷" class="full">
+            <el-input v-model="pubPayload" type="textarea" :rows="4" placeholder='{"msg": "Hello"}' />
+          </el-form-item>
         </div>
       </div>
 
@@ -108,7 +92,7 @@
       <div class="mqtt-section receive-section">
         <div class="receive-header">
           <h3 class="section-title">接收</h3>
-          <button type="button" class="btn small" :disabled="!messages.length" @click="clearMessages">清除</button>
+          <el-button size="small" :disabled="!messages.length" @click="clearMessages">清除</el-button>
         </div>
         <div class="receive-log" ref="logRef">
           <div v-if="!messages.length" class="log-empty">暂无接收消息，订阅主题后可在此查看</div>
@@ -130,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import mqtt from 'mqtt';
 
 // 默认值与 tools/docker-compose-base.yml 中 EMQX 容器配置一致：WebSocket 8087
@@ -232,16 +216,7 @@ function clearMessages() {
   messages.value = [];
 }
 
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
-onMounted(() => document.addEventListener('click', closeTipOnClickOutside));
-onUnmounted(() => {
-  document.removeEventListener('click', closeTipOnClickOutside);
-  disconnect();
-});
+onUnmounted(() => disconnect());
 </script>
 
 <style scoped>

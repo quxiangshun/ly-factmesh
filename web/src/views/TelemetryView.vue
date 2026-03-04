@@ -2,75 +2,59 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">查询设备采集数据、历史曲线</div>
-          </div>
+        <div class="toolbar-tip-wrap">
+          <el-tooltip content="查询设备采集数据、历史曲线" placement="bottom">
+            <el-icon class="tip-icon"><InfoFilled /></el-icon>
+          </el-tooltip>
         </div>
-        <div class="filter-row">
-        <div class="form-group">
-          <label>设备</label>
-          <select v-model="selectedDeviceId" class="select">
-            <option :value="null">请选择设备</option>
-            <option v-for="d in devices" :key="d.id" :value="d.id">{{ d.deviceName }} ({{ d.deviceCode }})</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>测点</label>
-          <input v-model="field" placeholder="如 temperature、humidity、voltage" class="input-sm" />
-        </div>
-        <div class="form-group">
-          <label>时间范围</label>
-          <select v-model="timeRange" class="select">
-            <option value="1h">最近1小时</option>
-            <option value="24h">最近24小时</option>
-            <option value="7d">最近7天</option>
-            <option value="30d">最近30天</option>
-          </select>
-        </div>
-        <button type="button" class="btn primary" @click="loadData" :disabled="!selectedDeviceId">查询</button>
-      </div>
+        <el-form :inline="true" class="filter-row" label-position="left" :label-width="60">
+          <el-form-item label="设备">
+            <el-select v-model="selectedDeviceId" placeholder="请选择设备" class="filter-select">
+              <el-option v-for="d in devices" :key="d.id" :value="d.id" :label="`${d.deviceName} (${d.deviceCode})`" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="测点">
+            <el-input v-model="field" placeholder="如 temperature、humidity、voltage" class="input-sm" style="width: 180px" />
+          </el-form-item>
+          <el-form-item label="时间范围">
+            <el-select v-model="timeRange" placeholder="选择" style="width: 140px">
+              <el-option value="1h" label="最近1小时" />
+              <el-option value="24h" label="最近24小时" />
+              <el-option value="7d" label="最近7天" />
+              <el-option value="30d" label="最近30天" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label-width="0">
+            <el-button type="primary" :disabled="!selectedDeviceId" @click="loadData">查询</el-button>
+          </el-form-item>
+        </el-form>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
       <div class="data-section">
         <h3 v-if="points.length > 0">共 {{ points.length }} 条数据</h3>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>测点</th>
-                <th>数值</th>
-                <th>采集时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(p, i) in points" :key="i">
-                <td>{{ p.field }}</td>
-                <td>{{ p.value }}</td>
-                <td>{{ formatTime(p.time) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p v-if="points.length === 0 && !loading" class="empty-msg">暂无数据，请选择设备并查询</p>
+        <el-table :data="points" class="table-wrap" max-height="400">
+          <el-table-column prop="field" label="测点" />
+          <el-table-column prop="value" label="数值" />
+          <el-table-column label="采集时间">
+            <template #default="{ row }">{{ formatTime(row.time) }}</template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-if="points.length === 0" description="暂无数据，请选择设备并查询" />
       </div>
     </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { ref, onMounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import { getDeviceList, queryTelemetry, type DeviceDTO, type DeviceTelemetryPoint } from '@/api/devices';
 
 const devices = ref<DeviceDTO[]>([]);
-const selectedDeviceId = ref<number | null>(null);
+const selectedDeviceId = ref<string | number | null>(null);
 const field = ref('');
 const timeRange = ref('24h');
 const points = ref<DeviceTelemetryPoint[]>([]);
@@ -143,39 +127,24 @@ async function loadData() {
   }
 }
 
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
 onMounted(async () => {
-  document.addEventListener('click', closeTipOnClickOutside);
   await loadDevices();
   if (selectedDeviceId.value) loadData();
 });
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
-.toolbar-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
-.filter-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
-.form-group { display: flex; flex-direction: column; gap: 0.25rem; }
-.form-group label { font-size: 0.875rem; color: #94a3b8; }
-.select { width: 200px; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; }
-.input-sm { width: 180px; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
+.toolbar-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+.toolbar-tip-wrap { display: flex; align-items: center; }
+.filter-row { display: flex; flex-wrap: wrap; align-items: center; }
+.filter-row :deep(.el-form-item) { margin-bottom: 0; margin-right: 0.5rem; }
+.filter-row :deep(.el-form-item__label) { padding-right: 2px; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; }
+.filter-select { width: 200px; }
+.error-alert { margin-bottom: 1rem; }
 .data-section { margin-top: 1rem; }
 .data-section h3 { margin: 0 0 0.5rem; font-size: 0.95rem; color: #94a3b8; }
-.table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; position: sticky; top: 0; background: #1e293b; }
-.empty-msg { color: #64748b; font-size: 0.9rem; margin-top: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
 </style>

@@ -10,15 +10,16 @@
         @contextmenu.prevent="(e) => showContextMenu(e, tag)"
       >
         <span class="tag-title">{{ tag.title }}</span>
-        <button
+        <el-button
           v-if="!tag.affix"
-          type="button"
-          class="tag-close"
+          link
+          circle
+          size="small"
           title="关闭"
           @click.prevent="handleClose(tag.path)"
         >
           <Icon icon="mdi:close" />
-        </button>
+        </el-button>
       </RouterLink>
     </div>
     <!-- 右键菜单 -->
@@ -36,17 +37,17 @@
         <button type="button" :disabled="!canCloseAll" @click="doCloseAllFromMenu">关闭所有</button>
       </div>
     </Teleport>
-    <div v-if="visitedTags.length > 0" class="tags-actions">
-      <div class="tags-dropdown" ref="dropdownRef">
-        <button type="button" class="tags-more" title="更多操作" @click.stop="showDropdown = !showDropdown">
-          <Icon icon="mdi:dots-vertical" />
-        </button>
-        <div v-show="showDropdown" class="tags-dropdown-menu" @click.stop>
-          <button type="button" @click="doCloseOther(); showDropdown = false">关闭其他</button>
-          <button type="button" @click="doCloseAll(); showDropdown = false">关闭全部</button>
-        </div>
-      </div>
-    </div>
+    <el-dropdown v-if="visitedTags.length > 0" trigger="click" @command="handleDropdownCommand">
+      <el-button link circle size="small" title="更多操作">
+        <Icon icon="mdi:dots-vertical" />
+      </el-button>
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="closeOther">关闭其他</el-dropdown-item>
+          <el-dropdown-item command="closeAll">关闭全部</el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
   </div>
 </template>
 
@@ -59,8 +60,10 @@ import { useTagsView } from '@/composables/useTagsView';
 const route = useRoute();
 const router = useRouter();
 const { visitedTags, closeTag, closeOther, closeAll, closeLeft, closeRight } = useTagsView();
-const showDropdown = ref(false);
-const dropdownRef = ref<HTMLElement | null>(null);
+function handleDropdownCommand(cmd: string) {
+  if (cmd === 'closeOther') doCloseOther();
+  else if (cmd === 'closeAll') doCloseAll();
+}
 
 // 右键菜单
 const contextMenu = ref({ visible: false, x: 0, y: 0, path: '' });
@@ -144,9 +147,6 @@ function handleContextMenuClickOutside(e: MouseEvent) {
 }
 
 function handleClickOutside(e: MouseEvent) {
-  if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
-    showDropdown.value = false;
-  }
   handleContextMenuClickOutside(e);
 }
 

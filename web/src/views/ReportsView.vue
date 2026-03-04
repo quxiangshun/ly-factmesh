@@ -2,118 +2,92 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">MES 报工录入，关联工单、工序、设备</div>
-          </div>
-        </div>
-        <select v-model="filterOrderId" class="filter-select">
-        <option :value="undefined">全部工单</option>
-        <option v-for="wo in workOrders" :key="wo.id" :value="wo.id">
-          {{ wo.orderCode }} - {{ wo.productName }}
-        </option>
-      </select>
-        <button type="button" class="btn primary" @click="showCreate = true">新建报工</button>
+        <el-tooltip content="MES 报工录入，关联工单、工序、设备" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-select v-model="filterOrderId" placeholder="全部工单" clearable style="width: 220px">
+          <el-option v-for="wo in workOrders" :key="wo.id" :value="wo.id" :label="`${wo.orderCode} - ${wo.productName}`" />
+        </el-select>
+        <el-button type="primary" @click="showCreate = true">新建报工</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-      <div v-if="!pageData?.records?.length" class="empty-state">暂无报工记录，请点击「新建报工」添加</div>
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>工单</th>
-              <th>工序</th>
-              <th>设备</th>
-              <th>报工/报废</th>
-              <th>操作员</th>
-              <th>报工时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in pageData?.records" :key="row.id">
-              <td>{{ row.orderCode || row.orderId }}</td>
-              <td>{{ row.processName || row.processId }}</td>
-              <td>{{ deviceLabel(row.deviceId) }}</td>
-              <td>{{ row.reportQuantity }} / {{ row.scrapQuantity ?? 0 }}</td>
-              <td>{{ row.operator || '-' }}</td>
-              <td>{{ formatTime(row.reportTime) }}</td>
-              <td>
-                <button type="button" class="btn small danger" @click="doDelete(row.id)">删除</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button type="button" class="btn small" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
-        <span class="page-info">第 {{ currentPage }} 页，共 {{ totalPages }} 页，{{ pageData?.total ?? 0 }} 条</span>
-        <button type="button" class="btn small" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
-      </div>
+      <el-empty v-if="!pageData?.records?.length" description="暂无报工记录，请点击「新建报工」添加" />
+      <el-table v-else :data="pageData?.records" class="table-wrap">
+        <el-table-column label="工单">
+          <template #default="{ row }">{{ row.orderCode || row.orderId }}</template>
+        </el-table-column>
+        <el-table-column label="工序">
+          <template #default="{ row }">{{ row.processName || row.processId }}</template>
+        </el-table-column>
+        <el-table-column label="设备">
+          <template #default="{ row }">{{ deviceLabel(row.deviceId) }}</template>
+        </el-table-column>
+        <el-table-column label="报工/报废">
+          <template #default="{ row }">{{ row.reportQuantity }} / {{ row.scrapQuantity ?? 0 }}</template>
+        </el-table-column>
+        <el-table-column prop="operator" label="操作员">
+          <template #default="{ row }">{{ row.operator || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="报工时间">
+          <template #default="{ row }">{{ formatTime(row.reportTime) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" type="danger" @click="doDelete(row.id)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        v-if="totalPages > 1"
+        v-model:current-page="currentPage"
+        :total="pageData?.total ?? 0"
+        :page-size="pageSize"
+        layout="prev, pager, next"
+        class="pagination"
+      />
     </template>
-    <div v-if="showCreate" class="modal-mask" @click.self="showCreate = false">
-      <div class="modal">
-        <h3>新建报工</h3>
-        <form @submit.prevent="submitCreate">
-          <div class="form-group">
-            <label>工单 *</label>
-            <select v-model="createForm.orderId" required>
-              <option value="">请选择工单</option>
-              <option v-for="wo in workOrders" :key="wo.id" :value="wo.id">
-                {{ wo.orderCode }} - {{ wo.productName }} ({{ wo.statusText }})
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>工序 *</label>
-            <select v-model="createForm.processId" required>
-              <option value="">请选择工序</option>
-              <option v-for="p in processes" :key="p.id" :value="p.id">
-                {{ p.processCode }} - {{ p.processName }}
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>设备 *</label>
-            <select v-model="createForm.deviceId" required>
-              <option value="">请选择设备</option>
-              <option v-for="d in devices" :key="d.id" :value="d.id">
-                {{ d.deviceCode }} - {{ d.deviceName }}
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>报工数量 *</label>
-            <input v-model.number="createForm.reportQuantity" type="number" min="0" required />
-          </div>
-          <div class="form-group">
-            <label>报废数量</label>
-            <input v-model.number="createForm.scrapQuantity" type="number" min="0" />
-          </div>
-          <div class="form-group">
-            <label>操作员</label>
-            <input v-model="createForm.operator" placeholder="可选" />
-          </div>
-          <p v-if="createError" class="error-msg">{{ createError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="showCreate = false">取消</button>
-            <button type="submit" class="btn primary" :disabled="creating">确定</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <el-dialog v-model="showCreate" title="新建报工" width="440px" :close-on-click-modal="false">
+      <el-form :model="createForm" @submit.prevent="submitCreate">
+        <el-form-item label="工单" required>
+          <el-select v-model="createForm.orderId" placeholder="请选择工单" style="width: 100%" required>
+            <el-option v-for="wo in workOrders" :key="wo.id" :value="wo.id" :label="`${wo.orderCode} - ${wo.productName} (${wo.statusText})`" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="工序" required>
+          <el-select v-model="createForm.processId" placeholder="请选择工序" style="width: 100%" required>
+            <el-option v-for="p in processes" :key="p.id" :value="p.id" :label="`${p.processCode} - ${p.processName}`" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="设备" required>
+          <el-select v-model="createForm.deviceId" placeholder="请选择设备" style="width: 100%" required>
+            <el-option v-for="d in devices" :key="d.id" :value="d.id" :label="`${d.deviceCode} - ${d.deviceName}`" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="报工数量" required>
+          <el-input-number v-model="createForm.reportQuantity" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="报废数量">
+          <el-input-number v-model="createForm.scrapQuantity" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="操作员">
+          <el-input v-model="createForm.operator" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="createError" type="error" :title="createError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="showCreate = false">取消</el-button>
+          <el-button type="primary" native-type="submit" :loading="creating">确定</el-button>
+        </div>
+      </el-form>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import {
   getWorkReportPage,
   createWorkReport,
@@ -123,6 +97,7 @@ import {
 import { getWorkOrderPage, type WorkOrderDTO } from '@/api/workOrders';
 import { getProcessList, type ProcessDTO } from '@/api/processes';
 import { getDeviceList, type DeviceDTO } from '@/api/devices';
+import { ElMessageBox } from 'element-plus';
 
 const pageData = ref<Awaited<ReturnType<typeof getWorkReportPage>> | null>(null);
 const loading = ref(true);
@@ -148,6 +123,12 @@ function formatTime(s?: string) {
   } catch {
     return s;
   }
+}
+
+function deviceLabel(id?: number) {
+  if (!id) return '-';
+  const d = devices.value.find((x) => x.id === id);
+  return d ? `${d.deviceCode} - ${d.deviceName}` : String(id);
 }
 
 async function loadOptions() {
@@ -184,18 +165,11 @@ async function load() {
   }
 }
 
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
 watch([currentPage, filterOrderId], load);
 onMounted(() => {
   loadOptions();
   load();
-  document.addEventListener('click', closeTipOnClickOutside);
 });
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 const showCreate = ref(false);
 const createForm = ref<WorkReportCreateRequest>({
@@ -238,40 +212,27 @@ async function submitCreate() {
 }
 
 async function doDelete(id: number) {
-  if (!confirm('确定删除该报工记录？')) return;
   try {
+    await ElMessageBox.confirm('确定删除该报工记录？', '确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
     await deleteWorkReport(id);
     await load();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败';
+    if (e !== 'cancel') error.value = e instanceof Error ? e.message : '删除失败';
   }
 }
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-.filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 180px; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.btn.danger { color: #f87171; border-color: #f87171; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.pagination { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: #94a3b8; }
-.pagination .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; min-width: 360px; max-height: 90vh; overflow-y: auto; }
-.modal h3 { margin: 0 0 1rem; color: #e5e7eb; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
-.form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; margin-right: 0.25rem; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
+.pagination { margin-top: 1rem; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 </style>

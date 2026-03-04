@@ -2,67 +2,58 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">系统级事件，支持按类型与处理状态筛选</div>
-          </div>
-        </div>
-        <input v-model="filterEventType" placeholder="事件类型" class="filter-input" />
-      <select v-model="filterProcessed" class="filter-select">
-        <option :value="undefined">全部</option>
-        <option :value="0">未处理</option>
-        <option :value="1">已处理</option>
-      </select>
-        <button type="button" class="btn primary" @click="load">查询</button>
+        <el-tooltip content="系统级事件，支持按类型与处理状态筛选" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-input v-model="filterEventType" placeholder="事件类型" class="filter-input" style="width: 140px" />
+        <el-select v-model="filterProcessed" placeholder="处理状态" clearable class="filter-input" style="width: 120px">
+          <el-option :value="undefined" label="全部" />
+          <el-option :value="0" label="未处理" />
+          <el-option :value="1" label="已处理" />
+        </el-select>
+        <el-button type="primary" @click="load">查询</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-      <div v-if="!pageData?.records?.length" class="empty-state">暂无系统事件</div>
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>事件类型</th>
-              <th>级别</th>
-              <th>内容</th>
-              <th>关联服务</th>
-              <th>关联ID</th>
-              <th>已处理</th>
-              <th>创建时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in pageData?.records" :key="row.id">
-              <td>{{ row.id }}</td>
-              <td>{{ row.eventType || '-' }}</td>
-              <td>{{ row.eventLevel }}</td>
-              <td class="content-cell">{{ row.eventContent || '-' }}</td>
-              <td>{{ row.relatedService || '-' }}</td>
-              <td>{{ row.relatedId || '-' }}</td>
-              <td>{{ row.processed ? '是' : '否' }}</td>
-              <td>{{ formatTime(row.createTime) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button type="button" class="btn small" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
-        <span class="page-info">第 {{ currentPage }} 页，共 {{ totalPages }} 页，{{ pageData?.total ?? 0 }} 条</span>
-        <button type="button" class="btn small" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
-      </div>
+      <el-empty v-if="!pageData?.records?.length" description="暂无系统事件" />
+      <el-table v-else :data="pageData?.records" class="table-wrap">
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="eventType" label="事件类型">
+          <template #default="{ row }">{{ row.eventType || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="eventLevel" label="级别" />
+        <el-table-column prop="eventContent" label="内容" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.eventContent || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="relatedService" label="关联服务">
+          <template #default="{ row }">{{ row.relatedService || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="relatedId" label="关联ID">
+          <template #default="{ row }">{{ row.relatedId || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="已处理">
+          <template #default="{ row }">{{ row.processed ? '是' : '否' }}</template>
+        </el-table-column>
+        <el-table-column label="创建时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        v-model:current-page="currentPage"
+        :total="pageData?.total ?? 0"
+        :page-size="pageSize"
+        layout="prev, pager, next"
+        class="pagination"
+      />
     </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import { getSystemEventPage } from '@/api/systemEvents';
 
 const pageData = ref<Awaited<ReturnType<typeof getSystemEventPage>> | null>(null);
@@ -102,33 +93,15 @@ async function load() {
 }
 
 watch(currentPage, load);
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
-onMounted(() => { load(); document.addEventListener('click', closeTipOnClickOutside); });
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
+onMounted(load);
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
-.filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; width: 140px; }
-.filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 100px; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
-.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.content-cell { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pagination { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: #94a3b8; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
+.pagination { margin-top: 1rem; }
 </style>

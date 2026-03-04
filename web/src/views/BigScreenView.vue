@@ -5,14 +5,15 @@
       <div class="screen-meta">
         <span class="now-time">{{ nowTime }}</span>
         <span class="refresh-tip">每 {{ refreshSeconds }} 秒自动刷新</span>
-        <button
-          type="button"
-          class="fullscreen-btn"
+        <el-button
+          link
+          circle
+          size="small"
           :title="isFullscreen ? '退出全屏' : '全屏'"
           @click="toggleFullscreen"
         >
           <Icon :icon="isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'" />
-        </button>
+        </el-button>
       </div>
     </header>
 

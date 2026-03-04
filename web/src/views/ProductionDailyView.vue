@@ -2,69 +2,53 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">按日统计完成工单数、产量及进行中/暂停数量</div>
-          </div>
-        </div>
-        <input v-model="filterDate" type="date" class="filter-input" />
-      <button type="button" class="btn primary" @click="load">查询</button>
-        <button type="button" class="btn" @click="setToday">今天</button>
+        <el-tooltip content="按日统计完成工单数、产量及进行中/暂停数量" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-date-picker v-model="filterDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" clearable class="filter-input" />
+        <el-button type="primary" @click="load">查询</el-button>
+        <el-button @click="setToday">今天</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else-if="summary">
       <div class="summary-cards">
-        <div class="card">
+        <el-card shadow="never" class="summary-card">
           <span class="card-label">统计日期</span>
           <span class="card-value">{{ summary.date || '-' }}</span>
-        </div>
-        <div class="card">
+        </el-card>
+        <el-card shadow="never" class="summary-card">
           <span class="card-label">已完成工单数</span>
           <span class="card-value highlight">{{ summary.completedCount ?? 0 }}</span>
-        </div>
-        <div class="card">
+        </el-card>
+        <el-card shadow="never" class="summary-card">
           <span class="card-label">已完成产量</span>
           <span class="card-value highlight">{{ summary.completedQuantity ?? 0 }}</span>
-        </div>
-        <div class="card">
+        </el-card>
+        <el-card shadow="never" class="summary-card">
           <span class="card-label">进行中工单数</span>
           <span class="card-value">{{ summary.inProgressCount ?? 0 }}</span>
-        </div>
-        <div class="card">
+        </el-card>
+        <el-card shadow="never" class="summary-card">
           <span class="card-label">暂停工单数</span>
           <span class="card-value">{{ summary.pausedCount ?? 0 }}</span>
-        </div>
+        </el-card>
       </div>
       <div class="detail-section">
         <h3 class="section-title">当日完成工单明细</h3>
-        <div v-if="!detailList.length" class="empty-state">当日无完成工单</div>
-        <div v-else class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>工单编码</th>
-                <th>产品</th>
-                <th>计划数量</th>
-                <th>实际产量</th>
-                <th>完成时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in detailList" :key="row.id">
-                <td>{{ row.orderCode }}</td>
-                <td>{{ row.productName }} ({{ row.productCode }})</td>
-                <td>{{ row.planQuantity }}</td>
-                <td>{{ row.actualQuantity }}</td>
-                <td>{{ row.endTime ? formatTime(row.endTime) : '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <el-empty v-if="!detailList.length" description="当日无完成工单" />
+        <el-table v-else :data="detailList" class="table-wrap">
+          <el-table-column prop="orderCode" label="工单编码" />
+          <el-table-column label="产品">
+            <template #default="{ row }">{{ row.productName }} ({{ row.productCode }})</template>
+          </el-table-column>
+          <el-table-column prop="planQuantity" label="计划数量" />
+          <el-table-column prop="actualQuantity" label="实际产量" />
+          <el-table-column label="完成时间">
+            <template #default="{ row }">{{ row.endTime ? formatTime(row.endTime) : '-' }}</template>
+          </el-table-column>
+        </el-table>
       </div>
     </template>
   </section>
@@ -72,6 +56,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import { getWorkOrderSummary, getWorkOrderSummaryDetail, type WorkOrderSummaryDTO, type WorkOrderDTO } from '@/api/workOrders';
 
 const summary = ref<WorkOrderSummaryDTO | null>(null);
@@ -112,39 +97,30 @@ async function load() {
   }
 }
 
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
 onMounted(() => {
-  document.addEventListener('click', closeTipOnClickOutside);
   filterDate.value = new Date().toISOString().slice(0, 10);
   load();
 });
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1.5rem; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
-.filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
+.filter-input { width: 180px; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; }
+.error-alert { margin-bottom: 1rem; }
 .summary-cards { display: flex; flex-wrap: wrap; gap: 1rem; }
-.card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1rem 1.25rem; min-width: 140px; }
+.summary-card {
+  min-width: 140px;
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+.summary-card :deep(.el-card__body) { padding: 1rem 1.25rem; }
 .card-label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem; }
 .card-value { font-size: 1.25rem; font-weight: 600; color: #e5e7eb; }
 .card-value.highlight { color: #38bdf8; }
 .detail-section { margin-top: 1.5rem; }
 .section-title { font-size: 1rem; color: #e5e7eb; margin: 0 0 0.75rem; }
-.empty-state { color: #94a3b8; padding: 1.5rem; text-align: center; }
-.table-wrap { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
+.table-wrap { margin-bottom: 1rem; }
 </style>

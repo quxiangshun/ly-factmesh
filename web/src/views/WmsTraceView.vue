@@ -2,74 +2,72 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">按物料/批次/工单/领料单追溯出入库记录</div>
-          </div>
-        </div>
-        <select v-model="filterMaterialId" class="filter-select">
-        <option :value="undefined">全部物料</option>
-        <option v-for="m in materials" :key="m.id" :value="m.id">{{ m.materialCode }} - {{ m.materialName }}</option>
-      </select>
-      <input v-model="filterBatchNo" placeholder="批次号" class="filter-input" />
-      <input v-model.number="filterOrderId" type="number" placeholder="工单ID" class="filter-input" />
-      <input v-model.number="filterReqId" type="number" placeholder="领料单ID" class="filter-input" />
-        <button type="button" class="btn primary" @click="load">查询</button>
+        <el-tooltip content="按物料/批次/工单/领料单追溯出入库记录" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-select v-model="filterMaterialId" placeholder="全部物料" clearable class="filter-input" style="width: 180px">
+          <el-option v-for="m in materials" :key="m.id" :value="m.id" :label="`${m.materialCode} - ${m.materialName}`" />
+        </el-select>
+        <el-input v-model="filterBatchNo" placeholder="批次号" class="filter-input" style="width: 120px" />
+        <el-input v-model.number="filterOrderId" type="number" placeholder="工单ID" class="filter-input" style="width: 120px" />
+        <el-input v-model.number="filterReqId" type="number" placeholder="领料单ID" class="filter-input" style="width: 120px" />
+        <el-button type="primary" @click="load">查询</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-      <div v-if="!pageData?.records?.length" class="empty-state">暂无追溯记录</div>
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>物料</th>
-              <th>批次</th>
-              <th>类型</th>
-              <th>数量</th>
-              <th>仓库</th>
-              <th>工单</th>
-              <th>领料单</th>
-              <th>操作人</th>
-              <th>参考单号</th>
-              <th>时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in pageData?.records" :key="row.id">
-              <td>{{ row.materialCode }} {{ row.materialName }}</td>
-              <td>{{ row.batchNo || '-' }}</td>
-              <td>{{ txTypeLabel(row.transactionType) }}</td>
-              <td :class="row.transactionType === 1 ? 'qty-in' : 'qty-out'">
-                {{ row.transactionType === 1 ? '+' : '-' }}{{ row.quantity }}
-              </td>
-              <td>{{ row.warehouse || '-' }}</td>
-              <td>{{ row.orderId || '-' }}</td>
-              <td>{{ row.reqId || '-' }}</td>
-              <td>{{ row.operator || '-' }}</td>
-              <td>{{ row.referenceNo || '-' }}</td>
-              <td>{{ formatTime(row.transactionTime) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button type="button" class="btn small" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
-        <span class="page-info">第 {{ currentPage }} 页，共 {{ totalPages }} 页，{{ pageData?.total ?? 0 }} 条</span>
-        <button type="button" class="btn small" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
-      </div>
+      <el-empty v-if="!pageData?.records?.length" description="暂无追溯记录" />
+      <el-table v-else :data="pageData?.records" class="table-wrap">
+        <el-table-column label="物料">
+          <template #default="{ row }">{{ row.materialCode }} {{ row.materialName }}</template>
+        </el-table-column>
+        <el-table-column prop="batchNo" label="批次">
+          <template #default="{ row }">{{ row.batchNo || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="类型">
+          <template #default="{ row }">{{ txTypeLabel(row.transactionType) }}</template>
+        </el-table-column>
+        <el-table-column label="数量">
+          <template #default="{ row }">
+            <span :class="row.transactionType === 1 ? 'qty-in' : 'qty-out'">
+              {{ row.transactionType === 1 ? '+' : '-' }}{{ row.quantity }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="warehouse" label="仓库">
+          <template #default="{ row }">{{ row.warehouse || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="orderId" label="工单">
+          <template #default="{ row }">{{ row.orderId || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="reqId" label="领料单">
+          <template #default="{ row }">{{ row.reqId || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="operator" label="操作人">
+          <template #default="{ row }">{{ row.operator || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="referenceNo" label="参考单号">
+          <template #default="{ row }">{{ row.referenceNo || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.transactionTime) }}</template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        v-model:current-page="currentPage"
+        :total="pageData?.total ?? 0"
+        :page-size="pageSize"
+        layout="prev, pager, next"
+        class="pagination"
+      />
     </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import { traceInventory } from '@/api/inventory';
 import { getMaterialPage, type MaterialDTO } from '@/api/materials';
 
@@ -82,7 +80,6 @@ const filterMaterialId = ref<number | undefined>(undefined);
 const filterBatchNo = ref('');
 const filterOrderId = ref<number | undefined>(undefined);
 const filterReqId = ref<number | undefined>(undefined);
-
 const materials = ref<MaterialDTO[]>([]);
 
 const totalPages = computed(() => Math.max(1, Math.ceil((pageData.value?.total ?? 0) / pageSize)));
@@ -132,38 +129,20 @@ async function load() {
 }
 
 watch(currentPage, load);
-const showTip = ref(false);
-function closeTipOnClickOutside(e: MouseEvent) {
-  const el = (e.target as HTMLElement).closest('.title-with-tip');
-  if (!el) showTip.value = false;
-}
 onMounted(() => {
-  document.addEventListener('click', closeTipOnClickOutside);
   loadOptions();
   load();
 });
-onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 180px; }
-.filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; width: 120px; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
-.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
 .qty-in { color: #34d399; }
 .qty-out { color: #f87171; }
-.pagination { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: #94a3b8; }
+.pagination { margin-top: 1rem; }
 </style>

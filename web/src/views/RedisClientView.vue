@@ -2,14 +2,9 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">Redis 客户端，可连接任意 Redis 实例，连接信息可保存到数据库管理</div>
-          </div>
-        </div>
+        <el-tooltip content="Redis 客户端，可连接任意 Redis 实例，连接信息可保存到数据库管理" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
       </div>
     </div>
     <div class="redis-grid">
@@ -30,8 +25,8 @@
             <span class="conn-name">{{ c.name }}</span>
             <span class="conn-addr">{{ c.host }}:{{ c.port }}</span>
             <div class="conn-actions">
-              <button type="button" class="btn-icon" title="编辑" @click.stop="openEdit(c)">✎</button>
-              <button type="button" class="btn-icon danger" title="删除" @click.stop="doDelete(c.id)">×</button>
+              <el-button type="primary" link size="small" title="编辑" @click.stop="openEdit(c)">编辑</el-button>
+              <el-button type="danger" link size="small" title="删除" @click.stop="doDelete(c.id)">删除</el-button>
             </div>
           </div>
         </div>
@@ -39,24 +34,20 @@
 
         <div class="quick-conn">
           <h4 class="sub-title">快速连接</h4>
-          <div class="quick-form">
-            <div class="form-row">
-              <label>主机</label>
-              <input v-model="quickForm.host" type="text" class="form-input" placeholder="localhost" />
-            </div>
-            <div class="form-row">
-              <label>端口</label>
-              <input v-model="quickForm.port" type="text" class="form-input" placeholder="6379" />
-            </div>
-            <div class="form-row">
-              <label>密码</label>
-              <input v-model="quickForm.password" type="password" class="form-input" placeholder="可选" />
-            </div>
-            <div class="form-row">
-              <label>DB</label>
-              <input v-model.number="quickForm.database" type="number" class="form-input" placeholder="0" min="0" />
-            </div>
-          </div>
+          <el-form label-position="top" class="quick-form">
+            <el-form-item label="主机">
+              <el-input v-model="quickForm.host" placeholder="localhost" />
+            </el-form-item>
+            <el-form-item label="端口">
+              <el-input v-model="quickForm.port" placeholder="6379" />
+            </el-form-item>
+            <el-form-item label="密码">
+              <el-input v-model="quickForm.password" type="password" placeholder="可选" show-password />
+            </el-form-item>
+            <el-form-item label="DB">
+              <el-input-number v-model="quickForm.database" :min="0" placeholder="0" style="width: 100%" />
+            </el-form-item>
+          </el-form>
         </div>
       </div>
 
@@ -86,7 +77,7 @@
       <div class="redis-section result-section">
         <div class="result-header">
           <h3 class="section-title">结果</h3>
-          <button type="button" class="btn small" :disabled="!result" @click="clearResult">清除</button>
+          <el-button size="small" :disabled="!result" @click="clearResult">清除</el-button>
         </div>
         <div class="result-area" ref="resultRef">
           <div v-if="!result && !error" class="result-empty">选择连接后输入命令执行</div>
@@ -96,45 +87,36 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
-    <div v-if="showModal" class="modal-mask" @click.self="closeModal">
-      <div class="modal">
-        <h3>{{ editingId ? '编辑连接' : '新增连接' }}</h3>
-        <form @submit.prevent="submitConn">
-          <div class="form-group">
-            <label>名称 *</label>
-            <input v-model="modalForm.name" required placeholder="如：本地Redis" />
-          </div>
-          <div class="form-group">
-            <label>主机 *</label>
-            <input v-model="modalForm.host" required placeholder="localhost" />
-          </div>
-          <div class="form-group">
-            <label>端口</label>
-            <input v-model.number="modalForm.port" type="number" placeholder="6379" />
-          </div>
-          <div class="form-group">
-            <label>密码</label>
-            <input v-model="modalForm.password" type="password" placeholder="可选，编辑时留空保留原密码" />
-          </div>
-          <div class="form-group">
-            <label>DB</label>
-            <input v-model.number="modalForm.database" type="number" placeholder="0" min="0" />
-          </div>
-          <p v-if="modalError" class="error-msg">{{ modalError }}</p>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="closeModal">取消</button>
-            <button type="submit" class="btn primary" :disabled="saving">确定</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <el-dialog v-model="showModal" :title="editingId ? '编辑连接' : '新增连接'" width="400px" :close-on-click-modal="false" @closed="closeModal">
+      <el-form :model="modalForm" @submit.prevent="submitConn">
+        <el-form-item label="名称" required>
+          <el-input v-model="modalForm.name" placeholder="如：本地Redis" />
+        </el-form-item>
+        <el-form-item label="主机" required>
+          <el-input v-model="modalForm.host" placeholder="localhost" />
+        </el-form-item>
+        <el-form-item label="端口">
+          <el-input-number v-model="modalForm.port" placeholder="6379" :min="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="modalForm.password" type="password" placeholder="可选，编辑时留空保留原密码" show-password />
+        </el-form-item>
+        <el-form-item label="DB">
+          <el-input-number v-model="modalForm.database" placeholder="0" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-alert v-if="modalError" type="error" :title="modalError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="closeModal">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="submitConn">确定</el-button>
+        </div>
+      </el-form>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import {
   listConnections,
   createConnection,
@@ -143,6 +125,7 @@ import {
   executeCommand,
   type RedisConnection,
 } from '@/api/redis';
+import { ElMessageBox } from 'element-plus';
 
 const connections = ref<RedisConnection[]>([]);
 const selectedId = ref<number | null>(null);
@@ -233,7 +216,11 @@ async function submitConn() {
 }
 
 async function doDelete(id: number) {
-  if (!confirm('确定删除该连接？')) return;
+  try {
+    await ElMessageBox.confirm('确定删除该连接？', '确认', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' });
+  } catch {
+    return;
+  }
   try {
     await deleteConnection(id);
     if (selectedId.value === id) selectedId.value = null;
@@ -434,6 +421,8 @@ onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside))
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn.danger:hover { border-color: #f87171; color: #f87171; }
+.error-alert { margin-bottom: 1rem; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 
 .modal-mask {
   position: fixed;

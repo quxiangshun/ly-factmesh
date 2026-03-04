@@ -2,132 +2,121 @@
   <section class="page">
     <div class="toolbar">
       <div class="toolbar-actions">
-        <div class="title-with-tip">
-          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
-            <Icon icon="mdi:information-outline" class="tip-icon" />
-          </span>
-          <div v-if="showTip" class="tip-popover" @click.stop>
-            <div class="tip-content">库存查询、预警、盘点</div>
-          </div>
-        </div>
-        <select v-model="filterMaterialId" class="filter-select">
-        <option :value="undefined">全部物料</option>
-        <option v-for="m in materials" :key="m.id" :value="m.id">{{ m.materialCode }} - {{ m.materialName }}</option>
-      </select>
-      <input v-model="filterWarehouse" placeholder="仓库" class="filter-input" />
-      <input v-model="filterBatchNo" placeholder="批次号" class="filter-input" />
-      <button type="button" class="btn" @click="load">查询</button>
-      <button v-if="!showBelowSafe" type="button" class="btn primary" @click="showBelowSafe = true">低于安全库存</button>
-      <button v-else type="button" class="btn" @click="showBelowSafe = false">全部库存</button>
+        <el-tooltip content="库存查询、预警、盘点" placement="bottom">
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+        <el-select v-model="filterMaterialId" placeholder="全部物料" clearable style="width: 200px">
+          <el-option v-for="m in materials" :key="m.id" :value="m.id" :label="`${m.materialCode} - ${m.materialName}`" />
+        </el-select>
+        <el-input v-model="filterWarehouse" placeholder="仓库" style="width: 120px" clearable />
+        <el-input v-model="filterBatchNo" placeholder="批次号" style="width: 120px" clearable />
+        <el-button @click="load">查询</el-button>
+        <el-button v-if="!showBelowSafe" type="primary" @click="showBelowSafe = true">低于安全库存</el-button>
+        <el-button v-else @click="showBelowSafe = false">全部库存</el-button>
       </div>
     </div>
-    <div v-if="error" class="error-msg">{{ error }}</div>
-    <div v-if="loading" class="loading">加载中…</div>
+    <el-alert v-if="error" type="error" :title="error" show-icon class="error-alert" />
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-      <div v-if="!pageData?.records?.length" class="empty-state">暂无库存记录</div>
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>物料</th>
-              <th>批次</th>
-              <th>仓库</th>
-              <th>数量</th>
-              <th>安全库存</th>
-              <th>状态</th>
-              <th>更新时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in pageData?.records" :key="row.id" :class="{ 'row-warning': row.belowSafeStock }">
-              <td>{{ row.materialCode }} {{ row.materialName }}</td>
-              <td>{{ row.batchNo || '-' }}</td>
-              <td>{{ row.warehouse || '-' }}</td>
-              <td>{{ row.quantity }}</td>
-              <td>{{ row.safeStock ?? '-' }}</td>
-              <td>
-                <span v-if="row.belowSafeStock" class="badge danger">低于安全库存</span>
-                <span v-else class="badge ok">正常</span>
-              </td>
-              <td>{{ formatTime(row.lastUpdateTime) }}</td>
-              <td>
-                <button type="button" class="btn small" @click="openAdjust(row)">调整</button>
-                <button type="button" class="btn small" @click="openCount(row)">盘点</button>
-                <button type="button" class="btn small" @click="openSafeStock(row)">安全库存</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button type="button" class="btn small" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
-        <span class="page-info">第 {{ currentPage }} 页，共 {{ totalPages }} 页，{{ pageData?.total ?? 0 }} 条</span>
-        <button type="button" class="btn small" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
-      </div>
+      <el-empty v-if="!pageData?.records?.length" description="暂无库存记录" />
+      <el-table
+        v-else
+        :data="pageData?.records"
+        :row-class-name="({ row }: { row: { belowSafeStock?: boolean } }) => (row.belowSafeStock ? 'row-warning' : '')"
+        class="table-wrap"
+      >
+        <el-table-column label="物料">
+          <template #default="{ row }">{{ row.materialCode }} {{ row.materialName }}</template>
+        </el-table-column>
+        <el-table-column prop="batchNo" label="批次">
+          <template #default="{ row }">{{ row.batchNo || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="warehouse" label="仓库">
+          <template #default="{ row }">{{ row.warehouse || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="quantity" label="数量" />
+        <el-table-column prop="safeStock" label="安全库存">
+          <template #default="{ row }">{{ row.safeStock ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="140">
+          <template #default="{ row }">
+            <el-tag v-if="row.belowSafeStock" type="danger" size="small">低于安全库存</el-tag>
+            <el-tag v-else type="success" size="small">正常</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="更新时间">
+          <template #default="{ row }">{{ formatTime(row.lastUpdateTime) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="openAdjust(row)">调整</el-button>
+            <el-button size="small" @click="openCount(row)">盘点</el-button>
+            <el-button size="small" @click="openSafeStock(row)">安全库存</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        v-if="totalPages > 1"
+        v-model:current-page="currentPage"
+        :total="pageData?.total ?? 0"
+        :page-size="pageSize"
+        layout="prev, pager, next"
+        class="pagination"
+      />
     </template>
-    <div v-if="adjustRow" class="modal-mask" @click.self="adjustRow = null">
-      <div class="modal">
-        <h3>调整库存 - {{ adjustRow.materialName }}</h3>
-        <p class="hint">正数入库、负数出库</p>
-        <div class="form-group">
-          <label>数量</label>
-          <input v-model.number="adjustForm.quantity" type="number" placeholder="正数入库、负数出库" />
+    <el-dialog v-if="adjustRow" v-model="adjustVisible" :title="`调整库存 - ${adjustRow.materialName}`" width="400px" :close-on-click-modal="false">
+      <p class="hint">正数入库、负数出库</p>
+      <el-form @submit.prevent="doAdjust">
+        <el-form-item label="数量">
+          <el-input-number v-model="adjustForm.quantity" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="参考单号">
+          <el-input v-model="adjustForm.referenceNo" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="操作人">
+          <el-input v-model="adjustForm.operator" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="adjustError" type="error" :title="adjustError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="adjustRow = null">取消</el-button>
+          <el-button type="primary" native-type="submit" :loading="adjusting">确定</el-button>
         </div>
-        <div class="form-group">
-          <label>参考单号</label>
-          <input v-model="adjustForm.referenceNo" placeholder="可选" />
+      </el-form>
+    </el-dialog>
+    <el-dialog v-if="countRow" v-model="countVisible" :title="`盘点确认 - ${countRow.materialName}`" width="400px" :close-on-click-modal="false">
+      <p class="hint">当前账面：{{ countRow.quantity }}，请输入实盘数量</p>
+      <el-form @submit.prevent="doCount">
+        <el-form-item label="实盘数量">
+          <el-input-number v-model="countForm.actualQuantity" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="操作人">
+          <el-input v-model="countForm.operator" placeholder="可选" />
+        </el-form-item>
+        <el-alert v-if="countError" type="error" :title="countError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="countRow = null">取消</el-button>
+          <el-button type="primary" native-type="submit" :loading="counting">确定</el-button>
         </div>
-        <div class="form-group">
-          <label>操作人</label>
-          <input v-model="adjustForm.operator" placeholder="可选" />
+      </el-form>
+    </el-dialog>
+    <el-dialog v-if="safeStockRow" v-model="safeStockVisible" :title="`更新安全库存 - ${safeStockRow.materialName}`" width="400px" :close-on-click-modal="false">
+      <el-form @submit.prevent="doUpdateSafeStock">
+        <el-form-item label="安全库存数量">
+          <el-input-number v-model="safeStockForm.safeStock" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-alert v-if="safeStockError" type="error" :title="safeStockError" show-icon class="error-alert" />
+        <div class="dialog-footer">
+          <el-button @click="safeStockRow = null">取消</el-button>
+          <el-button type="primary" native-type="submit" :loading="safeStockSaving">确定</el-button>
         </div>
-        <p v-if="adjustError" class="error-msg">{{ adjustError }}</p>
-        <div class="modal-actions">
-          <button type="button" class="btn" @click="adjustRow = null">取消</button>
-          <button type="button" class="btn primary" :disabled="adjusting" @click="doAdjust">确定</button>
-        </div>
-      </div>
-    </div>
-    <div v-if="countRow" class="modal-mask" @click.self="countRow = null">
-      <div class="modal">
-        <h3>盘点确认 - {{ countRow.materialName }}</h3>
-        <p class="hint">当前账面：{{ countRow.quantity }}，请输入实盘数量</p>
-        <div class="form-group">
-          <label>实盘数量</label>
-          <input v-model.number="countForm.actualQuantity" type="number" min="0" />
-        </div>
-        <div class="form-group">
-          <label>操作人</label>
-          <input v-model="countForm.operator" placeholder="可选" />
-        </div>
-        <p v-if="countError" class="error-msg">{{ countError }}</p>
-        <div class="modal-actions">
-          <button type="button" class="btn" @click="countRow = null">取消</button>
-          <button type="button" class="btn primary" :disabled="counting" @click="doCount">确定</button>
-        </div>
-      </div>
-    </div>
-    <div v-if="safeStockRow" class="modal-mask" @click.self="safeStockRow = null">
-      <div class="modal">
-        <h3>更新安全库存 - {{ safeStockRow.materialName }}</h3>
-        <div class="form-group">
-          <label>安全库存数量</label>
-          <input v-model.number="safeStockForm.safeStock" type="number" min="0" />
-        </div>
-        <p v-if="safeStockError" class="error-msg">{{ safeStockError }}</p>
-        <div class="modal-actions">
-          <button type="button" class="btn" @click="safeStockRow = null">取消</button>
-          <button type="button" class="btn primary" :disabled="safeStockSaving" @click="doUpdateSafeStock">确定</button>
-        </div>
-      </div>
-    </div>
+      </el-form>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { InfoFilled } from '@element-plus/icons-vue';
 import {
   getInventoryPage,
   getInventoryBelowSafeStock,
@@ -152,6 +141,22 @@ const showBelowSafe = ref(false);
 const materials = ref<MaterialDTO[]>([]);
 
 const totalPages = computed(() => Math.max(1, Math.ceil((pageData.value?.total ?? 0) / pageSize)));
+
+const adjustRow = ref<InventoryDTO | null>(null);
+const adjustVisible = computed({
+  get: () => !!adjustRow.value,
+  set: (v) => { if (!v) adjustRow.value = null; }
+});
+const countRow = ref<InventoryDTO | null>(null);
+const countVisible = computed({
+  get: () => !!countRow.value,
+  set: (v) => { if (!v) countRow.value = null; }
+});
+const safeStockRow = ref<InventoryDTO | null>(null);
+const safeStockVisible = computed({
+  get: () => !!safeStockRow.value,
+  set: (v) => { if (!v) safeStockRow.value = null; }
+});
 
 function formatTime(t?: string) {
   if (!t) return '-';
@@ -204,8 +209,8 @@ onMounted(() => {
   loadOptions();
   load();
 });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
-const adjustRow = ref<InventoryDTO | null>(null);
 const adjustForm = ref<Pick<InventoryAdjustRequest, 'quantity' | 'referenceNo' | 'operator'>>({
   quantity: 0,
   referenceNo: '',
@@ -245,7 +250,6 @@ async function doAdjust() {
   }
 }
 
-const countRow = ref<InventoryDTO | null>(null);
 const countForm = ref({ actualQuantity: 0, operator: '' });
 const countError = ref('');
 const counting = ref(false);
@@ -279,7 +283,6 @@ async function doCount() {
   }
 }
 
-const safeStockRow = ref<InventoryDTO | null>(null);
 const safeStockForm = ref({ safeStock: 0 });
 const safeStockError = ref('');
 const safeStockSaving = ref(false);
@@ -312,33 +315,13 @@ async function doUpdateSafeStock() {
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
-.page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
 .toolbar { margin-bottom: 1rem; }
 .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 180px; }
-.filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; width: 120px; }
-.btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
-.btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-.btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-.error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
-.loading { color: #94a3b8; margin: 1rem 0; }
-.empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
-.row-warning { background: rgba(248, 113, 113, 0.08); }
-.badge { font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; }
-.badge.danger { background: rgba(248, 113, 113, 0.3); color: #f87171; }
-.badge.ok { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
-.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
-.data-table { width: 100%; border-collapse: collapse; color: #e5e7eb; }
-.data-table th, .data-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-.data-table th { color: #38bdf8; font-weight: 600; }
-.pagination { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: #94a3b8; }
-.pagination .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; min-width: 320px; }
-.modal h3 { margin: 0 0 1rem; color: #e5e7eb; }
+.tip-icon { font-size: 1.2rem; color: #94a3b8; cursor: help; margin-right: 0.25rem; }
+.error-alert { margin-bottom: 1rem; }
+.table-wrap { margin-bottom: 1rem; }
+.pagination { margin-top: 1rem; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 .hint { font-size: 0.875rem; color: #94a3b8; margin-bottom: 1rem; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
-.form-group input { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+:deep(.row-warning) { background: rgba(248, 113, 113, 0.08); }
 </style>
