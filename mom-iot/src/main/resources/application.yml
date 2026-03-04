@@ -57,6 +57,11 @@ iot:
   scheduled-collect:
     enabled: false  # 默认关闭，按需开启
     cron: "0 */5 * * * ?"  # 每 5 分钟执行
+  # 模拟器对接（从 mom-simulator REST 拉取模拟点位并上报到 IoT）
+  simulator-collect:
+    enabled: true  # 开发环境开启，对接模拟器
+    url: http://localhost:9089  # 模拟器地址，直连或经网关
+    cron: "0/5 * * * * ?"  # 每 5 秒采集一次
   telemetry:
     cleaner:
       enabled: true  # 遥测数据清洗（过滤 NaN/Inf、范围校验）

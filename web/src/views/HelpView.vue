@@ -522,6 +522,19 @@ try {
 }</pre>
         </div>
         <p><strong>技术点</strong>：Eclipse Milo 0.6.16（OPC UA）、Modbus4j 3.1.0（Modbus TCP）、Apache Commons Pool2；ConditionalOnProperty iot.industrial.enabled=true 按需启用。</p>
+
+        <h3 id="iot-simulator-collect">工业协议模拟与 IoT 对接</h3>
+        <p><strong>业务逻辑</strong>：mom-simulator 为内存模拟的 OPC UA / Modbus TCP 数据源，仅开发环境使用；mom-iot 通过 SimulatorCollectorJob 定期从模拟器 REST 拉取数据，上报到 InfluxDB 并更新设备状态，实现联调闭环。</p>
+        <p><strong>使用说明</strong>：</p>
+        <ol>
+          <li>启动 <strong>mom-simulator</strong>（默认端口 9089）。</li>
+          <li>启动 <strong>mom-iot</strong>（默认端口 9092）。</li>
+          <li>在侧边栏「数据模拟 (开发)」→「工业协议模拟」进入模拟器页面。</li>
+          <li>在穿梭框左侧选择待模拟的设备，点击 <strong>&gt;</strong> 移至右侧「已选设备」，配置更新间隔后点击「保存配置」。</li>
+          <li>mom-iot 的 SimulatorCollectorJob 每 5 秒从模拟器拉取数据，自动上报遥测并更新设备列表中的温度、湿度、电压。</li>
+        </ol>
+        <p><strong>点位映射</strong>：模拟器 Device_n 对应 deviceIds 中第 n 个设备；OPC UA 的 Temperature/Humidity → temperature/humidity；Modbus 的 n_3_201 → voltage，n_3_200 → pressure。</p>
+        <p><strong>配置</strong>：mom-iot 的 application.yml 中 <code>iot.simulator-collect.enabled=true</code> 时启用；<code>iot.simulator-collect.url</code> 默认 <code>http://localhost:9089</code>，可按实际模拟器地址调整。</p>
       </section>
 
       <section id="mes" class="help-section">
@@ -789,7 +802,8 @@ const toc = [
         { id: 'iot-overview', name: 'IoT 业务流转概览' },
         ...(base.children || []),
         { id: 'iot-rule-engine', name: '规则引擎' },
-        { id: 'iot-industrial-protocol', name: '工业协议接入' }
+        { id: 'iot-industrial-protocol', name: '工业协议接入' },
+        { id: 'iot-simulator-collect', name: '模拟器对接' }
       ];
     }
     if (g.id === 'wms') {
