@@ -43,6 +43,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'qms/ncr', name: 'QmsNcr', component: () => import('../views/NcrView.vue'), meta: { title: '不合格品处理' } },
       { path: 'qms/quality-trace', name: 'QmsQualityTrace', component: () => import('../views/QualityTraceView.vue'), meta: { title: '质量追溯', desc: '关联工单/设备/物料' } },
       { path: 'ops/mqtt', name: 'OpsMqtt', component: () => import('../views/MqttClientView.vue'), meta: { title: 'MQTT 客户端', desc: '订阅、发布、接收 MQTT 消息' } },
+      { path: 'ops/redis', name: 'OpsRedis', component: () => import('../views/RedisClientView.vue'), meta: { title: 'Redis 客户端', desc: '连接任意 Redis，执行命令' } },
       { path: 'ops/pg', name: 'OpsPg', component: () => import('../views/PgAdminView.vue'), meta: { title: 'PG 管理', desc: 'PostgreSQL 数据库查询' } },
       { path: 'ops/global-logs', name: 'OpsGlobalLogs', component: () => import('../views/GlobalLogsView.vue'), meta: { title: '全局日志', desc: '系统级日志' } },
       { path: 'ops/audit-logs', name: 'OpsAuditLogs', component: () => import('../views/OpsAuditLogsView.vue'), meta: { title: '运维审计', desc: '运维审计记录' } },

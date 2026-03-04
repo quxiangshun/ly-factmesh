@@ -31,6 +31,9 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     implementation 'org.springframework.security:spring-security-crypto'
+
+    // Redis 客户端（运维 Redis 管理，动态连接）
+    implementation 'redis.clients:jedis:5.2.0'
 }
 
 jar {
