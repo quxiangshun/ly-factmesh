@@ -101,6 +101,7 @@ export const menuConfig: MenuItem[] = [
     icon: 'mdi:server',
     children: [
       { id: 'ops-mqtt', name: 'MQTT 客户端', path: '/ops/mqtt' },
+      { id: 'ops-pg', name: 'PG 管理', path: '/ops/pg' },
       { id: 'ops-global-logs', name: '全局日志', path: '/ops/global-logs' },
       { id: 'ops-audit-logs', name: '运维审计', path: '/ops/audit-logs' },
       { id: 'ops-system-events', name: '系统事件', path: '/ops/system-events' }
