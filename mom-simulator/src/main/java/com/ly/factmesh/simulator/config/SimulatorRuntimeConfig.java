@@ -36,11 +36,11 @@ public class SimulatorRuntimeConfig {
         if (!deviceIds.isEmpty()) {
             return deviceIds.size();
         }
-        return deviceCount.get();
+        return 0;
     }
 
     public void setDeviceCount(int count) {
-        deviceCount.set(Math.max(1, Math.min(1000, count)));
+        deviceCount.set(Math.max(0, Math.min(1000, count)));
     }
 
     public List<String> getDeviceIds() {
@@ -51,8 +51,6 @@ public class SimulatorRuntimeConfig {
         deviceIds.clear();
         if (ids != null && !ids.isEmpty()) {
             deviceIds.addAll(ids);
-        } else {
-            deviceCount.set(1);
         }
     }
 }

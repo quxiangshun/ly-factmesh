@@ -107,25 +107,39 @@
         <div class="values-row">
           <div class="sim-card values-card">
             <h3 class="card-title">OPC UA 模拟点位</h3>
-            <div v-if="values?.opcua" class="values-list">
+            <div v-if="values?.error" class="values-list">
+              <div class="value-empty error-text">{{ values.error }}</div>
+            </div>
+            <div v-else-if="!values" class="values-list">
+              <div class="value-empty loading-text">加载中...</div>
+            </div>
+            <div v-else-if="values?.opcua && Object.keys(values.opcua).length" class="values-list">
               <div v-for="(v, k) in values.opcua" :key="k" class="value-row">
                 <span class="point-id">{{ k }}</span>
                 <span class="point-value">{{ typeof v === 'number' ? v.toFixed(2) : v }}</span>
               </div>
             </div>
-            <div v-else-if="values?.error" class="error-text">{{ values.error }}</div>
-            <div v-else class="loading-text">加载中...</div>
+            <div v-else class="values-list">
+              <div class="value-empty">请先选择设备</div>
+            </div>
           </div>
           <div class="sim-card values-card">
             <h3 class="card-title">Modbus TCP 模拟点位</h3>
-            <div v-if="values?.modbus" class="values-list">
+            <div v-if="values?.error" class="values-list">
+              <div class="value-empty error-text">{{ values.error }}</div>
+            </div>
+            <div v-else-if="!values" class="values-list">
+              <div class="value-empty loading-text">加载中...</div>
+            </div>
+            <div v-else-if="values?.modbus && Object.keys(values.modbus).length" class="values-list">
               <div v-for="(v, k) in values.modbus" :key="k" class="value-row">
                 <span class="point-id">{{ k }}</span>
                 <span class="point-value">{{ v }}</span>
               </div>
             </div>
-            <div v-else-if="values?.error" class="error-text">{{ values.error }}</div>
-            <div v-else class="loading-text">加载中...</div>
+            <div v-else class="values-list">
+              <div class="value-empty">请先选择设备</div>
+            </div>
           </div>
         </div>
       </div>
@@ -619,6 +633,11 @@ onUnmounted(() => {
 .point-value {
   font-weight: 600;
   color: #38bdf8;
+}
+.value-empty {
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
 }
 .error-text,
 .loading-text {
