@@ -328,6 +328,7 @@ function doCloseAll() {
   border-radius: 4px;
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
 }
 .tags-dropdown-menu button:hover {
   background: rgba(56, 189, 248, 0.2);
