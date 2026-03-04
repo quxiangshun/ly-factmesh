@@ -48,11 +48,11 @@ public class DeviceRepositoryImpl implements DeviceRepository {
     @Override
     public DeviceAggregate save(DeviceAggregate deviceAggregate) {
         Device device = toEntity(deviceAggregate);
-        if (device.getId() == null) {
-            // 新增
+        // 新建设备（registerDevice）会先设置雪花 ID，需根据 DB 是否存在判断 insert/update
+        Device existing = device.getId() != null ? deviceMapper.selectById(device.getId()) : null;
+        if (existing == null) {
             deviceMapper.insert(device);
         } else {
-            // 更新
             deviceMapper.updateById(device);
         }
         return toAggregate(device);

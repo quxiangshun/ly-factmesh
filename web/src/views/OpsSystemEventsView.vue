@@ -1,14 +1,23 @@
 <template>
   <section class="page">
-    <p class="page-desc">系统级事件，支持按类型与处理状态筛选</p>
     <div class="toolbar">
-      <input v-model="filterEventType" placeholder="事件类型" class="filter-input" />
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">系统级事件，支持按类型与处理状态筛选</div>
+          </div>
+        </div>
+        <input v-model="filterEventType" placeholder="事件类型" class="filter-input" />
       <select v-model="filterProcessed" class="filter-select">
         <option :value="undefined">全部</option>
         <option :value="0">未处理</option>
         <option :value="1">已处理</option>
       </select>
-      <button type="button" class="btn primary" @click="load">查询</button>
+        <button type="button" class="btn primary" @click="load">查询</button>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="loading" class="loading">加载中…</div>
@@ -52,7 +61,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import { getSystemEventPage } from '@/api/systemEvents';
 
 const pageData = ref<Awaited<ReturnType<typeof getSystemEventPage>> | null>(null);
@@ -92,14 +102,20 @@ async function load() {
 }
 
 watch(currentPage, load);
-onMounted(load);
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => { load(); document.addEventListener('click', closeTipOnClickOutside); });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.toolbar { margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; }
+.toolbar { margin-bottom: 1rem; }
+.toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
 .filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; width: 140px; }
 .filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 100px; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }

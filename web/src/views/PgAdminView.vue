@@ -1,7 +1,17 @@
 <template>
   <section class="page">
-    <p class="page-desc">PostgreSQL 数据库管理，使用页面输入连接，仅支持 SELECT 查询</p>
-
+    <div class="toolbar">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">PostgreSQL 数据库管理，使用页面输入连接，仅支持 SELECT 查询</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="pg-grid">
       <!-- 连接 + 常用命令 -->
       <div class="conn-row-section">
@@ -102,7 +112,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import { executeSql } from '@/api/sql';
 
 const connForm = ref({
@@ -120,6 +131,14 @@ const commonCommands = [
   { sql: "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;", desc: '列出 public  schema 下的表' },
   { sql: "SELECT current_database() AS 当前库, schemaname AS schema, tablename AS 表名 FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema') ORDER BY schemaname, tablename;", desc: '查询当前连接库的所有表' },
 ];
+
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => document.addEventListener('click', closeTipOnClickOutside));
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 const loading = ref(false);
 const sql = ref('SELECT 1 as test');
@@ -198,7 +217,8 @@ function formatCell(val: unknown): string {
   flex-direction: column;
   min-height: 0;
 }
-.page-desc { margin: 0 0 0.5rem; font-size: 0.85rem; color: #94a3b8; flex-shrink: 0; }
+.toolbar { margin-bottom: 0.5rem; flex-shrink: 0; }
+.toolbar-actions { display: flex; align-items: center; }
 
 .pg-grid {
   display: grid;
@@ -234,13 +254,7 @@ function formatCell(val: unknown): string {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.command-list::-webkit-scrollbar { width: 4px; }
-.command-list::-webkit-scrollbar-track { background: transparent; }
-.command-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
-.command-list::-webkit-scrollbar-thumb:hover { background: #64748b; }
 .command-item {
   display: flex;
   align-items: flex-start;
@@ -328,13 +342,7 @@ function formatCell(val: unknown): string {
   font-size: 0.85rem;
   resize: vertical;
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.sql-input::-webkit-scrollbar { width: 4px; height: 4px; }
-.sql-input::-webkit-scrollbar-track { background: transparent; }
-.sql-input::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
-.sql-input::-webkit-scrollbar-thumb:hover { background: #64748b; }
 .sql-input::placeholder { color: #64748b; }
 
 .result-area {
@@ -342,13 +350,7 @@ function formatCell(val: unknown): string {
   min-height: 0;
   overflow: auto;
   border-radius: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.result-area::-webkit-scrollbar { width: 4px; height: 4px; }
-.result-area::-webkit-scrollbar-track { background: transparent; }
-.result-area::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
-.result-area::-webkit-scrollbar-thumb:hover { background: #64748b; }
 .result-console {
   background: #0f172a;
   border: 1px solid #475569;
@@ -357,13 +359,7 @@ function formatCell(val: unknown): string {
 .result-table-wrap {
   overflow: auto;
   min-width: 0;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.result-table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
-.result-table-wrap::-webkit-scrollbar-track { background: transparent; }
-.result-table-wrap::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
-.result-table-wrap::-webkit-scrollbar-thumb:hover { background: #64748b; }
 .result-table {
   width: 100%;
   border-collapse: collapse;

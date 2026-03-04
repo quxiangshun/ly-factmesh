@@ -119,5 +119,14 @@ export const menuConfig: MenuItem[] = [
       { id: 'monitor-services', name: '服务状态', path: '/monitor/services' },
       { id: 'monitor-docs', name: '接口文档', path: '/doc.html', external: true }
     ]
+  },
+  {
+    id: 'simulator',
+    name: '数据模拟 (开发)',
+    path: '/simulator',
+    icon: 'mdi:test-tube',
+    children: [
+      { id: 'simulator-data', name: '工业协议模拟', path: '/simulator/data', desc: 'OPC UA、Modbus TCP 模拟数据，仅开发环境' }
+    ]
   }
 ];

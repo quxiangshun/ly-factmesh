@@ -1,15 +1,79 @@
 <template>
   <section class="page">
-    <p class="page-desc">IoT 设备列表，支持上下线、启停、故障、遥测、告警</p>
-    <div class="stats-bar" v-if="stats">
-      <span>总数 {{ stats.total }}</span>
-      <span class="online">在线 {{ stats.online }}</span>
-      <span class="fault">故障 {{ stats.fault }}</span>
-    </div>
     <div class="toolbar">
-      <button type="button" class="btn primary" @click="showCreate = true">注册设备</button>
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">IoT 设备列表，支持上下线、启停、故障、遥测、告警</div>
+          </div>
+        </div>
+        <button type="button" class="btn primary" @click="showCreate = true">手动注册</button>
+        <button type="button" class="btn" @click="triggerFileInput" :disabled="importing">Excel 批量导入</button>
+        <a href="#" class="btn link" @click.prevent="downloadTemplate">下载模板</a>
+      </div>
+      <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="onFileSelected" />
+      <!-- 导入预览弹窗 -->
+      <div v-if="showImportPreview" class="modal-mask" @click.self="closeImportPreview">
+        <div class="modal modal-import-preview">
+          <h3>导入预览</h3>
+          <p class="preview-desc">请确认以下数据无误后点击「确认导入」执行导入</p>
+          <div v-if="previewErrors?.length" class="preview-errors">
+            <strong>以下行校验失败，将跳过：</strong>
+            <ul>
+              <li v-for="(e, i) in previewErrors" :key="i">第 {{ e.row }} 行 {{ e.deviceCode || '-' }}：{{ e.message }}</li>
+            </ul>
+          </div>
+          <div v-if="previewRows?.length" class="table-wrap preview-table">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>行号</th>
+                  <th>设备编码</th>
+                  <th>设备名称</th>
+                  <th>设备类型</th>
+                  <th>型号</th>
+                  <th>制造商</th>
+                  <th>安装位置</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in previewRows" :key="r.row">
+                  <td>{{ r.row }}</td>
+                  <td>{{ r.deviceCode }}</td>
+                  <td>{{ r.deviceName }}</td>
+                  <td>{{ r.deviceType || '-' }}</td>
+                  <td>{{ r.model || '-' }}</td>
+                  <td>{{ r.manufacturer || '-' }}</td>
+                  <td>{{ r.installLocation || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-else-if="!previewLoading" class="no-preview-data">没有可导入的有效数据</p>
+          <div v-if="previewLoading" class="loading">解析中…</div>
+          <div class="modal-actions">
+            <button type="button" class="btn" @click="closeImportPreview">取消</button>
+            <button type="button" class="btn primary" :disabled="!previewRows?.length || importing" @click="confirmImport">确认导入</button>
+          </div>
+        </div>
+      </div>
+      <div v-if="stats" class="stats-bar">
+        <span>总数 {{ stats.total }}</span>
+        <span class="online">在线 {{ stats.online }}</span>
+        <span class="fault">故障 {{ stats.fault }}</span>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
+    <div v-if="importResult" class="import-result" :class="{ success: importResult.successCount > 0, warning: importResult.failCount > 0 }">
+      <span>导入完成：成功 {{ importResult.successCount }} 条，失败 {{ importResult.failCount }} 条</span>
+      <ul v-if="importResult.errors?.length" class="import-errors">
+        <li v-for="(e, i) in importResult.errors" :key="i">第 {{ e.row }} 行 {{ e.deviceCode || '-' }}：{{ e.message }}</li>
+      </ul>
+      <button type="button" class="btn small" @click="importResult = null">关闭</button>
+    </div>
     <div v-if="loading" class="loading">加载中…</div>
     <template v-else>
       <div class="table-wrap">
@@ -194,11 +258,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import {
   getDeviceList,
   getDeviceStats,
   registerDevice,
+  batchPreviewDevices,
+  batchImportDevices,
+  downloadDeviceImportTemplate,
   updateDevice,
   deviceOnline,
   deviceOffline,
@@ -215,7 +283,9 @@ import {
   type DeviceDTO,
   type DeviceStatsDTO,
   type DeviceTelemetryPoint,
-  type DeviceAlertDTO
+  type DeviceAlertDTO,
+  type DeviceBatchImportResult,
+  type DeviceImportRow
 } from '@/api/devices';
 
 const list = ref<DeviceDTO[]>([]);
@@ -249,6 +319,14 @@ const alertsLoading = ref(false);
 const alertForm = ref({ alertType: '', alertLevel: 2, alertContent: '' });
 const alertError = ref('');
 const alertCreating = ref(false);
+const showTip = ref(false);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const importResult = ref<DeviceBatchImportResult | null>(null);
+const importing = ref(false);
+const showImportPreview = ref(false);
+const previewRows = ref<DeviceImportRow[]>([]);
+const previewErrors = ref<Array<{ row: number; deviceCode: string; message: string }>>([]);
+const previewLoading = ref(false);
 
 function onlineText(s: number) {
   const map: Record<number, string> = { 0: '离线', 1: '在线' };
@@ -360,7 +438,71 @@ async function resolveAlert(id: number) {
   }
 }
 
-onMounted(load);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => {
+  load();
+  document.addEventListener('click', closeTipOnClickOutside);
+});
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
+
+function triggerFileInput() {
+  fileInputRef.value?.click();
+}
+
+async function onFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  input.value = '';
+  previewLoading.value = true;
+  previewRows.value = [];
+  previewErrors.value = [];
+  showImportPreview.value = true;
+  importResult.value = null;
+  try {
+    const res = await batchPreviewDevices(file);
+    previewRows.value = res.rows ?? [];
+    previewErrors.value = res.errors ?? [];
+  } catch (err) {
+    previewErrors.value = [{ row: 0, deviceCode: '', message: err instanceof Error ? err.message : '预览失败' }];
+  } finally {
+    previewLoading.value = false;
+  }
+}
+
+function closeImportPreview() {
+  showImportPreview.value = false;
+  previewRows.value = [];
+  previewErrors.value = [];
+}
+
+async function confirmImport() {
+  if (!previewRows.value?.length) return;
+  importing.value = true;
+  importResult.value = null;
+  try {
+    const res = await batchImportDevices(previewRows.value);
+    importResult.value = res;
+    if (res.successCount > 0) await load();
+    closeImportPreview();
+  } catch (err) {
+    importResult.value = { successCount: 0, failCount: 1, errors: [{ row: 0, deviceCode: '', message: err instanceof Error ? err.message : '导入失败' }] };
+    closeImportPreview();
+  } finally {
+    importing.value = false;
+  }
+}
+
+async function downloadTemplate() {
+  try {
+    await downloadDeviceImportTemplate();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '下载失败';
+  }
+}
 
 function openEdit(row: DeviceDTO) {
   editForm.value = { ...row, deviceCode: row.deviceCode };
@@ -465,8 +607,9 @@ async function doDelete(id: number) {
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.toolbar { margin-bottom: 1rem; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
+.stats-bar { display: flex; gap: 1rem; font-size: 0.9rem; color: #94a3b8; margin-left: auto; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
 .btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.25rem; }
@@ -485,10 +628,10 @@ async function doDelete(id: number) {
 .form-group input { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; }
 .form-group input.readonly { opacity: 0.7; cursor: not-allowed; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
-.stats-bar { display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: #94a3b8; }
 .stats-bar .online { color: #22c55e; }
 .stats-bar .fault { color: #f87171; }
 .modal-lg { min-width: 480px; }
+.modal-import-preview { min-width: 720px; max-width: 90vw; }
 .form-row { display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 1rem; }
 .form-row .form-group { margin-bottom: 0; flex: 1; }
 .telemetry-list, .alerts-list { max-height: 300px; overflow-y: auto; margin-bottom: 1rem; }
@@ -497,4 +640,16 @@ async function doDelete(id: number) {
 .alert-level { font-weight: 600; color: #f87171; min-width: 2rem; }
 .alert-time { margin-left: auto; font-size: 0.8rem; color: #64748b; }
 .form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; box-sizing: border-box; resize: vertical; }
+.btn.link { text-decoration: none; color: #38bdf8; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.import-result { padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 8px; background: #1e293b; border: 1px solid #334155; }
+.import-result.success { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+.import-result.warning { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.import-errors { margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.85rem; color: #94a3b8; max-height: 120px; overflow-y: auto; }
+.import-errors li { margin-bottom: 0.25rem; }
+.preview-desc { color: #94a3b8; font-size: 0.875rem; margin: 0 0 1rem; }
+.preview-errors { margin-bottom: 1rem; padding: 0.75rem; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; font-size: 0.875rem; }
+.preview-errors ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+.preview-table { max-height: 320px; overflow-y: auto; margin-bottom: 1rem; }
+.no-preview-data { color: #94a3b8; margin: 1rem 0; }
 </style>

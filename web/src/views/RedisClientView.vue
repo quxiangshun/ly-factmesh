@@ -1,7 +1,17 @@
 <template>
   <section class="page">
-    <p class="page-desc">Redis 客户端，可连接任意 Redis 实例，连接信息可保存到数据库管理</p>
-
+    <div class="toolbar">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">Redis 客户端，可连接任意 Redis 实例，连接信息可保存到数据库管理</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="redis-grid">
       <!-- 连接管理 -->
       <div class="redis-section conn-section">
@@ -123,7 +133,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import {
   listConnections,
   createConnection,
@@ -274,7 +285,13 @@ function formatResult(val: unknown): string {
   return JSON.stringify(val, null, 2);
 }
 
-onMounted(load);
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => { load(); document.addEventListener('click', closeTipOnClickOutside); });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
@@ -287,7 +304,8 @@ onMounted(load);
   flex-direction: column;
   min-height: 0;
 }
-.page-desc { margin: 0 0 0.5rem; font-size: 0.85rem; color: #94a3b8; flex-shrink: 0; }
+.toolbar { margin-bottom: 0.5rem; flex-shrink: 0; }
+.toolbar-actions { display: flex; align-items: center; }
 
 .redis-grid {
   display: grid;
@@ -325,11 +343,7 @@ onMounted(load);
   gap: 0.3rem;
   flex: 0 1 auto;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.conn-list::-webkit-scrollbar { width: 4px; }
-.conn-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
 .conn-item {
   display: flex;
   flex-wrap: wrap;
@@ -401,11 +415,7 @@ onMounted(load);
   background: #0f172a;
   border: 1px solid #475569;
   border-radius: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.result-area::-webkit-scrollbar { width: 4px; height: 4px; }
-.result-area::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
 .result-empty, .result-error { padding: 1rem; font-size: 0.85rem; }
 .result-empty { color: #64748b; }
 .result-error { color: #f87171; }

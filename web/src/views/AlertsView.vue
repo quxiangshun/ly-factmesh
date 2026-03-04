@@ -1,16 +1,25 @@
 <template>
   <section class="page">
-    <p class="page-desc">告警记录、待处理告警、阈值规则自动告警</p>
-    <div class="stats-bar" v-if="pendingCount !== null && tab !== 'rules'">
-      <span class="pending">待处理 {{ pendingCount }} 条</span>
-    </div>
     <div class="toolbar">
-      <div class="tabs">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">告警记录、待处理告警、阈值规则自动告警</div>
+          </div>
+        </div>
+        <div class="stats-bar" v-if="pendingCount !== null && tab !== 'rules'">
+          <span class="pending">待处理 {{ pendingCount }} 条</span>
+        </div>
+        <div class="tabs">
         <button type="button" class="tab" :class="{ active: tab === 'pending' }" @click="tab = 'pending'">待处理</button>
         <button type="button" class="tab" :class="{ active: tab === 'all' }" @click="tab = 'all'">全部</button>
         <button type="button" class="tab" :class="{ active: tab === 'rules' }" @click="tab = 'rules'">告警规则</button>
+        </div>
+        <button v-if="tab === 'rules'" type="button" class="btn primary" @click="openCreateRule">新建规则</button>
       </div>
-      <button v-if="tab === 'rules'" type="button" class="btn primary" @click="openCreateRule">新建规则</button>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="loading" class="loading">加载中…</div>
@@ -161,7 +170,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import {
   getPendingAlerts,
   getAlertsAll,
@@ -341,18 +351,25 @@ watch(rulePage, () => {
   if (tab.value === 'rules') loadRules();
 });
 
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
 onMounted(async () => {
+  document.addEventListener('click', closeTipOnClickOutside);
   await loadPendingCount();
   if (tab.value === 'rules') await loadRules();
   else await loadAlerts();
 });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.stats-bar { margin-bottom: 1rem; font-size: 0.9rem; }
+.toolbar-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.stats-bar { font-size: 0.9rem; }
 .stats-bar .pending { color: #f87171; }
 .toolbar { margin-bottom: 1rem; }
 .tabs { display: flex; gap: 0.5rem; }

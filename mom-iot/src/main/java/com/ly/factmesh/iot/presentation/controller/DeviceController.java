@@ -1,19 +1,27 @@
 package com.ly.factmesh.iot.presentation.controller;
 
+import com.ly.factmesh.iot.application.dto.DeviceBatchImportResult;
+import com.ly.factmesh.iot.application.dto.DeviceBatchPreviewResult;
 import com.ly.factmesh.iot.application.dto.DeviceDTO;
 import com.ly.factmesh.iot.application.dto.DeviceRegisterRequest;
 import com.ly.factmesh.iot.application.dto.DeviceStatsDTO;
 import com.ly.factmesh.iot.application.dto.DeviceUpdateRequest;
 import com.ly.factmesh.iot.application.service.DeviceApplicationService;
+import com.ly.factmesh.iot.application.service.DeviceBatchImportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -29,6 +37,7 @@ import java.util.List;
 public class DeviceController {
 
     private final DeviceApplicationService deviceApplicationService;
+    private final DeviceBatchImportService deviceBatchImportService;
 
     @PostMapping
     @Operation(summary = "注册设备", description = "注册新设备到平台")
@@ -48,6 +57,21 @@ public class DeviceController {
     @Operation(summary = "设备统计", description = "获取设备总数、在线数、故障数")
     public ResponseEntity<DeviceStatsDTO> stats() {
         return ResponseEntity.ok(deviceApplicationService.getDeviceStats());
+    }
+
+    @GetMapping("/batch/template")
+    @Operation(summary = "下载设备导入模板", description = "下载 Excel 模板，填写后用于批量导入")
+    public ResponseEntity<byte[]> downloadTemplate() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        deviceBatchImportService.writeTemplate(out);
+        byte[] bytes = out.toByteArray();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment", "device_import_template.xlsx");
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(bytes.length)
+                .body(bytes);
     }
 
     @GetMapping("/{id}")
@@ -130,4 +154,43 @@ public class DeviceController {
         deviceApplicationService.deleteDevice(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/batch/preview")
+    @Operation(summary = "Excel 导入预览", description = "解析 Excel 并校验，不落库，供用户确认后提交导入")
+    public ResponseEntity<DeviceBatchPreviewResult> batchPreview(
+            @RequestParam("file") @Parameter(description = "Excel 文件 (.xlsx)") MultipartFile file
+    ) throws IOException {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(DeviceBatchPreviewResult.builder()
+                    .rows(List.of())
+                    .errors(List.of(new DeviceBatchPreviewResult.RowError(0, "", "请选择要上传的 Excel 文件")))
+                    .build());
+        }
+        String name = file.getOriginalFilename();
+        if (name == null || (!name.endsWith(".xlsx") && !name.endsWith(".xls"))) {
+            return ResponseEntity.badRequest().body(DeviceBatchPreviewResult.builder()
+                    .rows(List.of())
+                    .errors(List.of(new DeviceBatchPreviewResult.RowError(0, "", "仅支持 .xlsx、.xls 格式")))
+                    .build());
+        }
+        DeviceBatchPreviewResult result = deviceBatchImportService.previewFromExcel(file.getInputStream());
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/batch/import")
+    @Operation(summary = "确认导入设备", description = "根据预览数据执行导入，需先调用 /batch/preview 获取预览")
+    public ResponseEntity<DeviceBatchImportResult> batchImport(
+            @RequestBody @Parameter(description = "预览中的有效行数据") List<DeviceBatchPreviewResult.DeviceImportRow> rows
+    ) {
+        if (rows == null || rows.isEmpty()) {
+            return ResponseEntity.badRequest().body(DeviceBatchImportResult.builder()
+                    .successCount(0)
+                    .failCount(0)
+                    .errors(List.of(new DeviceBatchImportResult.RowError(0, "", "没有可导入的数据，请先上传 Excel 并预览")))
+                    .build());
+        }
+        DeviceBatchImportResult result = deviceBatchImportService.importFromRows(rows);
+        return ResponseEntity.ok(result);
+    }
+
 }

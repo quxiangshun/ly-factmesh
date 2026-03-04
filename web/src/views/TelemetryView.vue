@@ -1,8 +1,16 @@
 <template>
   <section class="page">
-    <p class="page-desc">查询设备采集数据、历史曲线</p>
     <div class="toolbar">
-      <div class="filter-row">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">查询设备采集数据、历史曲线</div>
+          </div>
+        </div>
+        <div class="filter-row">
         <div class="form-group">
           <label>设备</label>
           <select v-model="selectedDeviceId" class="select">
@@ -24,6 +32,7 @@
           </select>
         </div>
         <button type="button" class="btn primary" @click="loadData" :disabled="!selectedDeviceId">查询</button>
+      </div>
       </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
@@ -56,7 +65,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import { getDeviceList, queryTelemetry, type DeviceDTO, type DeviceTelemetryPoint } from '@/api/devices';
 
 const devices = ref<DeviceDTO[]>([]);
@@ -133,17 +143,24 @@ async function loadData() {
   }
 }
 
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
 onMounted(async () => {
+  document.addEventListener('click', closeTipOnClickOutside);
   await loadDevices();
   if (selectedDeviceId.value) loadData();
 });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
 .toolbar { margin-bottom: 1rem; }
+.toolbar-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
 .filter-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
 .form-group { display: flex; flex-direction: column; gap: 0.25rem; }
 .form-group label { font-size: 0.875rem; color: #94a3b8; }

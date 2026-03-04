@@ -53,6 +53,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'reports/production-daily', name: 'ReportsProduction', component: () => import('../views/ProductionDailyView.vue'), meta: { title: '生产日报', desc: '生产统计' } },
       { path: 'reports/equipment-oee', name: 'ReportsOee', component: () => import('../views/EquipmentOeeView.vue'), meta: { title: '设备 OEE', desc: '设备综合效率' } },
       { path: 'monitor/services', name: 'MonitorServices', component: () => import('../views/ServicesView.vue'), meta: { title: '服务状态' } },
+      { path: 'simulator/data', name: 'SimulatorData', component: () => import('../views/SimulatorView.vue'), meta: { title: '工业协议模拟', desc: 'OPC UA、Modbus TCP 模拟数据，仅开发环境' } },
       { path: 'help', name: 'Help', component: () => import('../views/HelpView.vue'), meta: { title: '帮助文档' } }
     ]
   }

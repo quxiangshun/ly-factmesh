@@ -1,14 +1,23 @@
 <template>
   <section class="page">
-    <p class="page-desc">检验项录入与质量判定</p>
     <div class="toolbar">
-      <select v-model="selectedTaskId" class="filter-select" @change="loadResults">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">检验项录入与质量判定</div>
+          </div>
+        </div>
+        <select v-model="selectedTaskId" class="filter-select" @change="loadResults">
         <option :value="0">选择质检任务</option>
         <option v-for="t in tasks" :key="t.id" :value="t.id">
           {{ t.taskCode }} - {{ t.orderCode || '工单' + (t.orderId ?? '-') }} ({{ t.status === 2 ? '已完成' : t.status === 1 ? '进行中' : '草稿' }})
         </option>
       </select>
-      <button type="button" class="btn primary" :disabled="!selectedTaskId" @click="showCreate = true">新建结果</button>
+        <button type="button" class="btn primary" :disabled="!selectedTaskId" @click="showCreate = true">新建结果</button>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="tasksLoading" class="loading">加载任务列表…</div>
@@ -156,7 +165,13 @@ async function loadResults() {
   }
 }
 
-onMounted(loadTasks);
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => { loadTasks(); document.addEventListener('click', closeTipOnClickOutside); });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 const submitCreate = async () => {
   createError.value = '';
@@ -198,8 +213,8 @@ async function doDelete(id: number) {
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.toolbar { margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center; }
+.toolbar { margin-bottom: 1rem; }
+.toolbar-actions { display: flex; gap: 0.75rem; align-items: center; }
 .filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 280px; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }

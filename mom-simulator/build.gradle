@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    implementation project(':mom-common')
+
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery:${springCloudAlibabaVersion}"
+    implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config:${springCloudAlibabaVersion}"
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+}
+
+jar {
+    enabled = true
+}
+
+springBoot {
+    mainClass = 'com.ly.factmesh.simulator.SimulatorApplication'
+}

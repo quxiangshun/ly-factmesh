@@ -27,3 +27,21 @@ button {
   font-family: inherit;
 }
 
+/* 通用 tip（信息图标 + 弹层） */
+.title-with-tip { position: relative; display: flex; align-items: center; }
+.tip-trigger { display: flex; align-items: center; padding: 0.25rem; cursor: pointer; color: #94a3b8; border-radius: 4px; transition: color 0.15s; }
+.tip-trigger:hover { color: #38bdf8; }
+.tip-icon { font-size: 1.2rem; }
+.tip-popover { position: absolute; top: 100%; left: 0; margin-top: 0.35rem; min-width: 240px; max-width: 480px; padding: 0.75rem 1rem; background: #1e293b; border: 1px solid #475569; border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); z-index: 100; }
+.tip-popover .tip-content { font-size: 0.9rem; color: #94a3b8; line-height: 1.5; margin: 0; }
+
+/* 全局滚动条（窄、暗色） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: #475569; }
+

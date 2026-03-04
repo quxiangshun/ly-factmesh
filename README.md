@@ -149,6 +149,20 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 **创建依据**：微服务部署时，前端 / 外部系统只需对接网关，无需感知后端多模块，降低对接成本。
 
+### 5. 开发辅助（可选，仅开发环境使用）
+
+#### ✅ mom-simulator（数据模拟器）
+**核心职责**：OPC UA、Modbus TCP 模拟数据生成，用于开发环境联调工业协议接入，生产环境不部署
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| OPC UA 模拟 | ✅ 已实现 | 内存模拟 Temperature（温度）、Humidity（湿度）；点位 ns=2;s=Temperature、ns=2;s=Humidity |
+| Modbus TCP 模拟 | ✅ 已实现 | 内存模拟压力（1_3_200）、电压（1_3_201），数值每 1 秒波动 |
+| REST 接口 | ✅ 已实现 | GET /api/simulator/status、/api/simulator/values 查询状态与模拟值 |
+| 前端菜单 | ✅ 已实现 | 侧边栏「数据模拟 (开发)」→「工业协议模拟」 |
+
+**说明**：当前为内存模拟，mom-iot 工业协议客户端可通过 REST 查看模拟值。如需真实 OPC UA/Modbus TCP 连接测试，请使用 Prosys OPC UA Simulation Server、Modbus Slave 等工具。
+
 ## 技术栈
 
 - **Java Version**: 25
@@ -239,6 +253,7 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 | 端口 | 服务 | 说明 |
 |------|------|------|
+| 9089 | mom-simulator | 数据模拟器（OPC UA、Modbus TCP 模拟，仅开发环境） |
 | 9090 | mom-gateway | API 网关，系统统一入口 |
 | 9091 | mom-admin | 系统管理（用户、角色、租户、字典等） |
 | 9092 | mom-iot | 设备物联域 |
@@ -372,6 +387,7 @@ ly-factmesh/
 ├── mom-wms/            # 仓储管理域
 ├── mom-qms/            # 质量管理域
 ├── mom-ops/            # 运维模块（全局日志、审计、系统事件）
+├── mom-simulator/      # 数据模拟器（OPC UA、Modbus TCP 模拟，仅开发环境）
 ├── mom-gateway/        # 网关模块
 ├── tools/              # 辅助工具
 │   ├── mqtt/           # MQTT 服务端 (EMQX) docker-compose
@@ -398,6 +414,7 @@ mom-wms → mom-infra → mom-common
 mom-qms → mom-infra → mom-common
 mom-admin → mom-infra → mom-common
 mom-ops → mom-infra → mom-common
+mom-simulator → mom-common
 mom-gateway → mom-admin, mom-common
 ```
 

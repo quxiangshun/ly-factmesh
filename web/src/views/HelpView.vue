@@ -827,21 +827,6 @@ const toc = [
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
-}
-.help-content-wrap::-webkit-scrollbar {
-  width: 6px;
-}
-.help-content-wrap::-webkit-scrollbar-track {
-  background: transparent;
-}
-.help-content-wrap::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 3px;
-}
-.help-content-wrap::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
 }
 .help-title { font-size: 1.75rem; margin: 0 0 0.25rem; color: #e5e7eb; }
 .help-desc { font-size: 0.95rem; color: #94a3b8; margin-bottom: 2rem; }

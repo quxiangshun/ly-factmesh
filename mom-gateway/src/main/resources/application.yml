@@ -87,6 +87,10 @@ spring:
               uri: lb://mom-ops
               predicates:
                 - Path=/api/global-logs/**,/api/ops-audit-logs/**,/api/system-events/**
+            - id: api-simulator
+              uri: lb://mom-simulator
+              predicates:
+                - Path=/api/simulator/**
 
 server:
   port: 9090

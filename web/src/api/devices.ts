@@ -68,6 +68,58 @@ export async function registerDevice(body: DeviceRegisterRequest): Promise<Devic
   return res.json();
 }
 
+// 批量导入
+export interface DeviceBatchImportResult {
+  successCount: number;
+  failCount: number;
+  errors: Array<{ row: number; deviceCode: string; message: string }>;
+}
+
+export interface DeviceImportRow {
+  row: number;
+  deviceCode: string;
+  deviceName: string;
+  deviceType?: string;
+  model?: string;
+  manufacturer?: string;
+  installLocation?: string;
+}
+
+export interface DeviceBatchPreviewResult {
+  rows: DeviceImportRow[];
+  errors: Array<{ row: number; deviceCode: string; message: string }>;
+}
+
+export async function batchPreviewDevices(file: File): Promise<DeviceBatchPreviewResult> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await request(`${BASE}/batch/preview`, {
+    method: 'POST',
+    body: form
+  });
+  return res.json();
+}
+
+export async function batchImportDevices(rows: DeviceImportRow[]): Promise<DeviceBatchImportResult> {
+  const res = await request(`${BASE}/batch/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(rows)
+  });
+  return res.json();
+}
+
+export async function downloadDeviceImportTemplate(): Promise<void> {
+  const res = await request(`${BASE}/batch/template`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'device_import_template.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function deviceOnline(id: number): Promise<DeviceDTO> {
   return requestJson(`${BASE}/${id}/online`, { method: 'POST' });
 }

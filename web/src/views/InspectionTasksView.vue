@@ -1,21 +1,30 @@
 <template>
   <section class="page">
-    <p class="page-desc">QMS 质检任务列表，支持新建、开始、完成、删除</p>
-    <div class="stats-bar" v-if="stats">
-      <span>总数 {{ stats.total }}</span>
-      <span>待检 {{ stats.draftCount }}</span>
-      <span class="progress">检验中 {{ stats.inProgressCount }}</span>
-      <span class="done">已完成 {{ stats.completedCount }}</span>
-    </div>
     <div class="toolbar">
-      <select v-model="filterStatus" class="filter-select">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">QMS 质检任务列表，支持新建、开始、完成、删除</div>
+          </div>
+        </div>
+        <select v-model="filterStatus" class="filter-select">
         <option value="">全部状态</option>
         <option :value="0">待检</option>
         <option :value="1">检验中</option>
         <option :value="2">已完成</option>
         <option :value="3">已关闭</option>
       </select>
-      <button type="button" class="btn primary" @click="showCreate = true">新建质检任务</button>
+        <button type="button" class="btn primary" @click="showCreate = true">新建质检任务</button>
+      </div>
+      <div v-if="stats" class="stats-bar">
+        <span>总数 {{ stats.total }}</span>
+        <span>待检 {{ stats.draftCount }}</span>
+        <span class="progress">检验中 {{ stats.inProgressCount }}</span>
+        <span class="done">已完成 {{ stats.completedCount }}</span>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="loading" class="loading">加载中…</div>
@@ -198,7 +207,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import { useRouter } from 'vue-router';
 import {
   getInspectionTaskPage,
@@ -254,7 +264,13 @@ async function load() {
 }
 
 watch([currentPage, filterStatus], load);
-onMounted(load);
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => { load(); document.addEventListener('click', closeTipOnClickOutside); });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 const showCreate = ref(false);
 const createForm = ref<InspectionTaskCreateRequest>({
@@ -418,8 +434,8 @@ async function doDeleteResult(id: number) {
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.toolbar { margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
+.toolbar { margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.toolbar-actions { display: flex; align-items: center; gap: 0.75rem; }
 .filter-select { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
@@ -427,7 +443,7 @@ async function doDeleteResult(id: number) {
 .btn.danger { color: #f87171; border-color: #f87171; }
 .error-msg { color: #f87171; margin-bottom: 1rem; font-size: 0.9rem; }
 .warn-msg { color: #fbbf24; margin-bottom: 0.75rem; font-size: 0.9rem; }
-.stats-bar { display: flex; gap: 1.5rem; margin-bottom: 1rem; padding: 0.75rem 1rem; background: #1e293b; border-radius: 8px; font-size: 0.9rem; color: #94a3b8; }
+.stats-bar { display: flex; gap: 1.5rem; margin-left: auto; padding: 0.75rem 1rem; background: #1e293b; border-radius: 8px; font-size: 0.9rem; color: #94a3b8; }
 .stats-bar .progress { color: #38bdf8; }
 .stats-bar .done { color: #34d399; }
 .loading { color: #94a3b8; margin: 1rem 0; }

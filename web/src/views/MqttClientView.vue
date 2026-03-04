@@ -1,7 +1,17 @@
 <template>
   <section class="page">
-    <p class="page-desc">MQTT 客户端，默认连接项目 EMQX 容器（ws://localhost:8087），支持订阅、发布与消息接收</p>
-
+    <div class="toolbar">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">MQTT 客户端，默认连接项目 EMQX 容器（ws://localhost:8087），支持订阅、发布与消息接收</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="mqtt-grid">
       <!-- 设置 -->
       <div class="mqtt-section">
@@ -119,7 +129,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onUnmounted } from 'vue';
+import { ref, reactive, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import mqtt from 'mqtt';
 
 // 默认值与 tools/docker-compose-base.yml 中 EMQX 容器配置一致：WebSocket 8087
@@ -221,7 +232,16 @@ function clearMessages() {
   messages.value = [];
 }
 
-onUnmounted(() => disconnect());
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => document.addEventListener('click', closeTipOnClickOutside));
+onUnmounted(() => {
+  document.removeEventListener('click', closeTipOnClickOutside);
+  disconnect();
+});
 </script>
 
 <style scoped>
@@ -234,7 +254,8 @@ onUnmounted(() => disconnect());
   flex-direction: column;
   min-height: 0;
 }
-.page-desc { margin: 0 0 0.5rem; font-size: 0.85rem; color: #94a3b8; flex-shrink: 0; }
+.toolbar { margin-bottom: 0.5rem; flex-shrink: 0; }
+.toolbar-actions { display: flex; align-items: center; }
 
 .mqtt-grid {
   display: grid;

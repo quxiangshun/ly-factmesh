@@ -1,7 +1,17 @@
 <template>
   <section class="page">
-    <p class="page-desc">InfluxDB 管理，可连接任意 InfluxDB 2.x 实例，执行 Flux 查询，连接信息可保存到数据库</p>
-
+    <div class="toolbar">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showPageTip = !showPageTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showPageTip" class="tip-popover" @click.stop>
+            <div class="tip-content">InfluxDB 管理，可连接任意 InfluxDB 2.x 实例，执行 Flux 查询，连接信息可保存到数据库</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="influx-grid">
       <!-- 连接管理 -->
       <div class="influx-section conn-section">
@@ -142,6 +152,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { Icon } from '@iconify/vue';
 import {
   listConnections,
   createConnection,
@@ -163,6 +174,14 @@ const hasExecuted = ref(false);
 const resultRef = ref<HTMLElement | null>(null);
 
 const showTip = ref(false);
+const showPageTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) {
+    showTip.value = false;
+    showPageTip.value = false;
+  }
+}
 const commonQueries = [
   { query: 'buckets()', desc: '列出所有 Bucket' },
   { query: 'from(bucket: "iot-telemetry") |> range(start: -1h)', desc: 'iot-telemetry 最近 1 小时数据' },
@@ -337,16 +356,12 @@ function formatCell(val: unknown): string {
   return String(val);
 }
 
-function closeTip() {
-  showTip.value = false;
-}
-
 onMounted(() => {
   load();
-  document.addEventListener('click', closeTip);
+  document.addEventListener('click', closeTipOnClickOutside);
 });
 onBeforeUnmount(() => {
-  document.removeEventListener('click', closeTip);
+  document.removeEventListener('click', closeTipOnClickOutside);
 });
 </script>
 
@@ -360,7 +375,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-height: 0;
 }
-.page-desc { margin: 0 0 0.5rem; font-size: 0.85rem; color: #94a3b8; flex-shrink: 0; }
+.toolbar { margin-bottom: 0.5rem; flex-shrink: 0; }
+.toolbar-actions { display: flex; align-items: center; }
 
 .influx-grid {
   display: grid;
@@ -400,11 +416,7 @@ onBeforeUnmount(() => {
   gap: 0.3rem;
   flex: 0 1 auto;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.conn-list::-webkit-scrollbar { width: 4px; }
-.conn-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
 .conn-item {
   display: flex;
   flex-wrap: wrap;
@@ -505,11 +517,7 @@ onBeforeUnmount(() => {
   background: #0f172a;
   border: 1px solid #475569;
   border-radius: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
 }
-.result-area::-webkit-scrollbar { width: 4px; height: 4px; }
-.result-area::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
 .result-empty, .result-error { padding: 1rem; font-size: 0.85rem; }
 .result-empty { color: #64748b; }
 .result-error { color: #f87171; }

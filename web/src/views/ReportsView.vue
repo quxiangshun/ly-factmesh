@@ -1,14 +1,23 @@
 <template>
   <section class="page">
-    <p class="page-desc">MES 报工录入，关联工单、工序、设备</p>
     <div class="toolbar">
-      <select v-model="filterOrderId" class="filter-select">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">MES 报工录入，关联工单、工序、设备</div>
+          </div>
+        </div>
+        <select v-model="filterOrderId" class="filter-select">
         <option :value="undefined">全部工单</option>
         <option v-for="wo in workOrders" :key="wo.id" :value="wo.id">
           {{ wo.orderCode }} - {{ wo.productName }}
         </option>
       </select>
-      <button type="button" class="btn primary" @click="showCreate = true">新建报工</button>
+        <button type="button" class="btn primary" @click="showCreate = true">新建报工</button>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="loading" class="loading">加载中…</div>
@@ -103,7 +112,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import {
   getWorkReportPage,
   createWorkReport,
@@ -174,11 +184,18 @@ async function load() {
   }
 }
 
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
 watch([currentPage, filterOrderId], load);
 onMounted(() => {
   loadOptions();
   load();
+  document.addEventListener('click', closeTipOnClickOutside);
 });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 const showCreate = ref(false);
 const createForm = ref<WorkReportCreateRequest>({
@@ -235,8 +252,8 @@ async function doDelete(id: number) {
 .page { padding: 0 0 1.5rem; }
 .empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.toolbar { margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
+.toolbar { margin-bottom: 1rem; }
+.toolbar-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 180px; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }

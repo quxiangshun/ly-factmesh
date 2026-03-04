@@ -224,18 +224,6 @@ function doCloseAll() {
   flex: 1;
   min-width: 0;
   overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
-}
-.tags-scroll::-webkit-scrollbar {
-  height: 4px;
-}
-.tags-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.tags-scroll::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 2px;
 }
 .tag-item {
   display: inline-flex;

@@ -1,8 +1,17 @@
 <template>
   <section class="page">
-    <p class="page-desc">MES 产线定义，用于生产排程与工位关联</p>
     <div class="toolbar">
-      <button type="button" class="btn primary" @click="showCreate = true">新建产线</button>
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">MES 产线定义，用于生产排程与工位关联</div>
+          </div>
+        </div>
+        <button type="button" class="btn primary" @click="showCreate = true">新建产线</button>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="loading" class="loading">加载中…</div>
@@ -101,7 +110,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import {
   getLinePage,
   createLine,
@@ -136,7 +146,13 @@ async function load() {
 }
 
 watch(currentPage, load);
-onMounted(load);
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => { load(); document.addEventListener('click', closeTipOnClickOutside); });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 const showCreate = ref(false);
 const createForm = ref<ProductionLineCreateRequest>({
@@ -227,8 +243,8 @@ async function doDelete(id: number) {
 .empty-state { color: #94a3b8; padding: 2rem; text-align: center; }
 .form-group input.readonly { opacity: 0.7; cursor: not-allowed; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
 .toolbar { margin-bottom: 1rem; }
+.toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
 .btn.small { padding: 0.25rem 0.5rem; font-size: 0.8rem; }

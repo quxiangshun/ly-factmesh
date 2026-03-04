@@ -1,15 +1,24 @@
 <template>
   <section class="page">
-    <p class="page-desc">按物料/批次/工单/领料单追溯出入库记录</p>
     <div class="toolbar">
-      <select v-model="filterMaterialId" class="filter-select">
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">按物料/批次/工单/领料单追溯出入库记录</div>
+          </div>
+        </div>
+        <select v-model="filterMaterialId" class="filter-select">
         <option :value="undefined">全部物料</option>
         <option v-for="m in materials" :key="m.id" :value="m.id">{{ m.materialCode }} - {{ m.materialName }}</option>
       </select>
       <input v-model="filterBatchNo" placeholder="批次号" class="filter-input" />
       <input v-model.number="filterOrderId" type="number" placeholder="工单ID" class="filter-input" />
       <input v-model.number="filterReqId" type="number" placeholder="领料单ID" class="filter-input" />
-      <button type="button" class="btn primary" @click="load">查询</button>
+        <button type="button" class="btn primary" @click="load">查询</button>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="loading" class="loading">加载中…</div>
@@ -59,7 +68,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import { traceInventory } from '@/api/inventory';
 import { getMaterialPage, type MaterialDTO } from '@/api/materials';
 
@@ -122,17 +132,24 @@ async function load() {
 }
 
 watch(currentPage, load);
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
 onMounted(() => {
+  document.addEventListener('click', closeTipOnClickOutside);
   loadOptions();
   load();
 });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 </script>
 
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.toolbar { margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.toolbar { margin-bottom: 1rem; }
+.toolbar-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .filter-select { padding: 0.4rem 0.75rem; border-radius: 6px; background: #1e293b; color: #e5e7eb; border: 1px solid #475569; min-width: 180px; }
 .filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; width: 120px; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }

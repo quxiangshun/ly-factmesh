@@ -1,10 +1,19 @@
 <template>
   <section class="page">
-    <p class="page-desc">Admin 数据字典，支持按类型筛选、创建、编辑、删除</p>
     <div class="toolbar">
-      <input v-model="filterType" placeholder="字典类型筛选" class="filter-input" />
-      <button type="button" class="btn" @click="load">查询</button>
-      <button type="button" class="btn primary" @click="showCreate = true">新建字典</button>
+      <div class="toolbar-actions">
+        <div class="title-with-tip">
+          <span class="tip-trigger" title="功能说明" @click.stop="showTip = !showTip">
+            <Icon icon="mdi:information-outline" class="tip-icon" />
+          </span>
+          <div v-if="showTip" class="tip-popover" @click.stop>
+            <div class="tip-content">Admin 数据字典，支持按类型筛选、创建、编辑、删除</div>
+          </div>
+        </div>
+        <input v-model="filterType" placeholder="字典类型筛选" class="filter-input" />
+        <button type="button" class="btn" @click="load">查询</button>
+        <button type="button" class="btn primary" @click="showCreate = true">新建字典</button>
+      </div>
     </div>
     <div v-if="error" class="error-msg">{{ error }}</div>
     <div v-if="loading" class="loading">加载中…</div>
@@ -128,7 +137,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import {
   getDicts,
   createDict,
@@ -164,7 +174,13 @@ async function load() {
 }
 
 watch(currentPage, load);
-onMounted(load);
+const showTip = ref(false);
+function closeTipOnClickOutside(e: MouseEvent) {
+  const el = (e.target as HTMLElement).closest('.title-with-tip');
+  if (!el) showTip.value = false;
+}
+onMounted(() => { load(); document.addEventListener('click', closeTipOnClickOutside); });
+onUnmounted(() => document.removeEventListener('click', closeTipOnClickOutside));
 
 const showCreate = ref(false);
 const createForm = ref<DictCreateRequest>({
@@ -243,8 +259,8 @@ async function doDelete(id: number) {
 <style scoped>
 .page { padding: 0 0 1.5rem; }
 .page-title { margin: 0 0 0.25rem; font-size: 1.5rem; color: #e5e7eb; }
-.page-desc { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; }
-.toolbar { margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; }
+.toolbar { margin-bottom: 1rem; }
+.toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
 .filter-input { padding: 0.4rem 0.75rem; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; width: 180px; }
 .btn { padding: 0.4rem 0.75rem; font-size: 0.875rem; border-radius: 6px; cursor: pointer; border: 1px solid #475569; background: #1e293b; color: #e5e7eb; }
 .btn.primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
