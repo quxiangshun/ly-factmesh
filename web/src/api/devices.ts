@@ -60,12 +60,11 @@ export async function getDeviceStats(): Promise<DeviceStatsDTO> {
 }
 
 export async function registerDevice(body: DeviceRegisterRequest): Promise<DeviceDTO> {
-  const res = await request(BASE, {
+  return requestJson<DeviceDTO>(BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  return res.json();
 }
 
 // 批量导入

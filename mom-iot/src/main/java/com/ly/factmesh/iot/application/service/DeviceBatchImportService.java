@@ -12,8 +12,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 设备批量导入服务（Excel）
@@ -36,6 +38,7 @@ public class DeviceBatchImportService {
     public DeviceBatchPreviewResult previewFromExcel(InputStream input) throws IOException {
         List<DeviceBatchPreviewResult.DeviceImportRow> rows = new ArrayList<>();
         List<DeviceBatchPreviewResult.RowError> errors = new ArrayList<>();
+        Map<String, Integer> deviceCodeToFirstRow = new HashMap<>();
 
         try (Workbook wb = WorkbookFactory.create(input)) {
             Sheet sheet = wb.getSheetAt(0);
@@ -66,10 +69,16 @@ public class DeviceBatchImportService {
                     errors.add(new DeviceBatchPreviewResult.RowError(excelRowNum, deviceCode, "设备名称不能为空"));
                     continue;
                 }
+                String code = deviceCode.trim();
+                if (deviceCodeToFirstRow.containsKey(code)) {
+                    errors.add(new DeviceBatchPreviewResult.RowError(excelRowNum, code, "设备编码与第" + deviceCodeToFirstRow.get(code) + "行重复"));
+                    continue;
+                }
+                deviceCodeToFirstRow.put(code, excelRowNum);
 
                 rows.add(new DeviceBatchPreviewResult.DeviceImportRow(
                         excelRowNum,
-                        deviceCode.trim(),
+                        code,
                         deviceName.trim(),
                         nullIfBlank(deviceType),
                         nullIfBlank(model),
