@@ -7,13 +7,18 @@
         通过微服务 + 前后端分离架构打造现代化数字工厂。
       </p>
       <div class="hero-actions">
-        <RouterLink to="/services" class="btn primary">查看微服务</RouterLink>
-        <a href="/swagger-ui.html" target="_blank" rel="noreferrer" class="btn ghost">
-          打开接口文档
+        <RouterLink to="/reports" class="btn primary">报表统计</RouterLink>
+        <RouterLink to="/monitor/services" class="btn ghost">查看微服务</RouterLink>
+        <a href="/doc.html" target="_blank" rel="noreferrer" class="btn ghost">
+          接口文档
         </a>
       </div>
     </div>
     <div class="grid">
+      <RouterLink to="/reports" class="card card-link">
+        <h2>报表统计</h2>
+        <p>自定义报表、生产日报、设备 OEE、库存统计等，按模板或已保存定义执行。</p>
+      </RouterLink>
       <div class="card">
         <h2>领域驱动设计</h2>
         <p>严格拆分 admin / iot / mes / qms / wms 领域，代码结构与业务模型一致。</p>
@@ -96,6 +101,16 @@
 .card p {
   color: #9ca3af;
   font-size: 0.85rem;
+}
+
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card-link:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3);
 }
 </style>
 

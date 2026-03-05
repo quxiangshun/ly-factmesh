@@ -164,6 +164,13 @@ public class InventoryApplicationService {
         inventoryRepository.save(inv);
     }
 
+    /** 库存统计（用于报表） */
+    public java.util.Map<String, Object> getStats() {
+        long total = inventoryRepository.count(null, null, null);
+        long belowSafe = inventoryRepository.countBelowSafeStock();
+        return java.util.Map.of("totalRecords", total, "belowSafeStockCount", belowSafe);
+    }
+
     /** 库存低于安全库存的物料列表，用于采购/生产预警 */
     public Page<InventoryDTO> pageBelowSafeStock(int pageNum, int pageSize) {
         long offset = (long) (pageNum - 1) * pageSize;

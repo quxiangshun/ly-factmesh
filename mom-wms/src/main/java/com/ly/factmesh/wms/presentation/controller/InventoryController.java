@@ -42,6 +42,12 @@ public class InventoryController {
         return ResponseEntity.ok(inventoryApplicationService.findByMaterialId(materialId));
     }
 
+    @GetMapping("/stats")
+    @Operation(summary = "库存统计", description = "用于报表：总记录数、低于安全库存数")
+    public ResponseEntity<java.util.Map<String, Object>> getStats() {
+        return ResponseEntity.ok(inventoryApplicationService.getStats());
+    }
+
     @GetMapping
     @Operation(summary = "分页查询库存")
     public ResponseEntity<Page<InventoryDTO>> page(

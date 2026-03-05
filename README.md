@@ -89,6 +89,7 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 | 盘点 | ✅ 已实现 | POST /api/inventory/count 录入实盘数量，系统自动计算差异并调整库存，记录 TYPE_ADJUST 事务 |
 | 库存查询 | ✅ 已实现 | GET /api/inventory 分页查询，支持按物料/仓库/批次号筛选；GET /api/inventory/material/{id} 按物料 ID 查全部库位 |
 | 库存预警 | ✅ 已实现 | PUT /api/inventory/{id}/safe-stock 设置安全库存；GET /api/inventory/below-safe-stock 低于安全库存预警 |
+| 库存统计 | ✅ 已实现 | GET /api/inventory/stats 返回总记录数、低于安全库存数，供报表统计使用 |
 | 生产领料 / 退料 | ✅ 已实现 | 领料单 /api/requisitions CRUD；MES 工单下发 Feign 触发创建；POST /{id}/complete 完成领料扣库存、退料加库存 |
 | 物料批次管理 | ✅ 已实现 | 库存/出入库/领料明细表支持 batch_no；adjust 请求可指定 batchNo 入库；库存分页支持 batchNo 筛选 |
 | 物料追溯 | ✅ 已实现 | GET /api/inventory/trace 按物料/批次/工单/领料单多条件查询；领料完成自动记录 order_id、req_id 到出入库事务 |
@@ -119,6 +120,7 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 | 字典管理（统一维护系统基础配置） | ✅ 已实现 | POST /api/dicts CRUD；GET /api/dicts/type/{dictType} 按类型获取 |
 | 角色权限管理（RBAC权限模型） | ✅ 已实现 | 角色 CRUD、权限 CRUD、角色权限关联、用户角色分配 |
 | 系统日志（操作日志、审计日志） | ✅ 已实现 | POST /api/operation-logs 记录；GET 分页查询；POST /api/audit-logs 记录；GET 分页查询 |
+| 报表统计（自定义报表） | ✅ 已实现 | GET /api/reports/templates 模板列表；/api/reports/definitions 定义 CRUD；POST /api/reports/execute 执行；聚合 MES/IoT/QMS/WMS 数据（生产日报、库存统计、设备统计、质检统计等） |
 
 **设计原则**：
 - mom-admin 仅依赖基础支撑层
@@ -237,7 +239,9 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 6. **访问系统**
    - 网关地址：http://localhost:9090
-   - API 文档：http://localhost:9090/swagger-ui.html（网关聚合）/ http://localhost:9091/swagger-ui.html（admin 单服务）
+   - 前端页面：http://localhost:5173（Vite 开发服务器，需单独启动 `cd web && npm run dev`）
+   - 报表统计：登录后在首页点击「报表统计」，或左侧菜单「报表统计」→「自定义报表」；支持按模板执行（生产日报汇总、库存统计、设备统计、质检任务统计等），可保存为定义重复使用
+   - API 文档：http://localhost:9090/doc.html（网关聚合）/ http://localhost:9091/swagger-ui.html（admin 单服务）
    - 聚合 OpenAPI JSON：http://localhost:9090/v3/api-docs/all
    - 注册中心地址：http://localhost:8848
 

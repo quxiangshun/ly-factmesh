@@ -20,7 +20,7 @@
 
         <h3 id="user-guide-beginner">一、我是小白，该怎么使用这个系统？</h3>
         <p><strong>第一步：登录</strong>。打开系统地址，输入管理员提供的账号和密码，点击登录。登录成功后进入「工作台」首页。</p>
-        <p><strong>第二步：熟悉菜单</strong>。左侧是功能菜单，分为：工作台、系统管理、设备物联、生产执行、仓储管理、质量管理、报表看板、运维管理、系统监控。根据你的岗位，你会用到其中某几块。</p>
+        <p><strong>第二步：熟悉菜单</strong>。左侧是功能菜单，分为：工作台、系统管理、设备物联、生产执行、仓储管理、质量管理、报表统计、运维管理、系统监控。根据你的岗位，你会用到其中某几块。</p>
         <p><strong>第三步：按流程操作</strong>。典型生产流程：计划员创建并下发工单 → 仓库按领料单发料 → 现场开始生产、报工 → 工单完成后自动创建质检任务 → 质检员处理质检任务和不合格品。你可以先从「工作台」和「生产执行」入手，体验工单创建、下发、报工、完成的全流程。</p>
         <p><strong>遇到问题</strong>：点击页面右上角的 <strong>?</strong> 图标，可跳转到本文档的使用说明部分；或访问「系统监控」下的「接口文档」查看 API 详情。</p>
 
@@ -38,7 +38,7 @@
             <tr><td>质量检验员</td><td>质检任务执行、质检结果录入、不合格品登记与处置</td><td>质量管理 (QMS)</td></tr>
             <tr><td>设备管理员</td><td>设备注册与维护、遥测查看、告警规则、告警处理</td><td>设备物联 (IoT)</td></tr>
             <tr><td>运维人员</td><td>全局日志、运维审计、系统事件监控</td><td>运维管理 (Ops)、系统监控</td></tr>
-            <tr><td>管理层</td><td>生产日报、设备 OEE、各类报表看板</td><td>报表看板 (Reports)</td></tr>
+            <tr><td>管理层</td><td>生产日报、设备 OEE、自定义报表</td><td>报表统计 → 自定义报表</td></tr>
           </tbody>
         </table>
 
@@ -799,17 +799,22 @@ POST /count (inventoryId, actualQuantity) ──► 计算 diff=实盘-账面
       </section>
 
       <section id="reports" class="help-section">
-        <h2>报表看板</h2>
+        <h2>报表统计</h2>
+        <p><strong>入口</strong>：左侧菜单「报表统计」→「自定义报表」；或首页点击「报表统计」按钮、首页「报表统计」卡片。</p>
+
+        <h3 id="reports-custom">自定义报表</h3>
+        <p><strong>业务逻辑</strong>：按预定义模板或已保存的报表定义执行，聚合 MES/IoT/QMS/WMS 数据。</p>
+        <p><strong>预定义模板</strong>：生产日报汇总、生产日报明细、产线产能统计、设备统计、质检任务统计、库存统计。</p>
+        <p><strong>使用步骤</strong>：① 选择「按模板」或「按已保存定义」；② 若按模板，选择模板（生产日报等需填日期），点击「执行」；③ 查看表格结果；④ 可选「保存为定义」将当前配置保存，便于日后在「按已保存定义」中重复执行。</p>
+        <p><strong>技术点</strong>：ReportApplicationService 聚合各微服务接口；/api/reports/templates、/api/reports/definitions、/api/reports/execute；网关路由 /api/reports/** → mom-admin。</p>
 
         <h3 id="reports-production">生产日报</h3>
         <p><strong>业务逻辑</strong>：按日统计产量、良品率等。</p>
         <p><strong>解决方案</strong>：占位页；后续聚合 MES 报工数据，按日期、工单、工序维度汇总 reportQuantity、scrapQuantity，计算良品率。</p>
-        <p><strong>技术点</strong>：占位页；需聚合 MES 报工数据。</p>
 
         <h3 id="reports-oee">设备 OEE</h3>
         <p><strong>业务逻辑</strong>：设备综合效率 = 可用率 × 性能率 × 良品率。</p>
         <p><strong>解决方案</strong>：占位页；后续聚合 IoT 设备运行时长、故障时长与 MES 产量，计算 OEE 三要素并展示趋势。</p>
-        <p><strong>技术点</strong>：占位页；需聚合 IoT 设备运行数据与 MES 产量。</p>
       </section>
 
       <section id="monitor" class="help-section">

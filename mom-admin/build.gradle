@@ -9,6 +9,7 @@ dependencies {
 
     // Nacos 服务注册与发现、配置中心
     implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery:${springCloudAlibabaVersion}"
+    implementation "org.springframework.cloud:spring-cloud-starter-loadbalancer"
     implementation "com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config:${springCloudAlibabaVersion}"
 
     // SpringBoot业务依赖，自动兜底版本

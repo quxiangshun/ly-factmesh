@@ -87,10 +87,11 @@ export const menuConfig: MenuItem[] = [
   },
   {
     id: 'reports',
-    name: '报表看板',
+    name: '报表统计',
     path: '/reports',
     icon: 'mdi:chart-box',
     children: [
+      { id: 'reports-custom', name: '自定义报表', path: '/reports/custom' },
       { id: 'reports-production', name: '生产日报', path: '/reports/production-daily' },
       { id: 'reports-oee', name: '设备 OEE', path: '/reports/equipment-oee' }
     ]

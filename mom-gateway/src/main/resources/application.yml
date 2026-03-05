@@ -66,7 +66,7 @@ spring:
             - id: api-admin
               uri: lb://mom-admin
               predicates:
-                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**,/api/tenants/**,/api/operation-logs/**,/api/audit-logs/**
+                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**,/api/tenants/**,/api/operation-logs/**,/api/audit-logs/**,/api/reports/**
             - id: api-iot
               uri: lb://mom-iot
               predicates:
