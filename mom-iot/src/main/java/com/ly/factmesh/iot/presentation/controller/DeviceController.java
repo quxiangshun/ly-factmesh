@@ -6,8 +6,10 @@ import com.ly.factmesh.iot.application.dto.DeviceDTO;
 import com.ly.factmesh.iot.application.dto.DeviceRegisterRequest;
 import com.ly.factmesh.iot.application.dto.DeviceStatsDTO;
 import com.ly.factmesh.iot.application.dto.DeviceUpdateRequest;
+import com.ly.factmesh.iot.application.dto.FaultPredictionResult;
 import com.ly.factmesh.iot.application.service.DeviceApplicationService;
 import com.ly.factmesh.iot.application.service.DeviceBatchImportService;
+import com.ly.factmesh.iot.application.service.DeviceFaultPredictionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +40,7 @@ public class DeviceController {
 
     private final DeviceApplicationService deviceApplicationService;
     private final DeviceBatchImportService deviceBatchImportService;
+    private final DeviceFaultPredictionService deviceFaultPredictionService;
 
     @PostMapping
     @Operation(summary = "注册设备", description = "注册新设备到平台")
@@ -80,6 +83,15 @@ public class DeviceController {
         return deviceApplicationService.getDeviceById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/fault-prediction")
+    @Operation(summary = "设备故障预测", description = "基于遥测数据统计分析与告警历史，评估设备故障风险")
+    public ResponseEntity<FaultPredictionResult> faultPrediction(
+            @PathVariable @Parameter(description = "设备ID") Long id,
+            @RequestParam(required = false, defaultValue = "24") @Parameter(description = "分析时间窗口（小时）") Integer hours
+    ) {
+        return ResponseEntity.ok(deviceFaultPredictionService.predict(id, hours));
     }
 
     @GetMapping

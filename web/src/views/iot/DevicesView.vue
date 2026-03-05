@@ -111,6 +111,7 @@
                 <button type="button" class="btn small" @click="openEdit(row)">编辑</button>
                 <button type="button" class="btn small" @click="openTelemetry(row)">遥测</button>
                 <button type="button" class="btn small" @click="openAlerts(row)">告警</button>
+                <button type="button" class="btn small" @click="openFaultPrediction(row)">故障预测</button>
                 <button type="button" class="btn small danger" @click="doDelete(row.id)">删除</button>
               </td>
             </tr>
@@ -256,6 +257,41 @@
         </div>
       </div>
     </div>
+    <div v-if="showFaultPrediction" class="modal-mask" @click.self="showFaultPrediction = false">
+      <div class="modal modal-lg">
+        <h3>故障预测 - {{ selectedDevice?.deviceName }}</h3>
+        <div class="form-row form-row-wrap">
+          <div class="form-group">
+            <label>分析时间窗口（小时）</label>
+            <input v-model.number="predictionHours" type="number" min="1" max="168" class="num-input" />
+          </div>
+          <button type="button" class="btn primary" @click="loadFaultPrediction" :disabled="predictionLoading">执行预测</button>
+        </div>
+        <div v-if="predictionLoading" class="loading">分析中…</div>
+        <div v-else-if="faultPrediction" class="fault-prediction-result">
+          <div class="prediction-header" :class="faultPrediction.riskLevel.toLowerCase()">
+            <span class="risk-badge">{{ faultPrediction.riskLevel }}</span>
+            <span class="risk-score">风险分数 {{ faultPrediction.riskScore }}/100</span>
+          </div>
+          <div v-if="faultPrediction.factors?.length" class="prediction-section">
+            <h4>风险因素</h4>
+            <ul>
+              <li v-for="(f, i) in faultPrediction.factors" :key="i">{{ f }}</li>
+            </ul>
+          </div>
+          <div v-if="faultPrediction.recommendations?.length" class="prediction-section">
+            <h4>建议措施</h4>
+            <ul>
+              <li v-for="(r, i) in faultPrediction.recommendations" :key="i">{{ r }}</li>
+            </ul>
+          </div>
+          <p v-if="!faultPrediction.dataSufficient" class="prediction-tip">遥测数据不足，预测结果仅供参考</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" @click="showFaultPrediction = false">关闭</button>
+        </div>
+      </div>
+    </div>
     <div v-if="showCreateAlert" class="modal-mask" @click.self="showCreateAlert = false">
       <div class="modal">
         <h3>新建告警</h3>
@@ -306,12 +342,14 @@ import {
   getDeviceAlerts,
   createDeviceAlert,
   resolveDeviceAlert,
+  getFaultPrediction,
   type DeviceRegisterRequest,
   type DeviceUpdateRequest,
   type DeviceDTO,
   type DeviceStatsDTO,
   type DeviceTelemetryPoint,
   type DeviceAlertDTO,
+  type FaultPredictionResult,
   type DeviceBatchImportResult,
   type DeviceImportRow
 } from '@/api/devices';
@@ -352,6 +390,10 @@ const alertsLoading = ref(false);
 const alertForm = ref({ alertType: '', alertLevel: 2, alertContent: '' });
 const alertError = ref('');
 const alertCreating = ref(false);
+const showFaultPrediction = ref(false);
+const faultPrediction = ref<FaultPredictionResult | null>(null);
+const predictionLoading = ref(false);
+const predictionHours = ref(24);
 const showTip = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const importResult = ref<DeviceBatchImportResult | null>(null);
@@ -455,6 +497,37 @@ function openAlerts(row: DeviceDTO) {
   showAlerts.value = true;
   deviceAlerts.value = [];
   loadDeviceAlerts();
+}
+
+function openFaultPrediction(row: DeviceDTO) {
+  selectedDevice.value = row;
+  showFaultPrediction.value = true;
+  faultPrediction.value = null;
+  predictionHours.value = 24;
+  loadFaultPrediction();
+}
+
+async function loadFaultPrediction() {
+  if (!selectedDevice.value) return;
+  predictionLoading.value = true;
+  faultPrediction.value = null;
+  try {
+    faultPrediction.value = await getFaultPrediction(selectedDevice.value.id, predictionHours.value || 24);
+  } catch (e) {
+    faultPrediction.value = {
+      deviceId: selectedDevice.value.id as number,
+      deviceCode: selectedDevice.value.deviceCode,
+      deviceName: selectedDevice.value.deviceName,
+      riskLevel: 'LOW',
+      riskScore: 0,
+      analysisHours: predictionHours.value || 24,
+      factors: [e instanceof Error ? e.message : '预测失败'],
+      recommendations: [],
+      dataSufficient: false
+    };
+  } finally {
+    predictionLoading.value = false;
+  }
 }
 
 async function loadDeviceAlerts() {
@@ -722,6 +795,24 @@ async function doDelete(id: string | number) {
 .stats-bar .online { color: #22c55e; }
 .stats-bar .fault { color: #f87171; }
 .modal-lg { min-width: 480px; }
+.fault-prediction-result { margin: 1rem 0; }
+.prediction-header { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+.prediction-header.low { background: rgba(34, 197, 94, 0.15); }
+.prediction-header.medium { background: rgba(234, 179, 8, 0.15); }
+.prediction-header.high { background: rgba(249, 115, 22, 0.15); }
+.prediction-header.critical { background: rgba(239, 68, 68, 0.15); }
+.risk-badge { font-weight: 600; font-size: 1rem; }
+.prediction-header.low .risk-badge { color: #22c55e; }
+.prediction-header.medium .risk-badge { color: #eab308; }
+.prediction-header.high .risk-badge { color: #f97316; }
+.prediction-header.critical .risk-badge { color: #ef4444; }
+.risk-score { color: #94a3b8; font-size: 0.9rem; }
+.prediction-section { margin-bottom: 1rem; }
+.prediction-section h4 { font-size: 0.9rem; color: #94a3b8; margin: 0 0 0.5rem; }
+.prediction-section ul { margin: 0; padding-left: 1.25rem; color: #e5e7eb; }
+.prediction-tip { font-size: 0.85rem; color: #94a3b8; margin-top: 0.5rem; }
+.form-row-wrap { flex-wrap: wrap; }
+.num-input { width: 80px; }
 .modal-import-preview { min-width: 720px; max-width: 90vw; }
 .form-row { display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 1rem; }
 .form-row-wrap { flex-wrap: wrap; }

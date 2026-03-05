@@ -120,6 +120,18 @@ public class DeviceAlertService {
         return deviceAlertMapper.selectCount(new LambdaQueryWrapper<DeviceAlert>().eq(DeviceAlert::getAlertStatus, 0));
     }
 
+    /**
+     * 统计设备在指定时间以来的告警次数（用于故障预测）
+     */
+    public long countRecentByDevice(Long deviceId, LocalDateTime since) {
+        if (deviceId == null || since == null) return 0;
+        return deviceAlertMapper.selectCount(
+                new LambdaQueryWrapper<DeviceAlert>()
+                        .eq(DeviceAlert::getDeviceId, deviceId)
+                        .ge(DeviceAlert::getCreateTime, since)
+        );
+    }
+
     private DeviceAlertDTO toDTO(DeviceAlert alert) {
         return DeviceAlertDTO.builder()
                 .id(alert.getId())

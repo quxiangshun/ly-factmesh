@@ -1,6 +1,23 @@
 plugins {
     id 'java'
     id 'org.springframework.boot'
+    id 'com.google.protobuf' version '0.9.4'
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.3"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.65.0"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
 }
 
 dependencies {
@@ -38,6 +55,12 @@ dependencies {
 
     // InfluxDB 客户端（运维 InfluxDB 管理）
     implementation 'com.influxdb:influxdb-client-java:7.3.0'
+
+    // gRPC 客户端（调用 mom-ai）
+    implementation 'io.grpc:grpc-netty-shaded:1.65.0'
+    implementation 'io.grpc:grpc-protobuf:1.65.0'
+    implementation 'io.grpc:grpc-stub:1.65.0'
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
 }
 
 jar {

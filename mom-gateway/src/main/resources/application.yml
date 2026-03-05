@@ -66,7 +66,7 @@ spring:
             - id: api-admin
               uri: lb://mom-admin
               predicates:
-                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**,/api/tenants/**,/api/operation-logs/**,/api/audit-logs/**,/api/reports/**
+                - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/dicts/**,/api/configs/**,/api/tenants/**,/api/operation-logs/**,/api/audit-logs/**,/api/reports/**,/api/ai-grpc/**
             - id: api-iot
               uri: lb://mom-iot
               predicates:
@@ -87,6 +87,10 @@ spring:
               uri: lb://mom-ops
               predicates:
                 - Path=/api/global-logs/**,/api/ops-audit-logs/**,/api/system-events/**
+            - id: api-ai
+              uri: ${MOM_AI_URI:http://localhost:9097}
+              predicates:
+                - Path=/api/ai/**
             - id: api-simulator
               uri: lb://mom-simulator
               predicates:

@@ -47,6 +47,11 @@ spring:
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
 
+# mom-ai gRPC 地址（admin 通过 gRPC 调用，Docker 中设为 mom-ai:9098）
+ai:
+  grpc:
+    address: ${MOM_AI_GRPC_ADDRESS:localhost:9098}
+
 # 读写分离（可选）
 # infra:
 #   datasource:

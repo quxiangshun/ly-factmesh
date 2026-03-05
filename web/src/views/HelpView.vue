@@ -36,7 +36,7 @@
             <tr><td>生产现场/操作工</td><td>开始/暂停/恢复工单，录入报工；领料、完成领料单</td><td>生产执行 - 工单管理、报工管理；仓储管理 - 领料单</td></tr>
             <tr><td>仓库管理员</td><td>物料主数据、领料单审核与发料、库存管理、盘点、调整</td><td>仓储管理 (WMS)</td></tr>
             <tr><td>质量检验员</td><td>质检任务执行、质检结果录入、不合格品登记与处置</td><td>质量管理 (QMS)</td></tr>
-            <tr><td>设备管理员</td><td>设备注册与维护、遥测查看、告警规则、告警处理</td><td>设备物联 (IoT)</td></tr>
+            <tr><td>设备管理员</td><td>设备注册与维护、遥测查看、告警规则、告警处理、故障预测</td><td>设备物联 (IoT)</td></tr>
             <tr><td>运维人员</td><td>全局日志、运维审计、系统事件监控</td><td>运维管理 (Ops)、系统监控</td></tr>
             <tr><td>管理层</td><td>生产日报、设备 OEE、自定义报表</td><td>报表统计 → 自定义报表</td></tr>
           </tbody>
@@ -83,9 +83,10 @@
         <h4>设备管理员</h4>
         <ul>
           <li>在「设备管理」中手动注册或 Excel 批量导入设备，维护设备信息。</li>
-          <li>设备列表每行支持：<strong>上线</strong> / <strong>离线</strong>、<strong>启动</strong> / <strong>停止</strong>、<strong>故障</strong>（故障后显示<strong>恢复</strong>按钮）、编辑、删除。</li>
+          <li>设备列表每行支持：<strong>上线</strong> / <strong>离线</strong>、<strong>启动</strong> / <strong>停止</strong>、<strong>故障</strong>（故障后显示<strong>恢复</strong>按钮）、编辑、删除、<strong>遥测</strong>、<strong>告警</strong>、<strong>故障预测</strong>。</li>
           <li>点击「遥测」打开弹窗：可查询历史遥测（按测点、时间范围），支持<strong>模拟上报</strong>测点数据用于测试；若上报 temperature/humidity/voltage/current，会同步更新设备列表中的显示值。</li>
           <li>点击「告警」查看该设备告警列表，可新建告警、处理待处理告警。</li>
+          <li>点击「故障预测」：选择分析时间窗口（1–168 小时）执行预测，系统基于遥测统计与告警历史输出风险等级及建议措施。</li>
           <li>「设备告警」页可查看全部/待处理告警、配置告警规则；遥测超标后规则引擎自动创建告警，需人工处理。</li>
         </ul>
 
@@ -490,6 +491,7 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
             <tr><td>更新状态</td><td>PATCH /api/devices/{id}/status</td><td>更新温度、湿度、电压、电流</td></tr>
             <tr><td>遥测上报</td><td>POST /api/devices/telemetry/report</td><td>上报测点数据，写入 InfluxDB 并触发规则引擎</td></tr>
             <tr><td>遥测查询</td><td>GET /api/devices/telemetry/{deviceId}</td><td>按测点、时间范围查询历史</td></tr>
+            <tr><td>故障预测</td><td>GET /api/devices/{id}/fault-prediction?hours=</td><td>基于遥测与告警历史评估故障风险</td></tr>
           </tbody>
         </table>
         <p><strong>解决方案</strong>：DeviceAggregate 聚合根统一管理设备生命周期；状态机控制 onlineStatus、runningStatus 流转；遥测弹窗支持模拟上报与时间范围查询；GET /stats 聚合统计总数/在线/故障。</p>
@@ -498,6 +500,13 @@ RBAC: User ──UserRole──► Role ──RolePermission──► Permission
         <h3 id="iot-telemetry">设备遥测（实时上报）</h3>
         <p><strong>业务逻辑</strong>：设备/采集端实时上报遥测数据，系统经数据清洗后写入 InfluxDB 时序库，并触发告警规则引擎；支持按设备、测点、时间范围查询历史数据。</p>
         <p><strong>设备列表「遥测」弹窗</strong>：① <strong>查询历史</strong>：输入测点（如 temperature）、开始/结束时间，点击查询；② <strong>模拟上报</strong>：输入测点名与数值，点击「上报」，调用 reportTelemetry 写入 InfluxDB；若测点为 temperature/humidity/voltage/current，同时调用 PATCH /status 更新设备表，列表中的温度/湿度等即时刷新。</p>
+
+        <h3 id="iot-fault-prediction">设备故障预测</h3>
+        <p><strong>业务逻辑</strong>：基于遥测时序数据统计分析与告警历史，评估设备故障风险，辅助预防性维护。</p>
+        <p><strong>入口</strong>：设备管理页设备列表每行「故障预测」按钮 → 弹窗选择分析时间窗口（1–168 小时，默认 24）→ 执行预测。</p>
+        <p><strong>预测算法</strong>：① 统计异常（Z-Score）：测点当前值偏离均值 >2σ 则加分；② 趋势分析：温度上升、电压下降等趋势异常加分；③ 近期告警：分析窗口内告警次数叠加风险；④ 当前故障状态直接输出高风险。</p>
+        <p><strong>输出</strong>：风险等级（LOW/MEDIUM/HIGH/CRITICAL）、风险分数 0–100、风险因素列表、建议措施；遥测数据不足时提示仅供参考。</p>
+        <p><strong>技术点</strong>：DeviceFaultPredictionService；GET /api/devices/{id}/fault-prediction?hours=24；无 ML 依赖，纯统计算法。</p>
         <p><strong>上报流程</strong>：① POST /api/devices/telemetry/report，请求体 { deviceId, deviceCode?, timestamp?, data }；② DeviceTelemetryService 校验设备存在；③ TelemetryDataCleaner 清洗（过滤 NaN/Inf、范围校验，iot.telemetry.cleaner.enabled 可关闭）；④ 逐测点写入 InfluxDB，measurement 为 device_telemetry，tags 含 device_id、device_code、field，field 为 value；⑤ 写入完成后调用 AlertRuleEngineService.evaluate() 触发规则评估。</p>
         <p><strong>查询接口</strong>：GET /api/devices/telemetry/{deviceId}?field=&start=&end=&limit=，Flux 查询 InfluxDB，支持按测点、ISO-8601 时间范围、limit（默认 1000，最大 10000）分页。</p>
         <p><strong>技术点</strong>：InfluxDB 时序库；TelemetryDataCleaner 数据清洗；reportTelemetry 批量测点写入；queryTelemetry Flux 查询；measurement device_telemetry；模拟上报 + updateDeviceStatus 联动。</p>
@@ -817,6 +826,34 @@ POST /count (inventoryId, actualQuantity) ──► 计算 diff=实盘-账面
         <p><strong>解决方案</strong>：占位页；后续聚合 IoT 设备运行时长、故障时长与 MES 产量，计算 OEE 三要素并展示趋势。</p>
       </section>
 
+      <section id="ai" class="help-section">
+        <h2>AI 模块（mom-ai）</h2>
+        <p>mom-ai 为独立的 Python 微服务，提供预测分析、自定义训练与推理能力。mom-admin 通过 gRPC 调用 mom-ai，并将接口代理为 REST 供前端/第三方使用。</p>
+
+        <h3 id="ai-grpc">gRPC 集成</h3>
+        <p><strong>架构</strong>：mom-ai 提供 HTTP(9097) 与 gRPC(9098) 双端口；mom-admin 内置 gRPC 客户端，通过 <code>ai.grpc.address</code> 连接 mom-ai，并暴露 REST 代理。</p>
+        <p><strong>配置</strong>：</p>
+        <ul>
+          <li>本地/开发：默认 <code>localhost:9098</code>，无需额外配置。</li>
+          <li>Docker：设置 <code>MOM_AI_GRPC_ADDRESS=mom-ai:9098</code>。</li>
+        </ul>
+        <p><strong>REST 代理接口</strong>（经网关 <code>/api/ai-grpc/**</code> 转发至 mom-admin）：</p>
+        <table class="help-table">
+          <thead>
+            <tr><th>接口</th><th>方法</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>/api/ai-grpc/capabilities</td><td>GET</td><td>获取 AI 能力列表及模型状态</td></tr>
+            <tr><td>/api/ai-grpc/train</td><td>POST</td><td>自定义训练（epochs、lr、train_x、train_y）</td></tr>
+            <tr><td>/api/ai-grpc/predict</td><td>POST</td><td>推理预测</td></tr>
+          </tbody>
+        </table>
+        <p><strong>启动顺序</strong>：先启动 mom-ai（<code>python main.py</code>），再启动 mom-admin；mom-admin 启动时建立 gRPC 通道，调用时通过 channel 请求 mom-ai。</p>
+
+        <h3 id="ai-usage">使用说明</h3>
+        <p>AI 模块能力（自定义训练、推理）当前通过 REST 代理接口供系统集成使用；设备故障预测由 mom-iot 的 <code>DeviceFaultPredictionService</code> 实现（基于遥测与告警统计），与 mom-ai 独立。后续可将 mom-ai 的 ML 模型用于更高级的故障预测、质量预测等场景。</p>
+      </section>
+
       <section id="monitor" class="help-section">
         <h2>系统监控</h2>
 
@@ -836,7 +873,7 @@ POST /count (inventoryId, actualQuantity) ──► 计算 diff=实盘-账面
         <ul>
           <li><strong>分页</strong>：统一格式 { records, total, current, size }，与 MyBatis-Plus Page 一致。</li>
           <li><strong>鉴权</strong>：JWT Token 存 localStorage；请求头 Authorization: Bearer &lt;token&gt;。</li>
-          <li><strong>网关路由</strong>：/api/auth/**、/api/users/** 等按路径前缀转发至对应服务。</li>
+          <li><strong>网关路由</strong>：/api/auth/**、/api/users/**、/api/reports/**、/api/ai-grpc/** → mom-admin；/api/ai/** → mom-ai；/api/devices/**（含 fault-prediction）→ mom-iot；/api/work-orders/**、/api/processes/**、/api/lines/**、/api/work-reports/** → mom-mes；/api/materials/**、/api/requisitions/**、/api/inventory/** → mom-wms；/api/inspection-tasks/**、/api/inspection-results/**、/api/ncr/** → mom-qms。</li>
           <li><strong>跨域</strong>：前端 Vite 代理 /api 到网关；网关到各服务通过 lb:// 负载均衡。</li>
           <li><strong>Flyway</strong>：各模块 db/migration 下 SQL 自动执行，版本号递增。</li>
           <li><strong>基础设施</strong>：mom-infra 提供 CacheService、MqttClientWrapper 等接口；mom-iot 实现 IndustrialClient（OPC UA / Modbus TCP）统一接入，配置 iot.industrial.enabled=true 后按需启用。</li>
@@ -888,6 +925,7 @@ const toc = [
       base.children = [
         { id: 'iot-overview', name: 'IoT 业务流转概览' },
         ...(base.children || []),
+        { id: 'iot-fault-prediction', name: '设备故障预测' },
         { id: 'iot-rule-engine', name: '规则引擎' },
         { id: 'iot-industrial-protocol', name: '工业协议接入' },
         { id: 'iot-simulator-collect', name: '模拟器对接' }
@@ -898,6 +936,12 @@ const toc = [
         { id: 'wms-overview', name: 'WMS 业务流转概览' },
         ...(base.children || []),
         { id: 'wms-api', name: 'WMS API 汇总' }
+      ];
+    }
+    if (g.id === 'ai') {
+      base.children = [
+        { id: 'ai-grpc', name: 'gRPC 集成' },
+        { id: 'ai-usage', name: '使用说明' }
       ];
     }
     if (g.id === 'mes') {

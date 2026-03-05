@@ -97,6 +97,15 @@ export const menuConfig: MenuItem[] = [
     ]
   },
   {
+    id: 'ai',
+    name: 'AI 模块',
+    path: '/ai',
+    icon: 'mdi:brain',
+    children: [
+      { id: 'ai-predict', name: '训练与推理', path: '/ai' }
+    ]
+  },
+  {
     id: 'ops',
     name: '运维管理 (Ops)',
     path: '/ops',

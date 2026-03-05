@@ -8,6 +8,7 @@
       </p>
       <div class="hero-actions">
         <RouterLink to="/reports" class="btn primary">报表统计</RouterLink>
+        <RouterLink to="/ai" class="btn ghost">AI 预测分析</RouterLink>
         <RouterLink to="/monitor/services" class="btn ghost">查看微服务</RouterLink>
         <a href="/doc.html" target="_blank" rel="noreferrer" class="btn ghost">
           接口文档
@@ -18,6 +19,10 @@
       <RouterLink to="/reports" class="card card-link">
         <h2>报表统计</h2>
         <p>自定义报表、生产日报、设备 OEE、库存统计等，按模板或已保存定义执行。</p>
+      </RouterLink>
+      <RouterLink to="/ai" class="card card-link">
+        <h2>AI 预测分析</h2>
+        <p>mom-ai 支持自定义训练与推理，可基于 PyTorch 模型进行二分类预测。</p>
       </RouterLink>
       <div class="card">
         <h2>领域驱动设计</h2>

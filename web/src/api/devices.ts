@@ -59,6 +59,26 @@ export async function getDeviceStats(): Promise<DeviceStatsDTO> {
   return requestJson(`${BASE}/stats`);
 }
 
+// 设备故障预测（AI 预测分析）
+export interface FaultPredictionResult {
+  deviceId: number;
+  deviceCode?: string;
+  deviceName?: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  riskScore: number;
+  analysisHours: number;
+  factors: string[];
+  recommendations: string[];
+  dataSufficient: boolean;
+}
+
+export async function getFaultPrediction(
+  deviceId: string | number,
+  hours = 24
+): Promise<FaultPredictionResult> {
+  return requestJson(`${BASE}/${deviceId}/fault-prediction?hours=${hours}`);
+}
+
 export async function registerDevice(body: DeviceRegisterRequest): Promise<DeviceDTO> {
   return requestJson<DeviceDTO>(BASE, {
     method: 'POST',

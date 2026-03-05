@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package ai;
+
+option java_package = "com.ly.factmesh.ai.grpc";
+option java_outer_classname = "AiServiceProto";
+
+// AI 服务定义，供 mom-admin 通过 gRPC 调用（与 mom-ai/proto/ai_service.proto 同步）
+service AiService {
+  rpc GetCapabilities(GetCapabilitiesRequest) returns (GetCapabilitiesResponse);
+  rpc Train(TrainRequest) returns (TrainResponse);
+  rpc Predict(PredictRequest) returns (PredictResponse);
+}
+
+message GetCapabilitiesRequest {}
+
+message Capability {
+  string code = 1;
+  string name = 2;
+  string status = 3;
+  string description = 4;
+}
+
+message GetCapabilitiesResponse {
+  string module = 1;
+  string version = 2;
+  string lang = 3;
+  repeated Capability capabilities = 4;
+}
+
+message TrainRequest {
+  int32 epochs = 1;
+  double lr = 2;
+  repeated FloatArray train_x = 3;
+  repeated int32 train_y = 4;
+}
+
+message FloatArray {
+  repeated float values = 1;
+}
+
+message TrainResponse {
+  string status = 1;
+  int32 epochs = 2;
+  double lr = 3;
+  double final_loss = 4;
+  string model_path = 5;
+}
+
+message PredictRequest {
+  repeated FloatArray data = 1;
+}
+
+message PredictResponse {
+  repeated FloatArray input_data = 1;
+  repeated int32 predictions = 2;
+}

@@ -51,6 +51,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'ops/audit-logs', name: 'OpsAuditLogs', component: () => import('../views/ops/OpsAuditLogsView.vue'), meta: { title: '运维审计', desc: '运维审计记录' } },
       { path: 'ops/system-events', name: 'OpsSystemEvents', component: () => import('../views/ops/OpsSystemEventsView.vue'), meta: { title: '系统事件', desc: '系统级事件' } },
       { path: 'reports', redirect: '/reports/custom' },
+      { path: 'ai', name: 'AiPredict', component: () => import('../views/ai/AiView.vue'), meta: { title: 'AI 训练与推理', desc: '自定义训练、推理预测' } },
       { path: 'reports/production-daily', name: 'ReportsProduction', component: () => import('../views/reports/ProductionDailyView.vue'), meta: { title: '生产日报', desc: '生产统计' } },
       { path: 'reports/equipment-oee', name: 'ReportsOee', component: () => import('../views/reports/EquipmentOeeView.vue'), meta: { title: '设备 OEE', desc: '设备综合效率' } },
       { path: 'reports/custom', name: 'ReportsCustom', component: () => import('../views/reports/CustomReportView.vue'), meta: { title: '自定义报表', desc: '按模板或已保存定义执行报表' } },

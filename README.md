@@ -56,6 +56,7 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 | 设备数据采集（实时） | ✅ 已实现 | POST /api/devices/telemetry 遥测上报，写入 InfluxDB 时序库 |
 | 设备数据存储 | ✅ 已实现 | InfluxDB 存储遥测数据，支持按设备/时间范围查询 |
 | 设备故障告警 | ✅ 已实现 | 告警规则引擎 /api/devices/alert-rules；阈值触发自动告警；告警处理 /api/devices/alerts |
+| 设备故障预测 | ✅ 已实现 | GET /api/devices/{id}/fault-prediction 基于遥测统计与告警历史评估故障风险；设备管理页「故障预测」入口 |
 | 远程控制 | ✅ 已实现 | POST /api/devices/{id}/start、/stop 启停控制 |
 | 设备台账（型号、参数） | ✅ 已实现 | Device 含 model、manufacturer、installLocation；PATCH /api/devices/{id}/status 更新采集数据 |
 | 设备台账（维保记录） | ✅ 已实现 | POST /api/devices/maintenance 新增；GET /api/devices/maintenance/device/{id} 按设备查询 |
@@ -141,7 +142,7 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 
 | 能力 | 实现状态 | 说明 |
 |------|----------|------|
-| 接口路由 | ✅ 已实现 | 按 Path 转发到 mom-admin/iot/mes/wms/qms；lb 负载均衡 |
+| 接口路由 | ✅ 已实现 | 按 Path 转发到 mom-admin/iot/mes/wms/qms/mom-ai；lb 负载均衡 |
 | 统一认证授权（JWT） | ✅ 已实现 | JwtAuthGlobalFilter 校验 Bearer Token；app.jwt.gateway-auth-enabled=true 开启 |
 | 接口限流 | ✅ 已实现 | RateLimitGlobalFilter 按 IP 内存限流；app.rate-limit.enabled=true 开启 |
 | 熔断、降级（Sentinel） | ✅ 已实现 | 引入 spring-cloud-starter-alibaba-sentinel；配置 Sentinel Dashboard 后生效 |
@@ -164,6 +165,24 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 | 前端菜单 | ✅ 已实现 | 侧边栏「数据模拟 (开发)」→「工业协议模拟」 |
 
 **说明**：当前为内存模拟，mom-iot 工业协议客户端可通过 REST 查看模拟值。如需真实 OPC UA/Modbus TCP 连接测试，请使用 Prosys OPC UA Simulation Server、Modbus Slave 等工具。
+
+### 6. AI 模块（可选）
+
+#### ✅ mom-ai（AI 预测分析模块，Python）
+**核心职责**：预测分析、智能决策，基于 Python 实现，便于接入 ML 库（scikit-learn、TensorFlow 等）或外部 AI 服务
+
+| 能力 | 实现状态 | 说明 |
+|------|----------|------|
+| 能力查询 | ✅ 已实现 | GET /api/ai/capabilities 获取当前支持的能力及状态 |
+| 自定义训练 | ✅ 已实现 | POST /api/ai/train 传 epochs、lr、训练数据，支持 PyTorch 模型训练与持久化 |
+| 推理预测 | ✅ 已实现 | POST /api/ai/predict 加载训练好的模型进行推理 |
+| 设备故障预测 | 委派 mom-iot | 统计预测由 mom-iot 实现；mom-ai 可扩展 ML 增强 |
+| 产量预测 | 计划中 | 基于历史工单与产线数据预测产能 |
+| 质量预测 | 计划中 | 基于质检历史与工艺参数预测良品率 |
+
+**技术栈**：Python 3.12 + FastAPI + PyTorch
+**gRPC 集成**：mom-admin 通过 gRPC 调用 mom-ai（port 9098）；配置 `ai.grpc.address`，Docker 中为 `mom-ai:9098`。REST 代理：`GET /api/ai-grpc/capabilities`、`POST /api/ai-grpc/train`、`POST /api/ai-grpc/predict`。
+**创建依据**：将 AI 能力独立成域，采用 Python 便于使用丰富 ML 生态，与 Java 业务域解耦。
 
 ## 技术栈
 
@@ -232,6 +251,10 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
      ./gradlew :mom-wms:bootRun
      ./gradlew :mom-qms:bootRun
      ```
+   - 启动 AI 模块（Python）
+     ```bash
+     cd mom-ai && pip install -r requirements.txt && python main.py
+     ```
    - 启动网关
      ```bash
      ./gradlew :mom-gateway:bootRun
@@ -265,6 +288,8 @@ LY-FactMesh是一个面向制造业的现代化运营管理系统(MOM)，采用D
 | 9094 | mom-wms | 仓储管理域 |
 | 9095 | mom-qms | 质量管理域 |
 | 9096 | mom-ops | 运维模块（全局日志、审计、系统事件） |
+| 9097 | mom-ai | AI 模块 HTTP（Python，预测分析、智能决策） |
+| 9098 | mom-ai | AI 模块 gRPC（供 mom-admin 调用） |
 | 5173 | web | 前端开发服务器（Vite） |
 
 #### 基础环境（tools/docker-compose-base.yml 或独立编排）
@@ -418,6 +443,7 @@ ly-factmesh/
 ├── mom-wms/            # 仓储管理域
 ├── mom-qms/            # 质量管理域
 ├── mom-ops/            # 运维模块（全局日志、审计、系统事件）
+├── mom-ai/             # AI 模块（Python + FastAPI，预测分析、智能决策，可扩展 ML）
 ├── mom-simulator/      # 数据模拟器（OPC UA、Modbus TCP 模拟，仅开发环境）
 ├── mom-gateway/        # 网关模块
 ├── tools/              # 辅助工具
@@ -550,7 +576,7 @@ mom-gateway → mom-admin, mom-common
 
 - **v1.0.0**: 完成核心功能开发，包括设备管理、工单管理、库存管理和质量管理
 - **v1.1.0**: 增加报表统计功能，支持自定义报表
-- **v1.2.0**: 集成 AI 预测分析功能，实现设备故障预测
+- **v1.2.0**: 集成 AI 预测分析功能，实现设备故障预测 ✅ 已实现
 - **v2.0.0**: 支持多云部署，实现跨地域协同管理
 
 ## 致谢
