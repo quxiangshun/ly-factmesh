@@ -51,3 +51,4 @@ docker compose -f tools/docker-compose-base.yml up -d postgres mysql-nacos nacos
 | `mqtt/` | EMQX MQTT Broker |
 | `seata/` | Seata 分布式事务服务端 |
 | `sql/` | 数据库初始化脚本 |
+| `edge-box/` | **边缘盒子**：C / Go / Java / Python 多语言，按子目录区分 |

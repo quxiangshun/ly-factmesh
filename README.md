@@ -394,7 +394,8 @@ ly-factmesh/
 │   ├── pgsql/          # PostgreSQL 主从集群（读写分离）
 │   ├── seata/          # Seata Server 分布式事务 docker-compose
 │   ├── sql/            # 数据库初始化脚本
-│   ├── nacos/                    # Nacos 配置与编排
+│   ├── nacos/          # Nacos 配置与编排
+│   ├── edge-box/       # 边缘盒子（C/Go/Java/Python 多语言）
 │   └── docker-compose-influxdb.yml  # InfluxDB 编排
 ├── DDD_ARCHITECTURE_OVERVIEW.md  # DDD架构文档
 ├── DOCKER_README.md    # Docker部署文档

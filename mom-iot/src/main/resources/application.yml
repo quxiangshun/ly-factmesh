@@ -45,6 +45,21 @@ spring:
     clean-disabled: true
     validate-on-migrate: true
 
+# MQTT（可选，对接 EMQX 用于设备遥测、领域事件）
+# infra:
+#   mqtt:
+#     broker-url: tcp://127.0.0.1:1883
+#     client-id: factmesh-iot-01
+#     username: factmesh_user
+#     password: factmesh_pwd123
+#     connect-timeout: 5
+#     keep-alive: 30
+#     auto-reconnect: true
+#     max-reconnect-interval: 10
+#     subscribe-topics:
+#       factmesh/input/device/+: 1
+#       factmesh/sync/edge/+: 2
+
 # InfluxDB 时序数据库（设备遥测数据）
 influxdb:
   url: http://localhost:8086

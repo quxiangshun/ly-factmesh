@@ -32,3 +32,8 @@ web/node_modules/
 
 # META-INF 自动生成
 META-INF/
+
+# 边缘盒子编译产物
+tools/edge-box/go/factmesh_edge_box
+tools/edge-box/go/factmesh_edge_box.exe
+tools/edge-box/c/build/

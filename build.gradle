@@ -22,6 +22,9 @@ subprojects {
     apply plugin: 'java'
 
     group = 'com.ly.factmesh'
+
+    // edge-box/java 为独立边缘程序，跳过 Spring Boot 等业务依赖
+    if (project.path == ':tools:edge-box:java') return
     version = '1.0-SNAPSHOT'
 
     java {

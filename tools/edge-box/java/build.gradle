@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.ly.factmesh'
+version = '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+}
+
+application {
+    mainClass = 'com.ly.factmesh.edgebox.FactMeshEdgeBox'
+}
+
+jar {
+    archiveBaseName = 'factmesh-edge-box-java'
+    manifest {
+        attributes 'Main-Class': 'com.ly.factmesh.edgebox.FactMeshEdgeBox'
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

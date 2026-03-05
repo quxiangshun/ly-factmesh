@@ -244,7 +244,7 @@
             <tr><td>数据库适配</td><td>PostgreSQL + Druid 连接池、MyBatis-Plus 分页</td><td>spring.datasource.*</td></tr>
             <tr><td>读写分离</td><td>DynamicDataSource 主从路由；@ReadOnly 注解标注读方法路由到从库</td><td>infra.datasource.read-write-split.enabled=true，master-url、slave-url</td></tr>
             <tr><td>缓存</td><td>Redis 客户端封装，CacheService 接口（set/get/delete/expire）</td><td>spring.data.redis.host</td></tr>
-            <tr><td>消息队列</td><td>MQTT 客户端接口 MqttClientWrapper（publish/subscribe）、MqttProperties</td><td>infra.mqtt.broker-url</td></tr>
+            <tr><td>消息队列</td><td>MQTT 客户端 MqttClientWrapper（Paho 实现）、MqttProperties、MqttMessageHandler 可选</td><td>infra.mqtt.broker-url、subscribe-topics</td></tr>
             <tr><td>工业协议</td><td>OPC UA、Modbus TCP 统一接入，连接池管理（mom-iot 实现）</td><td>IndustrialClient、IndustrialClientConnectionPool</td></tr>
             <tr><td>监控告警</td><td>Actuator + Micrometer Prometheus 埋点</td><td>management.endpoints.*</td></tr>
             <tr><td>分布式事务</td><td>Seata 2.2.0，seata-spring-boot-starter 自动装配</td><td>seata.enabled=true，application-id，tx-service-group</td></tr>
@@ -264,8 +264,90 @@
         <p><strong>接口</strong>：set(key, value)、set(key, value, timeout, unit)、get(key, clazz)、delete(key)、hasKey(key)、expire(key, timeout, unit)。</p>
 
         <h3 id="infra-mqtt">消息队列（MQTT）</h3>
-        <p><strong>使用方式</strong>：实现 MqttClientWrapper 接口，对接 EMQX；配置 infra.mqtt.broker-url 启用。</p>
-        <p><strong>接口</strong>：publish(topic, payload)、subscribe(topic, callback)、unsubscribe(topic)、isConnected()、disconnect()。</p>
+        <p><strong>使用方式</strong>：配置 <code>infra.mqtt.broker-url</code> 后，mom-infra 自动注册基于 Eclipse Paho 的 <code>PahoMqttClientWrapper</code> 实现；业务模块注入 <code>MqttClientWrapper</code> 即可发布/订阅。若需自定义实现，可自行注册 Bean 覆盖（<code>@ConditionalOnMissingBean</code>）。</p>
+        <p><strong>部署</strong>：<code>docker compose -f tools/mqtt/docker-compose.yml up -d</code> 启动 EMQX；开发环境默认允许匿名，生产环境建议在 Dashboard(18083) 启用认证并添加用户。</p>
+        <p><strong>接口</strong>：publish(topic, payload)、publish(topic, payload, qos)、subscribe(topic, callback)、unsubscribe(topic)、isConnected()、disconnect()。</p>
+
+        <h4>配置示例（application.yml）</h4>
+        <pre class="flow-mermaid">infra:
+  mqtt:
+    broker-url: tcp://127.0.0.1:1883
+    client-id: factmesh-core-01
+    username: factmesh_user      # 生产环境必配
+    password: factmesh_pwd123
+    connect-timeout: 5
+    keep-alive: 30
+    auto-reconnect: true
+    max-reconnect-interval: 10
+    enable-tls: false            # 生产环境改为 true
+    subscribe-topics:             # 启动时自动订阅
+      factmesh/input/device/+: 1
+      factmesh/input/order/+: 1
+      factmesh/sync/edge/+: 2</pre>
+
+        <h4>代码示例</h4>
+        <p><strong>注入并发布消息</strong>：</p>
+        <pre class="flow-mermaid">@Service
+public class DeviceTelemetryPublisher {
+    @Autowired
+    private MqttClientWrapper mqtt;
+
+    public void publishTelemetry(String deviceId, String json) {
+        if (mqtt.isConnected()) {
+            mqtt.publish("factmesh/input/device/" + deviceId, json.getBytes(StandardCharsets.UTF_8), 1);
+        }
+    }
+}</pre>
+        <p><strong>动态订阅并接收消息</strong>：</p>
+        <pre class="flow-mermaid">@Service
+public class OrderEventListener {
+    @Autowired
+    private MqttClientWrapper mqtt;
+
+    @PostConstruct
+    public void subscribe() {
+        mqtt.subscribe("factmesh/input/order/+", (topic, payload) -> {
+            String json = new String(payload, StandardCharsets.UTF_8);
+            // 处理订单事件，如落库、同步到下游
+        });
+    }
+}</pre>
+        <p><strong>全局消息处理器（可选）</strong>：实现 <code>MqttMessageHandler</code> 并注册为 Bean，可接收所有 MQTT 消息（含配置订阅主题），用于 FactMesh 事实数据统一接入：</p>
+        <pre class="flow-mermaid">@Component
+public class FactMeshMqttHandler implements MqttMessageHandler {
+    @Override
+    public void onMessage(String topic, byte[] payload) {
+        // 将 MQTT 消息转换为 FactMesh 事实数据模型并投递
+    }
+}</pre>
+
+        <h4>主题约定</h4>
+        <table class="help-table">
+          <thead>
+            <tr><th>主题模式</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>factmesh/input/device/+</td><td>设备/业务系统上报事实数据</td></tr>
+            <tr><td>factmesh/input/order/+</td><td>订单状态变更等</td></tr>
+            <tr><td>factmesh/output/+</td><td>FactMesh 处理后向下游分发</td></tr>
+            <tr><td>factmesh/sync/edge/+</td><td>边缘节点跨节点同步</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="infra-edge-box">边缘盒子</h3>
+        <p>多语言边缘端实现，均通过 MQTT 发布到 <code>factmesh/input/device/{deviceId}</code>，与 FactMesh Java 核心通信。目录 <code>tools/edge-box/</code> 下按语言分子目录。</p>
+        <table class="help-table">
+          <thead>
+            <tr><th>语言</th><th>子目录</th><th>适用场景</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>C</td><td>edge-box/c/</td><td>极端低资源（单片机、无 OS 嵌入式），paho.mqtt.c</td></tr>
+            <tr><td>Go</td><td>edge-box/go/</td><td>资源适中（树莓派、工控机），paho.mqtt.golang</td></tr>
+            <tr><td>Java</td><td>edge-box/java/</td><td>与核心同语言，fat jar 部署，Paho MQTT Java</td></tr>
+            <tr><td>Python</td><td>edge-box/python/</td><td>原型验证、脚本化，paho-mqtt</td></tr>
+          </tbody>
+        </table>
+        <p>详见 <code>tools/edge-box/README.md</code>。</p>
 
         <h3 id="infra-protocol">工业协议</h3>
         <p>mom-iot 采用「抽象工厂 + 适配器」模式统一接入 OPC UA 和 Modbus TCP，通过 IndustrialClient 接口屏蔽协议差异，支持连接池管理。</p>
@@ -787,7 +869,7 @@ const toc = [
       { id: 'intro-flow', name: '系统运转流程' }
     ]
   },
-  { id: 'infra', name: '基础设施（Infra）', children: [{ id: 'infra-overview', name: '能力概览' }, { id: 'infra-cache', name: '缓存' }, { id: 'infra-mqtt', name: '消息队列' }, { id: 'infra-protocol', name: '工业协议' }] },
+  { id: 'infra', name: '基础设施（Infra）', children: [{ id: 'infra-overview', name: '能力概览' }, { id: 'infra-cache', name: '缓存' }, { id: 'infra-mqtt', name: '消息队列' }, { id: 'infra-edge-box', name: '边缘盒子' }, { id: 'infra-protocol', name: '工业协议' }] },
   { id: 'gateway', name: '网关（Gateway）', children: [{ id: 'gateway-overview', name: '网关概览' }, { id: 'gateway-routes', name: '路由规则' }] },
   ...menuConfig.map((g) => {
     const base = { id: g.id, name: g.name, children: g.children?.map((c) => ({ id: c.id, name: c.name })) };
