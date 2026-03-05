@@ -10,16 +10,15 @@
         @contextmenu.prevent="(e) => showContextMenu(e, tag)"
       >
         <span class="tag-title">{{ tag.title }}</span>
-        <el-button
+        <button
           v-if="!tag.affix"
-          link
-          circle
-          size="small"
+          type="button"
+          class="tag-close"
           title="关闭"
           @click.prevent="handleClose(tag.path)"
         >
           <Icon icon="mdi:close" />
-        </el-button>
+        </button>
       </RouterLink>
     </div>
     <!-- 右键菜单 -->
@@ -37,17 +36,17 @@
         <button type="button" :disabled="!canCloseAll" @click="doCloseAllFromMenu">关闭所有</button>
       </div>
     </Teleport>
-    <el-dropdown v-if="visitedTags.length > 0" trigger="click" @command="handleDropdownCommand">
-      <el-button link circle size="small" title="更多操作">
-        <Icon icon="mdi:dots-vertical" />
-      </el-button>
-      <template #dropdown>
-        <el-dropdown-menu>
-          <el-dropdown-item command="closeOther">关闭其他</el-dropdown-item>
-          <el-dropdown-item command="closeAll">关闭全部</el-dropdown-item>
-        </el-dropdown-menu>
-      </template>
-    </el-dropdown>
+    <div v-if="visitedTags.length > 0" class="tags-actions">
+      <div class="tags-dropdown" ref="dropdownRef">
+        <button type="button" class="tags-more" title="更多操作" @click.stop="showDropdown = !showDropdown">
+          <Icon icon="mdi:dots-vertical" />
+        </button>
+        <div v-show="showDropdown" class="tags-dropdown-menu" @click.stop>
+          <button type="button" @click="doCloseOther(); showDropdown = false">关闭其他</button>
+          <button type="button" @click="doCloseAll(); showDropdown = false">关闭全部</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -60,10 +59,8 @@ import { useTagsView } from '@/composables/useTagsView';
 const route = useRoute();
 const router = useRouter();
 const { visitedTags, closeTag, closeOther, closeAll, closeLeft, closeRight } = useTagsView();
-function handleDropdownCommand(cmd: string) {
-  if (cmd === 'closeOther') doCloseOther();
-  else if (cmd === 'closeAll') doCloseAll();
-}
+const showDropdown = ref(false);
+const dropdownRef = ref<HTMLElement | null>(null);
 
 // 右键菜单
 const contextMenu = ref({ visible: false, x: 0, y: 0, path: '' });
@@ -147,6 +144,9 @@ function handleContextMenuClickOutside(e: MouseEvent) {
 }
 
 function handleClickOutside(e: MouseEvent) {
+  if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
+    showDropdown.value = false;
+  }
   handleContextMenuClickOutside(e);
 }
 
@@ -220,7 +220,7 @@ function doCloseAll() {
 .tags-scroll {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.25rem;
   flex: 1;
   min-width: 0;
   overflow-x: auto;
@@ -228,11 +228,9 @@ function doCloseAll() {
 .tag-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  height: 26px;
-  padding: 0 0.45rem;
-  font-size: 0.78rem;
-  line-height: 1;
+  gap: 0.25rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
   color: #94a3b8;
   background: #1e293b;
   border: 1px solid #334155;
@@ -240,7 +238,6 @@ function doCloseAll() {
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
-  box-sizing: border-box;
 }
 .tag-item:hover {
   color: #e5e7eb;
@@ -251,15 +248,8 @@ function doCloseAll() {
   background: rgba(56, 189, 248, 0.15);
   border-color: #38bdf8;
 }
-.tag-item :deep(.el-button) {
-  min-height: auto;
-  height: 18px;
-  width: 18px;
-  padding: 0;
-  font-size: 0.75rem;
-}
 .tag-title {
-  max-width: 110px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

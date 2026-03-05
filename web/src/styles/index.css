@@ -45,3 +45,14 @@ button {
 *::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 *::-webkit-scrollbar-thumb:hover { background: #475569; }
 
+/* 全局按钮小尺寸（覆盖各视图） */
+button.btn, .btn { padding: 0.25rem 0.5rem !important; font-size: 0.8rem !important; }
+
+/* 列表/表格字体缩小 */
+.data-table, .data-table th, .data-table td { font-size: 0.75rem !important; }
+.table-wrap table, .table-wrap th, .table-wrap td { font-size: 0.75rem !important; }
+.telemetry-item, .alert-item { font-size: 0.75rem !important; }
+.tree-node, .tree-child { font-size: 0.75rem !important; }
+.conn-item, .transfer-item, .command-item, .perm-item { font-size: 0.75rem !important; }
+.pagination { font-size: 0.8rem !important; }
+

@@ -95,7 +95,7 @@
             <Icon icon="mdi:help-circle-outline" />
           </RouterLink>
           <a href="/doc.html" target="_blank" rel="noreferrer" class="header-link">接口文档</a>
-          <el-button text class="btn-logout" @click="handleLogout">退出</el-button>
+          <button class="btn-logout" @click="handleLogout">退出</button>
         </div>
       </header>
       <main class="main">
@@ -317,9 +317,9 @@ function handleLogout() {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 1rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: #9ca3af;
   user-select: none;
 }
@@ -346,7 +346,7 @@ function handleLogout() {
 
 .nav-item {
   display: block;
-  padding: 0.35rem 1rem 0.35rem 2rem;
+  padding: 0.4rem 1rem 0.4rem 2rem;
   font-size: 0.85rem;
   color: #9ca3af;
   text-decoration: none;
